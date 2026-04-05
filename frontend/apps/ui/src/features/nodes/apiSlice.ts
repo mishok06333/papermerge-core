@@ -231,6 +231,7 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
 
 export const {
   useGetPaginatedNodesQuery,
+  useLazyGetPaginatedNodesQuery,
   useGetFolderQuery,
   useAddNewFolderMutation,
   useRenameFolderMutation,

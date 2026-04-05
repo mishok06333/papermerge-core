@@ -1,10 +1,10 @@
 import {Box, Group, Stack} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
-import {useContext, useState} from "react"
+import {useContext, useMemo, useState} from "react"
 import {createRoot} from "react-dom/client"
 
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
-import {useNavigate} from "react-router-dom"
+import {useLocation, useNavigate} from "react-router-dom"
 
 import {
   currentNodeChanged,
@@ -58,7 +58,12 @@ import DraggingIcon from "./DraggingIcon"
 import {DropFilesModal} from "./DropFiles"
 import DropNodesModal from "./DropNodesDialog"
 import ExtractPagesModal from "./ExtractPagesModal"
+import {useGetUserGroupHomesQuery} from "@/features/users/apiSlice"
+import {selectCurrentUser} from "@/slices/currentUser"
+import {equalUUIDs} from "@/utils"
+
 import FolderNodeActions from "./FolderNodeActions"
+import HomeFolderTree from "./HomeFolderTree"
 import NodesList from "./NodesList"
 import SupportedFilesInfoModal from "./SupportedFilesInfoModal"
 
@@ -84,6 +89,9 @@ export default function Commander() {
   const height = useAppSelector(s => selectContentHeight(s, mode))
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const location = useLocation()
+  const user = useAppSelector(selectCurrentUser)
+  const {data: groupHomes} = useGetUserGroupHomesQuery()
   const lastPageSize = useAppSelector(s => selectLastPageSize(s, mode))
   const currentNodeID = useAppSelector(s => selectCurrentNodeID(s, mode))
   const draggedPages = useAppSelector(selectDraggedPages)
@@ -117,6 +125,31 @@ export default function Commander() {
   }
 
   const {data: currentFolder} = useGetFolderQuery(currentNodeID)
+
+  const {homeBrowseRootId, rootLabel} = useMemo(() => {
+    if (!user || !currentFolder?.breadcrumb?.length) {
+      return {homeBrowseRootId: null as string | null, rootLabel: ""}
+    }
+    const rootId = currentFolder.breadcrumb[0][0]
+    const homeIds = [
+      user.home_folder_id,
+      ...(groupHomes?.map(h => h.home_id) ?? [])
+    ]
+    const isUnderHome = homeIds.some(id => equalUUIDs(id, rootId))
+    if (!isUnderHome) {
+      return {homeBrowseRootId: null, rootLabel: ""}
+    }
+    return {
+      homeBrowseRootId: rootId,
+      rootLabel: currentFolder.breadcrumb[0][1]
+    }
+  }, [user, groupHomes, currentFolder?.breadcrumb])
+
+  const showHomeFolderTree =
+    mode === "main" &&
+    Boolean(homeBrowseRootId) &&
+    (location.pathname.startsWith("/home/") ||
+      location.pathname.startsWith("/folder/"))
 
   if (isLoading && !data) {
     return <div>Loading...</div>
@@ -288,27 +321,44 @@ export default function Commander() {
 
   return (
     <>
-      <Box
-        onDragEnter={onDragEnter}
-        onDragLeave={onDragLeave}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
+      <Group
+        align="flex-start"
+        wrap="nowrap"
+        gap="md"
         className={dragOver ? classes.accept_files : classes.commander}
       >
-        <FolderNodeActions />
-        <Breadcrumbs
-          breadcrumb={currentFolder?.breadcrumb}
-          onClick={onClick}
-          isFetching={isFetching}
-        />
-        <Stack
-          className={classes.content}
-          justify={"space-between"}
-          style={{height: `${height}px`}}
+        {showHomeFolderTree && homeBrowseRootId && (
+          <HomeFolderTree
+            key={homeBrowseRootId}
+            homeRootId={homeBrowseRootId}
+            rootLabel={rootLabel}
+            currentNodeID={currentNodeID}
+            lastPageSize={lastPageSize}
+            height={height}
+          />
+        )}
+        <Box
+          style={{flex: 1, minWidth: 0}}
+          onDragEnter={onDragEnter}
+          onDragLeave={onDragLeave}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
         >
-          {commanderContent}
-        </Stack>
-      </Box>
+          <FolderNodeActions />
+          <Breadcrumbs
+            breadcrumb={currentFolder?.breadcrumb}
+            onClick={onClick}
+            isFetching={isFetching}
+          />
+          <Stack
+            className={classes.content}
+            justify={"space-between"}
+            style={{height: `${height}px`}}
+          >
+            {commanderContent}
+          </Stack>
+        </Box>
+      </Group>
       {currentFolder && uploadFiles && uploadFiles.length > 0 && (
         <DropFilesModal
           opened={dropFilesOpened}

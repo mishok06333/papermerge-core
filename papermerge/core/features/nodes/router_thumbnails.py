@@ -88,11 +88,27 @@ async def get_document_thumbnail(
     jpg_abs_path = rel2abs(thumbnail_path(page.id))
 
     if not os.path.exists(jpg_abs_path):
-        image.gen_doc_thumbnail(
-            page_id=page.id,
-            doc_ver_id=doc_ver.id,
-            page_number=1,
-            file_name=doc_ver.file_name,
-        )
+        try:
+            image.gen_doc_thumbnail(
+                page_id=page.id,
+                doc_ver_id=doc_ver.id,
+                page_number=1,
+                file_name=doc_ver.file_name,
+            )
+        except Exception:
+            logger.exception(
+                "Thumbnail generation failed for document %s", document_id
+            )
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Could not generate thumbnail. On Windows, install Poppler "
+                    "and ensure it is on PATH (pdf2image needs pdftoppm). "
+                    "Also verify PAPERMERGE__MAIN__MEDIA_ROOT contains the document files."
+                ),
+            )
+
+    if not os.path.exists(jpg_abs_path):
+        raise HTTP404NotFound
 
     return JPEGFileResponse(jpg_abs_path)

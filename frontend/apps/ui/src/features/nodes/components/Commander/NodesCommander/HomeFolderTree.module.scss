@@ -1,0 +1,52 @@
+.sidebar {
+  flex: 0 0 240px;
+  max-width: 240px;
+  padding-right: 0.5rem;
+  border-right: 1px solid var(--mantine-color-default-border);
+}
+
+.tree {
+  padding-bottom: 0.5rem;
+}
+
+.row {
+  min-width: 0;
+}
+
+.chevron {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--mantine-color-dimmed);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  border-radius: var(--mantine-radius-sm);
+  padding: 2px 4px;
+
+  &:hover {
+    background-color: var(--mantine-color-default-hover);
+  }
+}
+
+.folderIcon {
+  flex-shrink: 0;
+  color: var(--mantine-color-yellow-7);
+}
+
+.fileIcon {
+  flex-shrink: 0;
+  color: var(--mantine-color-dimmed);
+}
+
+.placeholder {
+  display: block;
+  height: 0;
+  width: 0;
+  overflow: hidden;
+  position: absolute;
+}

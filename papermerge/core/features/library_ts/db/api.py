@@ -222,9 +222,9 @@ async def get_note(
 
 async def list_comments(
     db_session: AsyncSession, document_id: UUID
-) -> list[tuple[lib_orm.DocumentComment, str]]:
+) -> list[tuple[lib_orm.DocumentComment, str, str | None, str | None]]:
     stmt = (
-        select(lib_orm.DocumentComment, orm.User.username)
+        select(lib_orm.DocumentComment, orm.User.username, orm.User.first_name, orm.User.last_name)
         .join(orm.User, orm.User.id == lib_orm.DocumentComment.user_id)
         .where(lib_orm.DocumentComment.document_id == document_id)
         .order_by(lib_orm.DocumentComment.created_at.asc())
@@ -273,6 +273,22 @@ async def get_username_by_user_id(
     db_session: AsyncSession, user_id: UUID
 ) -> str | None:
     return await db_session.scalar(select(orm.User.username).where(orm.User.id == user_id))
+
+
+async def get_user_display_fields_by_id(
+    db_session: AsyncSession, user_id: UUID
+) -> tuple[str, str | None, str | None] | None:
+    """Return (username, first_name, last_name) for the given user_id, or None."""
+    row = (
+        await db_session.execute(
+            select(orm.User.username, orm.User.first_name, orm.User.last_name).where(
+                orm.User.id == user_id
+            )
+        )
+    ).one_or_none()
+    if row is None:
+        return None
+    return row.username, row.first_name, row.last_name
 
 
 async def set_rating(

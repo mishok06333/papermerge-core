@@ -11,6 +11,7 @@ from papermerge.core.features.groups.db import orm as groups_orm
 from papermerge.core.features.roles.db import orm as roles_orm
 from papermerge.core.features.roles.db.orm import users_roles_association
 from papermerge.core.features.nodes import schema as nodes_schema
+from papermerge.core.features.users.schema import user_display_name
 
 
 async def get_ancestors(
@@ -183,6 +184,8 @@ async def get_node_owner(db_session: AsyncSession, node_id: UUID) -> nodes_schem
             groups_orm.Group.name.label("group_name"),
             orm.Node.user_id,
             orm.User.username,
+            orm.User.first_name,
+            orm.User.last_name,
         )
         .select_from(orm.Node)
         .join(orm.User, orm.User.id == orm.Node.user_id, isouter=True)
@@ -194,7 +197,7 @@ async def get_node_owner(db_session: AsyncSession, node_id: UUID) -> nodes_schem
     if row.user_id is None:
         owner_name = row.group_name
     else:
-        owner_name = row.username
+        owner_name = user_display_name(row.first_name, row.last_name, row.username)
 
     return nodes_schema.Owner(
         name=owner_name, user_id=row.user_id, group_id=row.group_id

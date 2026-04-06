@@ -1,10 +1,10 @@
 import {useAppSelector} from "@/app/hooks"
+import {getBlobViewerCategory} from "@/features/document/documentPreview"
+import type {TFunction} from "i18next"
 import {
   useGetLibraryFavoritesQuery,
-  useGetLibraryNotificationsQuery,
   useGetLibraryRecentQuery,
   useGetLibraryTrashQuery,
-  useMarkLibraryNotificationReadMutation,
   usePurgeLibraryTrashMutation,
   useRemoveLibraryFavoriteMutation,
   useRestoreLibraryTrashMutation
@@ -12,8 +12,7 @@ import {
 import {
   NODE_DELETE,
   NODE_UPDATE,
-  NODE_VIEW,
-  USER_ME
+  NODE_VIEW
 } from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {User} from "@/types"
@@ -32,16 +31,16 @@ import {
   Title
 } from "@mantine/core"
 import {notifications} from "@mantine/notifications"
-import {IconBell, IconHistory, IconStar, IconTrash} from "@tabler/icons-react"
+import {IconHistory, IconStar, IconTrash} from "@tabler/icons-react"
 import {useMemo, useState} from "react"
 import {useTranslation} from "react-i18next"
 import {Link, useNavigate, useParams} from "react-router-dom"
 
-type Section = "favorites" | "recent" | "trash" | "notifications"
+type Section = "favorites" | "recent" | "trash"
 
 const valid = (s: string | undefined): Section => {
   const v = (s || "favorites") as Section
-  if (v === "recent" || v === "trash" || v === "notifications" || v === "favorites") {
+  if (v === "recent" || v === "trash" || v === "favorites") {
     return v
   }
   return "favorites"
@@ -85,13 +84,6 @@ export default function LibraryPage() {
           >
             {t("library.tab_trash")}
           </Tabs.Tab>
-          <Tabs.Tab
-            value="notifications"
-            leftSection={<IconBell size={16} />}
-            disabled={!scopes.includes(USER_ME)}
-          >
-            {t("library.tab_notifications")}
-          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="favorites" pt="md">
@@ -103,9 +95,6 @@ export default function LibraryPage() {
         <Tabs.Panel value="trash" pt="md">
           {scopes.includes(NODE_VIEW) ? <TrashPanel /> : null}
         </Tabs.Panel>
-        <Tabs.Panel value="notifications" pt="md">
-          {scopes.includes(USER_ME) ? <NotificationsPanel /> : null}
-        </Tabs.Panel>
       </Tabs>
     </Stack>
   )
@@ -113,6 +102,15 @@ export default function LibraryPage() {
 
 function openHref(ctype: string, id: string) {
   return ctype === "folder" ? `/folder/${id}` : `/document/${id}`
+}
+
+function resolveTypeLabel(ctype: string, title: string, t: TFunction): string {
+  if (ctype !== "document") {
+    return t(`library.ctype_${ctype}`, {defaultValue: ctype})
+  }
+  // Files without a recognized extension fall back to category "binary", displayed as "File"
+  const cat = getBlobViewerCategory(title)
+  return t(`library.filetype_${cat}`, {defaultValue: cat})
 }
 
 function FavoritesPanel() {
@@ -150,7 +148,7 @@ function FavoritesPanel() {
                   </Text>
                 ) : null}
               </Table.Td>
-              <Table.Td>{row.ctype}</Table.Td>
+              <Table.Td>{resolveTypeLabel(row.ctype, row.title, t)}</Table.Td>
               <Table.Td>
                 <Button
                   size="xs"
@@ -224,7 +222,7 @@ function RecentPanel() {
                   </Text>
                 ) : null}
               </Table.Td>
-              <Table.Td>{row.ctype}</Table.Td>
+              <Table.Td>{resolveTypeLabel(row.ctype, row.title, t)}</Table.Td>
               <Table.Td>
                 {new Date(row.viewed_at).toLocaleString()}
               </Table.Td>
@@ -372,7 +370,7 @@ function TrashPanel() {
                     {node.title}
                   </Anchor>
                 </Table.Td>
-                <Table.Td>{node.ctype}</Table.Td>
+                <Table.Td>{resolveTypeLabel(node.ctype, node.title, t)}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -390,60 +388,3 @@ function TrashPanel() {
   )
 }
 
-function NotificationsPanel() {
-  const {t} = useTranslation()
-  const {data, isLoading, isError} = useGetLibraryNotificationsQuery(50)
-  const [markRead, {isLoading: marking}] = useMarkLibraryNotificationReadMutation()
-
-  if (isLoading) {
-    return <Loader />
-  }
-  if (isError) {
-    return <Text c="red">{t("library.load_error")}</Text>
-  }
-  const rows = data ?? []
-  return (
-    <Stack gap="sm">
-      {rows.map(n => (
-        <Paper key={n.id} withBorder p="sm">
-          <Group justify="space-between">
-            <Stack gap={4}>
-              <Text size="sm" fw={600}>
-                {n.kind}
-              </Text>
-              <Text size="xs" c="dimmed">
-                {new Date(n.created_at).toLocaleString()}
-              </Text>
-              {n.payload ? (
-                <Text size="sm">{n.payload}</Text>
-              ) : null}
-            </Stack>
-            {!n.read_at ? (
-              <Button
-                size="xs"
-                variant="light"
-                loading={marking}
-                onClick={async () => {
-                  try {
-                    await markRead(n.id).unwrap()
-                  } catch {
-                    /* ignore */
-                  }
-                }}
-              >
-                {t("library.mark_read")}
-              </Button>
-            ) : (
-              <Text size="xs" c="dimmed">
-                {t("library.read")}
-              </Text>
-            )}
-          </Group>
-        </Paper>
-      ))}
-      {rows.length === 0 ? (
-        <Text c="dimmed">{t("library.empty_notifications")}</Text>
-      ) : null}
-    </Stack>
-  )
-}

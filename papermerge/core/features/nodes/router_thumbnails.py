@@ -42,7 +42,7 @@ class JPEGFileResponse(FileResponse):
     "/{document_id}",
     response_class=JPEGFileResponse,
     responses={
-        309: {
+        423: {
             "description": """Preview image cannot be generated at this moment
              yet. This may happen for example because the document is currently
             still being uploaded. A later response may succeed with 200 status
@@ -82,7 +82,7 @@ async def get_document_thumbnail(
         page = await dbapi.get_first_page(db_session, doc_ver_id=doc_ver.id)
     except NoResultFound:
         raise HTTPException(
-            status_code=309,
+            status_code=423,
             detail="Not ready for preview yet",
         )
 

@@ -60,6 +60,8 @@ export default function EditUserModal({
       form.setValues({
         username: data.username,
         email: data.email,
+        first_name: data.first_name || "",
+        last_name: data.last_name || "",
         is_active: data.is_active,
         is_superuser: data.is_superuser,
         groups: data.groups.map(g => g.name),
@@ -82,6 +84,8 @@ export default function EditUserModal({
       id: userId,
       username: userFields.username,
       email: userFields.email,
+      first_name: userFields.first_name,
+      last_name: userFields.last_name,
       is_active: userFields.is_active,
       is_superuser: userFields.is_superuser,
       group_ids: group_ids,
@@ -117,6 +121,20 @@ export default function EditUserModal({
           placeholder={t("users.form.email")}
           key={form.key("email")}
           {...form.getInputProps("email")}
+        />
+        <TextInput
+          mt="sm"
+          label={t("users.form.first_name")}
+          placeholder={t("users.form.first_name")}
+          key={form.key("first_name")}
+          {...form.getInputProps("first_name")}
+        />
+        <TextInput
+          mt="sm"
+          label={t("users.form.last_name")}
+          placeholder={t("users.form.last_name")}
+          key={form.key("last_name")}
+          {...form.getInputProps("last_name")}
         />
         <Checkbox
           mt="sm"

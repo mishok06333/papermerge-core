@@ -4,8 +4,6 @@ import mimetypes
 import os
 from os.path import getsize
 import uuid
-import tempfile
-from pathlib import Path
 from typing import Tuple, Sequence
 
 import img2pdf
@@ -142,7 +140,7 @@ async def update_doc_cfv(
         else:
             # prepare update values
             v = dict(id=item.custom_field_value_id)
-            if item.type == "date":
+            if item.type.value == "date":
                 v[f"value_{item.type.value}"] = str2date(custom_fields[item.name])
             elif item.type.value == "yearmonth":
                 v[f"value_{item.type.value}"] = str2float(custom_fields[item.name])
@@ -158,7 +156,7 @@ async def update_doc_cfv(
 
     await session.commit()
 
-    return items
+    return await get_doc_cfv(session, document_id=document_id)
 
 
 async def update_doc_type(
@@ -184,13 +182,17 @@ async def update_doc_type(
     await session.commit()
 
 
-async def get_docs_count_by_type(session: AsyncSession, type_id: uuid.UUID):
+async def get_docs_count_by_type(
+    session: AsyncSession,
+    type_id: uuid.UUID,
+    user_id: uuid.UUID | None = None,
+):
     """Returns number of documents of specific document type"""
-    stmt = (
-        select(func.count())
-        .select_from(orm.Document)
-        .where(orm.Document.document_type_id == type_id)
+    stmt = select(func.count()).select_from(orm.Document).where(
+        orm.Document.document_type_id == type_id
     )
+    if user_id is not None:
+        stmt = stmt.where(orm.Document.user_id == user_id)
 
     result = await session.scalars(stmt)
     return result.one()
@@ -229,6 +231,7 @@ async def get_cfv_column_name(db_session: AsyncSession, cf_name: str) -> CFVValu
 async def get_docs_by_type_no_cf(
     session: AsyncSession,
     type_id: uuid.UUID,
+    user_id: uuid.UUID,
     limit: int,
     offset: int,
     order_by: str | None = None,
@@ -239,9 +242,15 @@ async def get_docs_by_type_no_cf(
     This method works correctly only in case document type does
     not have custom fields
     """
-    stmt = select(orm.Document).where(
-        orm.Document.document_type_id == type_id
-    ).limit(limit).offset(offset)
+    stmt = (
+        select(orm.Document)
+        .where(
+            orm.Document.document_type_id == type_id,
+            orm.Document.user_id == user_id,
+        )
+        .limit(limit)
+        .offset(offset)
+    )
 
     results = []
 
@@ -281,6 +290,7 @@ async def get_docs_by_type(
         return await get_docs_by_type_no_cf(
             session,
             type_id=type_id,
+            user_id=user_id,
             order_by=order_by,
             order=order,
             limit=page_size,
@@ -672,11 +682,7 @@ async def upload(
 
     elif ct in IMAGE_MIMES_IMG2PDF:
         try:
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                tmp_file_path = Path(tmpdirname) / f"{safe_file_name}.pdf"
-                with open(tmp_file_path, "wb") as f:
-                    pdf_content = img2pdf.convert(content)
-                    f.write(pdf_content)
+            pdf_content = img2pdf.convert(content)
         except img2pdf.ImageOpenError as e:
             error = schema.Error(messages=[str(e)])
             return None, error
@@ -964,17 +970,16 @@ async def get_first_page(
     Returns first page of the document version
     identified by doc_ver_id
     """
-    async with db_session as session:  # noqa
-        stmt = (
-            select(orm.Page)
-            .where(
-                orm.Page.document_version_id == doc_ver_id,
-            )
-            .order_by(orm.Page.number.asc())
-            .limit(1)
+    stmt = (
+        select(orm.Page)
+        .where(
+            orm.Page.document_version_id == doc_ver_id,
         )
+        .order_by(orm.Page.number.asc())
+        .limit(1)
+    )
 
-        db_page = (await session.scalars(stmt)).one()
+    db_page = (await db_session.scalars(stmt)).one()
 
     return db_page
 
@@ -1055,7 +1060,7 @@ async def get_docs_thumbnail_img_status(
 
     doc_ids_not_yet_considered_for_preview = []
     items = []
-    if fserver == config.FileServer.S3.value:
+    if fserver == config.FileServer.S3:
         for row in await db_session.execute(stmt):
             url = None
             if row.preview_status == ImagePreviewStatus.ready:

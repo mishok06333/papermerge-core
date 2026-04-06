@@ -1,5 +1,6 @@
 import {User} from "@/types.d/shared_nodes"
 import {Checkbox, Table} from "@mantine/core"
+import {displayName} from "@/utils/userDisplay"
 
 interface Args {
   user: User
@@ -24,7 +25,7 @@ export default function UserRow({user, selectedIDs, onChange}: Args) {
           onChange={onLocalChange}
         />
       </Table.Td>
-      <Table.Td>{user.username}</Table.Td>
+      <Table.Td>{displayName(user)}</Table.Td>
       <Table.Td>{user.roles.map(r => r.name).join(",")}</Table.Td>
     </Table.Tr>
   )

@@ -1,6 +1,7 @@
 import {useGetUsersQuery} from "@/features/users/apiSlice"
 import {MultiSelect, Skeleton, Stack} from "@mantine/core"
 import {useState} from "react"
+import {displayName} from "@/utils/userDisplay"
 
 interface Args {
   onChange: (value: string[]) => void
@@ -31,7 +32,7 @@ export default function SelectUsers({onChange}: Args) {
         placeholder="Pick value"
         value={users}
         onChange={onChangeLocal}
-        data={data.map(u => u.username)}
+        data={data.map(u => ({value: u.id, label: displayName(u)}))}
       />
     </Stack>
   )

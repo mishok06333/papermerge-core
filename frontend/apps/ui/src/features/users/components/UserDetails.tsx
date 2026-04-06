@@ -3,6 +3,7 @@ import {Breadcrumbs, Box, LoadingOverlay, Group, Loader} from "@mantine/core"
 
 import {useGetUserQuery} from "@/features/users/apiSlice"
 import type {UserDetails} from "@/types"
+import {displayName} from "@/utils/userDisplay"
 import UserForm from "./UserForm"
 import EditButton from "./EditButton"
 import {DeleteUserButton} from "./DeleteButton"
@@ -47,7 +48,7 @@ function Path({user}: {user: UserDetails | null}) {
     <Group>
       <Breadcrumbs>
         <Link to="/users/">Users</Link>
-        <Link to={`/users/${user?.id}`}>{user?.username}</Link>
+        <Link to={`/users/${user?.id}`}>{user ? displayName(user) : ""}</Link>
       </Breadcrumbs>
       {navigation.state == "loading" && <Loader size={"sm"} />}
     </Group>

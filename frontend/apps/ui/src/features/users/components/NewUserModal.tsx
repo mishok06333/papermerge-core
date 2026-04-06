@@ -58,6 +58,8 @@ export default function NewUserModal({
     const newUserData = {
       username: userFields.username,
       email: userFields.email,
+      first_name: userFields.first_name || undefined,
+      last_name: userFields.last_name || undefined,
       is_active: userFields.is_active || false,
       is_superuser: userFields.is_superuser || false,
       password: makeRandomString(24),
@@ -105,6 +107,20 @@ export default function NewUserModal({
           placeholder={t("users.form.email")}
           key={form.key("email")}
           {...form.getInputProps("email")}
+        />
+        <TextInput
+          mt="sm"
+          label={t("users.form.first_name")}
+          placeholder={t("users.form.first_name")}
+          key={form.key("first_name")}
+          {...form.getInputProps("first_name")}
+        />
+        <TextInput
+          mt="sm"
+          label={t("users.form.last_name")}
+          placeholder={t("users.form.last_name")}
+          key={form.key("last_name")}
+          {...form.getInputProps("last_name")}
         />
         <Checkbox
           mt="sm"

@@ -1,5 +1,6 @@
 import type {User} from "@/types.d/shared_nodes"
 import {SharedNodeAccessDetails} from "@/types.d/shared_nodes"
+import {displayName} from "@/utils/userDisplay"
 import {Center, Checkbox, Skeleton, Stack, Table} from "@mantine/core"
 import UserAccessButtons from "./UserAccessButtons"
 import UserRow from "./UserRow"
@@ -65,17 +66,11 @@ export default function ManageAccessUsers({
 }
 
 function sortPredicate(u1: User, u2: User) {
-  const username1 = u1.username.toLowerCase()
-  const username2 = u2.username.toLowerCase()
+  const name1 = displayName(u1).toLowerCase()
+  const name2 = displayName(u2).toLowerCase()
 
-  if (username1 < username2) {
-    return -1
-  }
-  if (username1 > username2) {
-    return 1
-  }
-
-  // names must be equal
+  if (name1 < name2) return -1
+  if (name1 > name2) return 1
   return 0
 }
 

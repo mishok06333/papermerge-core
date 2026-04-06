@@ -105,6 +105,8 @@
   "users.edit.title": "Пайдаланушыны өңдеу",
   "users.form.username": "Пайдаланушы аты",
   "users.form.email": "Электрондық пошта",
+  "users.form.first_name": "Аты",
+  "users.form.last_name": "Тегі",
   "users.form.superuser": "Суперузер",
   "users.form.active": "Белсенді",
   "users.form.groups": "Топтар",
@@ -167,5 +169,15 @@
   "notifications.common.error": "Error",
   "notifications.role.updated.success": "Role successfully updated",
   "notifications.role.created.success": "Role successfully created",
-  "notifications.role.deleted.success": "Role successfully deleted"
+  "notifications.role.deleted.success": "Role successfully deleted",
+  "library.ctype_folder": "Қалта",
+  "library.filetype_pdf-pages": "PDF",
+  "library.filetype_video": "Бейне",
+  "library.filetype_audio": "Аудио",
+  "library.filetype_image": "Сурет",
+  "library.filetype_docx": "Word құжаты",
+  "library.filetype_word-doc": "Word құжаты",
+  "library.filetype_html": "HTML",
+  "library.filetype_text": "Мәтін",
+  "library.filetype_binary": "Файл"
 }

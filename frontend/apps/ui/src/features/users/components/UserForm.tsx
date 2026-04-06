@@ -30,6 +30,16 @@ export default function UserForm({user}: Args) {
         onChange={() => {}}
         rightSection={<CopyButton value={user?.email || ""} />}
       />
+      <TextInput
+        label={t("users.form.first_name")}
+        value={user?.first_name || ""}
+        onChange={() => {}}
+      />
+      <TextInput
+        label={t("users.form.last_name")}
+        value={user?.last_name || ""}
+        onChange={() => {}}
+      />
       <Checkbox
         label={t("users.form.superuser")}
         checked={user?.is_superuser}

@@ -14,6 +14,11 @@ from papermerge.core.features.groups.schema import Group
 from papermerge.core.features.roles.schema import Role
 
 
+def user_display_name(first_name: str | None, last_name: str | None, username: str) -> str:
+    full = " ".join(filter(None, [first_name, last_name])).strip()
+    return full if full else username
+
+
 class RemoteUser(BaseModel):
     """User model extracted from PAPERMERGE__AUTH__REMOTE_xyz headers"""
 
@@ -28,6 +33,8 @@ class User(BaseModel):
     id: UUID | str
     username: str
     email: str
+    first_name: str | None = None
+    last_name: str | None = None
     created_at: datetime
     updated_at: datetime
     home_folder_id: UUID | None
@@ -53,6 +60,8 @@ class UserDetails(BaseModel):
     id: UUID | str
     username: str
     email: str
+    first_name: str | None = None
+    last_name: str | None = None
     created_at: datetime
     updated_at: datetime
     home_folder_id: UUID | None
@@ -90,6 +99,8 @@ class UserDetails(BaseModel):
 class CreateUser(BaseModel):
     username: str
     email: str
+    first_name: str | None = None
+    last_name: str | None = None
     password: str
     is_superuser: bool
     is_active: bool
@@ -103,6 +114,8 @@ class CreateUser(BaseModel):
 class UpdateUser(BaseModel):
     username: str | None = None
     email: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
     password: str | None = None
     is_superuser: bool | None = None
     is_active: bool | None = None

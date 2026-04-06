@@ -13,6 +13,7 @@ from papermerge.core.db.engine import get_db
 from papermerge.core.features.auth import get_current_user, scopes
 from papermerge.core.features.library_ts import schema as lib_schema
 from papermerge.core.features.library_ts.db import api as lib_api
+from papermerge.core.features.users.schema import user_display_name
 from papermerge.core.features.nodes.db import api as nodes_dbapi
 from papermerge.core.schema import PaginatedResponse
 
@@ -199,11 +200,11 @@ async def list_doc_comments(
             id=r.id,
             document_id=r.document_id,
             user_id=r.user_id,
-            author=author,
+            author=user_display_name(first_name, last_name, username),
             body=r.body,
             created_at=r.created_at,
         )
-        for r, author in rows
+        for r, username, first_name, last_name in rows
     ]
 
 
@@ -240,7 +241,7 @@ async def add_doc_comment(
         id=row.id,
         document_id=row.document_id,
         user_id=row.user_id,
-        author=user.username,
+        author=user_display_name(user.first_name, user.last_name, user.username),
         body=row.body,
         created_at=row.created_at,
     )
@@ -267,7 +268,12 @@ async def update_doc_comment(
     if row is None or row.document_id != document_id:
         raise HTTPException(status_code=404, detail="Comment not found")
     row = await lib_api.update_comment(db_session, comment_id, payload.body)
-    author = await lib_api.get_username_by_user_id(db_session, row.user_id)
+    author_info = await lib_api.get_user_display_fields_by_id(db_session, row.user_id)
+    if author_info:
+        author_username, author_first, author_last = author_info
+        author = user_display_name(author_first, author_last, author_username)
+    else:
+        author = ""
     await lib_api.add_audit(
         db_session,
         user_id=user.id,
@@ -280,7 +286,7 @@ async def update_doc_comment(
         id=row.id,
         document_id=row.document_id,
         user_id=row.user_id,
-        author=author or "",
+        author=author,
         body=row.body,
         created_at=row.created_at,
     )

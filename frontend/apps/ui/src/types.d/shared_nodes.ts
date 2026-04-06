@@ -15,6 +15,8 @@ export type Role = {
 export type User = {
   id: string
   username: string
+  first_name?: string
+  last_name?: string
   roles: Array<Role>
 }
 

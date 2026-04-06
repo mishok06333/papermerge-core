@@ -9,6 +9,7 @@ import {
 } from "@/features/users/usersSlice"
 
 import type {User} from "@/types"
+import {displayName} from "@/utils/userDisplay"
 
 type Args = {
   user: User
@@ -32,7 +33,7 @@ export default function UserRow({user}: Args) {
         <Checkbox checked={selectedIds.includes(user.id)} onChange={onChange} />
       </Table.Td>
       <Table.Td>
-        <Link to={`/users/${user.id}`}>{user.username}</Link>
+        <Link to={`/users/${user.id}`}>{displayName(user)}</Link>
       </Table.Td>
       <Table.Td>{user.email}</Table.Td>
       <Table.Td>{user.id}</Table.Td>

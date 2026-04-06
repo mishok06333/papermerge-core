@@ -8,6 +8,7 @@ import Search from "./Search"
 import SidebarToggle from "./SidebarToggle"
 import UserMenu from "./UserMenu"
 import LanguageMenu from "./LanguageMenu"
+import NotificationsMenu from "./NotificationsMenu"
 
 const APP_TITLE =
   import.meta.env.VITE_APP_TITLE?.trim() || "Социальная поддержка 27"
@@ -36,6 +37,7 @@ function Header() {
         </Group>
         <Group>
           <LanguageMenu />
+          <NotificationsMenu />
           <ColorSchemeToggle />
           <UserMenu />
         </Group>

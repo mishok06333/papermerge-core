@@ -26,6 +26,8 @@ export type CurrentNodeType = {
 export type CreateUser = {
   username: string
   email: string
+  first_name?: string
+  last_name?: string
   is_superuser: boolean
   is_active: boolean
   group_ids: string[]
@@ -35,6 +37,8 @@ export type CreateUser = {
 export type NewUser = {
   username: string
   email: string
+  first_name?: string
+  last_name?: string
   home_folder_id: string
   inbox_folder_id: string
   scopes: Array<string>
@@ -55,6 +59,8 @@ export type UserDetails = User & {
 export type UserEditableFields = {
   username: string
   email: string
+  first_name?: string
+  last_name?: string
   is_superuser: boolean
   is_active: boolean
   groups: string[]
@@ -65,6 +71,8 @@ export type UserUpdate = {
   id: string
   username: string
   email: string
+  first_name?: string
+  last_name?: string
   is_superuser: boolean
   is_active: boolean
   group_ids: string[]

@@ -45,7 +45,7 @@ async def get_user_group_homes(
 
 @router.get("/group-inboxes")
 @utils.docstring_parameter(scope=scopes.NODE_VIEW)
-async def get_user_group_homes(
+async def get_user_group_inboxes(
     user: Annotated[
         schema.User, Security(auth.get_current_user, scopes=[scopes.NODE_VIEW])
     ],
@@ -136,6 +136,8 @@ async def create_user(
         is_active=pyuser.is_active,
         is_superuser=pyuser.is_superuser,
         group_ids=pyuser.group_ids,
+        first_name=pyuser.first_name,
+        last_name=pyuser.last_name,
     )
 
     if error:
@@ -180,7 +182,7 @@ async def get_user_details(
     "/{user_id}",
     status_code=204,
     responses={
-        432: {
+        409: {
             "description": """Deletion is not possible because there is only
              one user left""",
             "content": OPEN_API_GENERIC_JSON_DETAIL,
@@ -205,7 +207,7 @@ async def delete_user(
     """
     if await dbapi.get_users_count(db_session) == 1:
         raise HTTPException(
-            status_code=432, detail="Deletion not possible. Only one user left."
+            status_code=409, detail="Deletion not possible. Only one user left."
         )
 
     try:
@@ -213,9 +215,12 @@ async def delete_user(
             delete_user_data.apply_async(kwargs={"user_id": str(user_id)})
         else:
             await dbapi.delete_user(db_session, user_id=user_id)
-    except Exception as e:
-        logger.error(e)
-        raise HTTPException(status_code=469, detail=str(e))
+    except Exception:
+        logger.exception("Failed to delete user %s", user_id)
+        raise HTTPException(
+            status_code=500,
+            detail="Could not delete user at this time.",
+        )
 
 
 @router.patch("/{user_id}", status_code=200, response_model=schema.UserDetails)
@@ -261,6 +266,14 @@ async def change_user_password(
     )
 
     if error:
-        raise HTTPException(status_code=469, detail=error.model_dump())
+        logger.error(
+            "Password change failed for user %s: %s",
+            user_id,
+            error.model_dump(),
+        )
+        raise HTTPException(
+            status_code=500,
+            detail={"messages": ["Could not update password."]},
+        )
 
     return user

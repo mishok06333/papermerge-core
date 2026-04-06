@@ -1,5 +1,7 @@
 import {useAppDispatch} from "@/app/hooks"
 import PanelContext from "@/contexts/PanelContext"
+import LibraryFavoriteToggle from "@/features/library/components/LibraryFavoriteToggle"
+import {useCurrentSharedDoc} from "@/features/shared_nodes/hooks"
 import {updateActionPanel} from "@/features/ui/uiSlice"
 import {Group} from "@mantine/core"
 import {useViewportSize} from "@mantine/hooks"
@@ -13,6 +15,7 @@ export default function ActionButtons() {
   const dispatch = useAppDispatch()
   const ref = useRef<HTMLDivElement>(null)
   const mode: PanelMode = useContext(PanelContext)
+  const {doc} = useCurrentSharedDoc()
 
   useEffect(() => {
     if (ref?.current) {
@@ -31,6 +34,7 @@ export default function ActionButtons() {
     <Group ref={ref} justify="space-between">
       <Group>
         <DownloadButton />
+        {doc?.id ? <LibraryFavoriteToggle nodeId={doc.id} /> : null}
       </Group>
     </Group>
   )

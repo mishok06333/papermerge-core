@@ -398,7 +398,11 @@ async def get_documents_by_type(
         page_number=page_number,
         page_size=page_size,
     )
-    total_count = await dbapi.get_docs_count_by_type(db_session, type_id=document_type_id)
+    total_count = await dbapi.get_docs_count_by_type(
+        db_session,
+        type_id=document_type_id,
+        user_id=user.id,
+    )
 
     return PaginatedResponse(
         page_size=page_size,
@@ -449,7 +453,7 @@ async def get_document_doc_thumbnail_status(
     )
 
     fserver = config.papermerge__main__file_server
-    if fserver == FileServer.S3.value:
+    if fserver == FileServer.S3:
         if len(doc_ids_not_yet_considered) > 0:
             for doc_id in doc_ids_not_yet_considered:
                 send_task(

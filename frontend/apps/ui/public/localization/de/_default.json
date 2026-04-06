@@ -216,6 +216,8 @@
   "users.edit.title": "Benutzer bearbeiten",
   "users.form.username": "Benutzername",
   "users.form.email": "Email",
+  "users.form.first_name": "Vorname",
+  "users.form.last_name": "Nachname",
   "users.form.superuser": "Superuser",
   "users.form.active": "Aktive",
   "users.form.groups": "Gruppen",
@@ -281,5 +283,15 @@
   "notifications.common.error": "Fehler",
   "notifications.role.updated.success": "Rolle wurde aktualisiert",
   "notifications.role.created.success": "Rolle wurde erstellt",
-  "notifications.role.deleted.success": "Rolle wurde gelöscht"
+  "notifications.role.deleted.success": "Rolle wurde gelöscht",
+  "library.ctype_folder": "Ordner",
+  "library.filetype_pdf-pages": "PDF",
+  "library.filetype_video": "Video",
+  "library.filetype_audio": "Audio",
+  "library.filetype_image": "Bild",
+  "library.filetype_docx": "Word-Dokument",
+  "library.filetype_word-doc": "Word-Dokument",
+  "library.filetype_html": "HTML",
+  "library.filetype_text": "Text",
+  "library.filetype_binary": "Datei"
 }

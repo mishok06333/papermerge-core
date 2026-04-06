@@ -1,7 +1,6 @@
 import {useGetGroupsQuery} from "@/features/groups/apiSlice"
 import {useGetRolesQuery} from "@/features/roles/apiSlice"
 import {useAddNewSharedNodeMutation} from "@/features/shared_nodes/store/apiSlice"
-import {useGetUsersQuery} from "@/features/users/apiSlice"
 import {Button, Container, Group, Loader, Modal} from "@mantine/core"
 import {notifications} from "@mantine/notifications"
 import {useState} from "react"
@@ -27,7 +26,6 @@ export const ShareNodesModal = ({
   const [roles, setRoles] = useState<string[]>([])
   const [groups, setGroups] = useState<string[]>([])
   const [recipientRoles, setRecipientRoles] = useState<string[]>([])
-  const {data: dataUsers} = useGetUsersQuery()
   const {data: dataRoles} = useGetRolesQuery()
   const {data: dataGroups} = useGetGroupsQuery()
   const [addNewSharedNode, {isLoading, isSuccess}] =
@@ -49,8 +47,7 @@ export const ShareNodesModal = ({
   const localSubmit = async () => {
     const group_ids =
       dataGroups?.filter(g => groups?.includes(g.name)).map(g => g.id) || []
-    const user_ids =
-      dataUsers?.filter(u => users?.includes(u.username)).map(u => u.id) || []
+    const user_ids = users
     const role_ids =
       dataRoles?.filter(r => roles?.includes(r.name)).map(r => r.id) || []
     const recipient_role_ids =
@@ -130,11 +127,11 @@ export const ShareNodesModal = ({
         <SelectRecipientRoles onChange={onRecipientRolesChange} />
         <SelectRoles onChange={onRolesChange} />
         <Group gap="lg" justify="space-between">
-          <Button variant="default" onClick={localSubmit}>
+          <Button variant="default" onClick={localCancel}>
             Cancel
           </Button>
           <Button
-            leftSection={false && <Loader size={"sm"} />}
+            leftSection={isLoading ? <Loader size={"sm"} /> : undefined}
             onClick={localSubmit}
             disabled={isLoading || isSuccess}
           >

@@ -162,7 +162,8 @@ def select_document_type_cfs(
     ).join(
         cf, cf.id == assoc.custom_field_id
     ).where(
-        doc.document_type_id == document_type_id
+        doc.document_type_id == document_type_id,
+        doc.user_id == user_id,
     ).group_by(cf.name, cf.id).order_by(cf.name)
 
     return stmt
@@ -249,6 +250,8 @@ def select_docs_by_type_without_ordering(
         cfv,
         (cfv.field_id == subq_1.c.id) & (cfv.document_id == subq_2.c.id),
         isouter=True
+    ).where(
+        subq_2.c.user_id == user_id
     ).order_by(subq_2.c.id)
 
     return stmt
@@ -365,6 +368,8 @@ def select_docs_by_type_with_ordering(
         cfv,
         (cfv.field_id == subq_1.c.id) & (cfv.document_id == subq_2.c.id),
         isouter=True
+    ).where(
+        subq_2.c.user_id == user_id
     ).order_by(subq_2.c.id)
 
     subq_unordered_docs = aliased(subq_3_stmt.cte("unordered_docs"))
@@ -398,7 +403,8 @@ def select_docs_by_type_with_ordering(
         (cfv.field_id == subq_1.c.id) & (cfv.document_id == subq_2.c.id),
         isouter=True
     ).where(
-        subq_1.c.name==order_by
+        subq_1.c.name==order_by,
+        subq_2.c.user_id == user_id,
     )
 
     subq_ordered_docs = aliased(subq_4.cte("ordered_docs"))

@@ -1,5 +1,6 @@
 import type { User } from "@/types.ts"
 import { Group, Menu, UnstyledButton } from "@mantine/core"
+import { displayName } from "@/utils/userDisplay"
 import {
   IconApi,
   IconChevronRight,
@@ -42,7 +43,7 @@ export default function UserMenu() {
         <UnstyledButton>
           <Group>
             <IconUser />
-            {user.username}
+            {displayName(user)}
             <IconChevronRight size="1rem" />{" "}
           </Group>
         </UnstyledButton>

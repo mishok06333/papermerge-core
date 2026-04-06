@@ -132,6 +132,8 @@ async def get_user_details(
         id=db_user.id,
         username=db_user.username,
         email=db_user.email,
+        first_name=db_user.first_name,
+        last_name=db_user.last_name,
         created_at=db_user.created_at,
         updated_at=db_user.updated_at,
         home_folder_id=db_user.home_folder_id,
@@ -185,13 +187,17 @@ async def create_user(
     is_superuser: bool = False,
     is_active: bool = False,
     user_id: uuid.UUID | None = None,
+    first_name: str | None = None,
+    last_name: str | None = None,
 ) -> Tuple[schema.User | None, err_schema.Error | None]:
     group_ids = group_ids or []
     role_ids = role_ids or []
     _user_id = user_id or uuid.uuid4()
-    await db_session.execute(text("SET CONSTRAINTS ALL DEFERRED"))
 
     try:
+        if db_session.bind and db_session.bind.dialect.name == "postgresql":
+            await db_session.execute(text("SET CONSTRAINTS ALL DEFERRED"))
+
         home_folder_id = uuid.uuid4()
         inbox_folder_id = uuid.uuid4()
 
@@ -249,8 +255,10 @@ async def create_user(
             is_active=is_active,
             home_folder_id=home_folder_id,  # Set immediately
             inbox_folder_id=inbox_folder_id,  # Set immediately
+            first_name=first_name,
+            last_name=last_name,
         )
-            # Set relationships before adding to session
+        # Set relationships before adding to session
         if groups:
             user.groups = list(groups)
         if roles:
@@ -305,6 +313,12 @@ async def update_user(
 
     if attrs.password is not None:
         user.password = pbkdf2_sha256.hash(attrs.password)
+
+    if attrs.first_name is not None:
+        user.first_name = attrs.first_name
+
+    if attrs.last_name is not None:
+        user.last_name = attrs.last_name
 
     try:
         await db_session.commit()

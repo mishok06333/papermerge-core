@@ -55,10 +55,10 @@ export const apiSliceWithSharedNodes = apiSlice.injectEndpoints({
         }
 
         if (nodeID == SHARED_FOLDER_ROOT_ID) {
-          return `/shared-nodes/?page_size=${page_size}&filter=${filter}&order=${orderBy}`
+          return `/shared-nodes/?page_number=${page_number}&page_size=${page_size}&filter=${encodeURIComponent(filter)}&order_by=${orderBy}`
         }
 
-        return `/shared-nodes/folder/${nodeID}?page_size=${page_size}&filter=${filter}&order=${orderBy}`
+        return `/shared-nodes/folder/${nodeID}?page_number=${page_number}&page_size=${page_size}&filter=${encodeURIComponent(filter)}&order_by=${orderBy}`
       },
       providesTags: (
         result = {page_number: 1, page_size: 1, num_pages: 1, items: []},
@@ -91,10 +91,10 @@ export const apiSliceWithSharedNodes = apiSlice.injectEndpoints({
         method: "POST",
         body: shared_node
       }),
-      invalidatesTags: (_result, _error, input) =>
-        input.node_ids.map(node_id => {
-          return {type: "Node", id: node_id}
-        })
+      invalidatesTags: (_result, _error, input) => [
+        "SharedNode",
+        ...input.node_ids.map(node_id => ({type: "Node", id: node_id}))
+      ]
     }),
     updateSharedNodeAccess: builder.mutation<void, SharedNodeAccessUpdate>({
       query: access_update => ({
@@ -103,6 +103,7 @@ export const apiSliceWithSharedNodes = apiSlice.injectEndpoints({
         body: access_update
       }),
       invalidatesTags: (_result, _error, input) => [
+        "SharedNode",
         {type: "Node", id: input.id}
       ]
     }),

@@ -73,7 +73,15 @@ export const apiSlice = createApi({
     "DocumentCustomField", // custom fields associated to specific document (via document type)
     "DocumentCFV",
     "DocVersList",
-    "DocumentVersion"
+    "DocumentVersion",
+    "LibraryFavorites",
+    "LibraryRecent",
+    "LibraryTrash",
+    "LibraryNote",
+    "LibraryComments",
+    "LibraryRating",
+    "LibraryNotifications",
+    "AuditLog"
   ],
   endpoints: _ => ({})
 })

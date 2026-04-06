@@ -1,6 +1,8 @@
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from "pdfjs-dist"
+// Same-origin worker from the installed pdfjs-dist (avoids CDN blocks and version skew vs unpkg).
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
 
 interface GeneratePreviewArgs {

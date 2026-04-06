@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated, Union
 
-from fastapi import APIRouter, Security, Depends, Response, status
+from fastapi import APIRouter, Security, Depends, Response, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core.db.engine import get_db
@@ -89,14 +89,17 @@ async def create_shared_nodes(
     Required scope: `{scope}`
     """
 
-    await dbapi.create_shared_nodes(
+    _created, err = await dbapi.create_shared_nodes(
         db_session=db_session,
         node_ids=shared_node.node_ids,
         role_ids=shared_node.role_ids,
         user_ids=shared_node.user_ids,
         group_ids=shared_node.group_ids,
+        recipient_role_ids=shared_node.recipient_role_ids,
         owner_id=user.id,
     )
+    if err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

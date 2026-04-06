@@ -1,4 +1,4 @@
-import {createBrowserRouter} from "react-router-dom"
+import {createBrowserRouter, Navigate} from "react-router-dom"
 
 import App from "@/app/App.tsx"
 import Folder, {loader as folderLoader} from "@/pages/Folder"
@@ -30,6 +30,8 @@ import SharedNodesListView, {
 import {TagDetails, TagsList} from "@/features/tags/pages"
 import {UserDetails, UsersList} from "@/features/users/pages"
 import Document from "@/pages/Document"
+import LibraryPage from "@/features/library/pages/LibraryPage"
+import AuditLogPage from "@/features/audit/pages/AuditLogPage"
 
 import {AccessForbidden, NotFound, UnprocessableContent} from "@/pages/errors"
 
@@ -81,6 +83,14 @@ const router = createBrowserRouter([
         path: "/category/:categoryId",
         element: <CategoryListView />,
         loader: categoryLoader
+      },
+      {
+        path: "/library",
+        element: <Navigate to="/library/favorites" replace />
+      },
+      {
+        path: "/library/:section",
+        element: <LibraryPage />
       },
       {
         path: "/shared",
@@ -144,6 +154,10 @@ const router = createBrowserRouter([
       {
         path: "/users/:userId",
         element: <UserDetails />
+      },
+      {
+        path: "/audit-log",
+        element: <AuditLogPage />
       },
       {
         path: ERRORS_403_ACCESS_FORBIDDEN,

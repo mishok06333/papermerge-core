@@ -14,6 +14,7 @@ from papermerge.core.db import common as dbapi_common
 from papermerge.core import exceptions as exc
 from papermerge.core.db.engine import get_db
 from papermerge.core.features.document.response import DocumentFileResponse
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,16 @@ async def download_document_version(
                 user_id=user.id,
         ):
             raise exc.HTTP403Forbidden()
+
+        await lib_ts_api.increment_download(db_session, doc_id)
+        await lib_ts_api.add_audit(
+            db_session,
+            user_id=user.id,
+            action="document_download",
+            resource_type="document",
+            resource_id=doc_id,
+        )
+        await db_session.commit()
 
         doc_ver: orm.DocumentVersion = await dbapi.get_doc_ver(
             db_session,

@@ -790,8 +790,10 @@ async def get_doc(
     session: AsyncSession,
     id: uuid.UUID,
 ) -> schema.DocumentWithoutVersions:
+    # select(Document) already joins nodes (joined inheritance); do not join Node again.
     stmt_doc = select(orm.Document).where(
-        orm.Document.id == id
+        orm.Document.id == id,
+        orm.Document.deleted_at.is_(None),
     )
     db_doc = (await session.execute(stmt_doc)).scalar_one()
     breadcrumb = await get_ancestors(session, id)

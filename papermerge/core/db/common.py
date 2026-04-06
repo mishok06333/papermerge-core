@@ -9,6 +9,7 @@ from papermerge.core.features.nodes.db import orm
 from papermerge.core.features.shared_nodes.db import orm as sn_orm
 from papermerge.core.features.groups.db import orm as groups_orm
 from papermerge.core.features.roles.db import orm as roles_orm
+from papermerge.core.features.roles.db.orm import users_roles_association
 from papermerge.core.features.nodes import schema as nodes_schema
 
 
@@ -134,10 +135,15 @@ async def has_node_perm(
     ug = aliased(groups_orm.user_groups_association)
     # groups user belongs to
     user_group_ids = select(ug.c.group_id).where(ug.c.user_id == user_id)
+    # account roles assigned to the user (users_roles)
+    user_account_role_ids = select(users_roles_association.c.role_id).where(
+        users_roles_association.c.user_id == user_id
+    )
 
     node_access = select(orm.Node.id).where(
         (orm.Node.id == node_id)
         & ((orm.Node.user_id == user_id) | (orm.Node.group_id.in_(user_group_ids)))
+        & (orm.Node.deleted_at.is_(None))
     )
     sn = aliased(sn_orm.SharedNode)
     n = aliased(orm.Node)
@@ -155,7 +161,12 @@ async def has_node_perm(
         .where(
             (p.codename == codename)
             & (sn.node_id.in_(ancestor_ids))
-            & ((sn.user_id == user_id) | (sn.group_id.in_(user_group_ids)))
+            & (
+                (sn.user_id == user_id)
+                | (sn.group_id.in_(user_group_ids))
+                | (sn.recipient_role_id.in_(user_account_role_ids))
+            )
+            & (n.deleted_at.is_(None))
         )
     )
     stmt = exists(node_access.union_all(node_shared_access)).select()

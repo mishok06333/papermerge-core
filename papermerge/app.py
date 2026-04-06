@@ -40,14 +40,18 @@ from papermerge.core.routers.version import (
 )
 from papermerge.core.version import __version__
 from papermerge.core.config import get_settings
+from papermerge.core.features.library_ts.router import router as library_ts_router
 
-config = get_settings()
-prefix = config.papermerge__main__api_prefix
-app = FastAPI(title="Papermerge DMS REST API", version=__version__)
+settings = get_settings()
+prefix = settings.papermerge__main__api_prefix
+app = FastAPI(
+    title=f"{settings.papermerge__main__app_title} — API",
+    version=__version__,
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins_list(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -79,8 +83,9 @@ app.include_router(roles_router, prefix=prefix)
 app.include_router(probe_router, prefix=prefix)
 app.include_router(tasks_router, prefix=prefix)
 app.include_router(version_router, prefix=prefix)
+app.include_router(library_ts_router, prefix=prefix)
 
-if config.papermerge__search__url:
+if settings.papermerge__search__url:
     app.include_router(search_router, prefix=prefix)
 
 logging_config_path = Path(
@@ -88,6 +93,6 @@ logging_config_path = Path(
 )
 if logging_config_path.exists() and logging_config_path.is_file():
     with open(logging_config_path, "r") as stream:
-        config = yaml.load(stream, Loader=yaml.FullLoader)
+        logging_dict = yaml.load(stream, Loader=yaml.FullLoader)
 
-    dictConfig(config)
+    dictConfig(logging_dict)

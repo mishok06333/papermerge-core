@@ -4,6 +4,7 @@ export interface I18NPermissionTree {
   page_management: string
   categories: string
   shares: string
+  comments: string
   users: string
   roles: string
   groups: string

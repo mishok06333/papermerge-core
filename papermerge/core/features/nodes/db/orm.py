@@ -54,6 +54,7 @@ class Node(Base):
     updated_at: Mapped[datetime] = mapped_column(
         insert_default=func.now(), onupdate=func.now()
     )
+    deleted_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     __mapper_args__ = {
         "polymorphic_identity": "node",

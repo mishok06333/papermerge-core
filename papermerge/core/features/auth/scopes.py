@@ -19,6 +19,7 @@ class ScopeCategory(Enum):
     CUSTOM_FIELD = "custom_field"
     DOCUMENT_TYPE = "document_type"
     SHARED_NODE = "shared_node"
+    COMMENT = "comment"
 
 
 class Action(Enum):
@@ -124,6 +125,11 @@ class Scopes:
     SHARED_NODE_VIEW = "shared_node.view"
     SHARED_NODE_UPDATE = "shared_node.update"
     SHARED_NODE_DELETE = "shared_node.delete"
+
+    # Comment permissions (document library / collaboration)
+    COMMENT_CREATE = "comment.create"
+    COMMENT_UPDATE = "comment.update"
+    COMMENT_DELETE = "comment.delete"
 
     @classmethod
     def all_scopes(cls) -> Set[str]:

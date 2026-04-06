@@ -27,7 +27,8 @@ export default function SelectRoles({onChange}: Args) {
     <Stack my={"md"}>
       <MultiSelect
         searchable
-        label="Roles"
+        label="Access on shared item (roles)"
+        description="What recipients may do with this item (view, delete, etc.)"
         placeholder="Pick value"
         value={roles}
         onChange={onChangeLocal}

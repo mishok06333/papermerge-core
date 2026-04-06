@@ -11,6 +11,7 @@ from papermerge.core.features.shared_nodes.db import orm as sn_orm
 from papermerge.core.types import PaginatedResponse
 from papermerge.core import orm, schema, dbapi
 from papermerge.core.db import common as dbapi_common
+from papermerge.core.features.roles.db.orm import users_roles_association
 
 
 def str2colexpr(keys: list[str]):
@@ -40,12 +41,16 @@ async def create_shared_nodes(
     owner_id: uuid.UUID,
     user_ids: list[uuid.UUID] | None = None,
     group_ids: list[uuid.UUID] | None = None,
+    recipient_role_ids: list[uuid.UUID] | None = None,
 ) -> Tuple[list[sn_schema.SharedNode] | None, str | None]:
     if user_ids is None:
         user_ids = []
 
     if group_ids is None:
         group_ids = []
+
+    if recipient_role_ids is None:
+        recipient_role_ids = []
 
     shared_nodes = []
     for node_id in node_ids:
@@ -57,6 +62,7 @@ async def create_shared_nodes(
                         user_id=user_id,
                         role_id=role_id,
                         group_id=None,
+                        recipient_role_id=None,
                         owner_id=owner_id,
                     )
                 )
@@ -68,9 +74,28 @@ async def create_shared_nodes(
                         user_id=None,
                         role_id=role_id,
                         group_id=group_id,
+                        recipient_role_id=None,
                         owner_id=owner_id,
                     )
                 )
+        for aud_role_id in recipient_role_ids:
+            for role_id in role_ids:
+                shared_nodes.append(
+                    sn_orm.SharedNode(
+                        node_id=node_id,
+                        user_id=None,
+                        group_id=None,
+                        recipient_role_id=aud_role_id,
+                        role_id=role_id,
+                        owner_id=owner_id,
+                    )
+                )
+
+    if not shared_nodes:
+        return None, (
+            "No shares were created: pick at least one user, group, or recipient "
+            "role (all members), and at least one access role for the shared item."
+        )
 
     db_session.add_all(shared_nodes)
     await db_session.commit()
@@ -92,6 +117,15 @@ async def get_paginated_shared_nodes(
     subquery = select(UserGroupAlias.c.group_id).where(
         UserGroupAlias.c.user_id == user_id
     )
+    user_roles_subquery = select(users_roles_association.c.role_id).where(
+        users_roles_association.c.user_id == user_id
+    )
+
+    audience_match = or_(
+        orm.SharedNode.user_id == user_id,
+        orm.SharedNode.group_id.in_(subquery),
+        orm.SharedNode.recipient_role_id.in_(user_roles_subquery),
+    )
 
     perms_query = (
         select(orm.Node.id.label("node_id"), orm.Permission.codename)
@@ -101,10 +135,8 @@ async def get_paginated_shared_nodes(
         .join(RolePermissionAlias, RolePermissionAlias.c.role_id == orm.Role.id)
         .join(orm.Permission, orm.Permission.id == RolePermissionAlias.c.permission_id)
         .where(
-            or_(
-                orm.SharedNode.user_id == user_id,
-                orm.SharedNode.group_id.in_(subquery),
-            )
+            audience_match,
+            orm.Node.deleted_at.is_(None),
         )
     )
 
@@ -114,10 +146,8 @@ async def get_paginated_shared_nodes(
         .options(selectinload(orm.Node.tags))
         .join(orm.Node, orm.Node.id == orm.SharedNode.node_id)
         .where(
-            or_(
-                orm.SharedNode.user_id == user_id,
-                orm.SharedNode.group_id.in_(subquery),
-            )
+            audience_match,
+            orm.Node.deleted_at.is_(None),
         )
     )
 
@@ -157,7 +187,7 @@ async def get_paginated_shared_nodes(
             doc = await dbapi.load_doc(db_session, row.Node.id)
             new_item = schema.Document.model_validate(doc)
 
-        new_item.perms = perms[row.Node.id]
+        new_item.perms = perms.get(row.Node.id, [])
         items.append(new_item)
 
     return PaginatedResponse[Union[schema.Document, schema.Folder]](
@@ -176,6 +206,9 @@ async def get_shared_node_ids(
     subquery = select(UserGroupAlias.c.group_id).where(
         UserGroupAlias.c.user_id == user_id
     )
+    user_roles_subquery = select(users_roles_association.c.role_id).where(
+        users_roles_association.c.user_id == user_id
+    )
 
     stmt = (
         select(orm.Node.id)
@@ -185,6 +218,7 @@ async def get_shared_node_ids(
             or_(
                 orm.SharedNode.user_id == user_id,
                 orm.SharedNode.group_id.in_(subquery),
+                orm.SharedNode.recipient_role_id.in_(user_roles_subquery),
             )
         )
     )
@@ -199,51 +233,82 @@ async def get_shared_node_access_details(
 ) -> schema.SharedNodeAccessDetails:
     results = schema.SharedNodeAccessDetails(id=node_id)
 
+    AccessRole = aliased(orm.Role, name="access_role")
+    AudienceRoleOrm = aliased(orm.Role, name="audience_role")
+
     stmt = (
         select(
             orm.SharedNode.user_id,
             orm.User.username,
             orm.SharedNode.group_id,
             orm.Group.name.label("group_name"),
+            orm.SharedNode.recipient_role_id,
+            AudienceRoleOrm.name.label("audience_role_name"),
             orm.SharedNode.role_id,
-            orm.Role.name.label("role_name"),
+            AccessRole.name.label("access_role_name"),
         )
-        .join(orm.User, orm.User.id == orm.SharedNode.user_id, isouter=True)
-        .join(orm.Group, orm.Group.id == orm.SharedNode.group_id, isouter=True)
-        .join(orm.Role, orm.Role.id == orm.SharedNode.role_id)
+        .select_from(orm.SharedNode)
+        .join(AccessRole, AccessRole.id == orm.SharedNode.role_id)
+        .outerjoin(orm.User, orm.User.id == orm.SharedNode.user_id)
+        .outerjoin(orm.Group, orm.Group.id == orm.SharedNode.group_id)
+        .outerjoin(AudienceRoleOrm, AudienceRoleOrm.id == orm.SharedNode.recipient_role_id)
         .where(orm.SharedNode.node_id == node_id)
     )
 
     users = {}
     groups = {}
+    audience_roles: dict[uuid.UUID, sn_schema.AudienceRole] = {}
     for row in await db_session.execute(stmt):
         if row.user_id is not None:
             if (user := users.get(row.user_id)) is not None:
-                user.roles.append(sn_schema.Role(name=row.role_name, id=row.role_id))
+                user.roles.append(
+                    sn_schema.Role(name=row.access_role_name, id=row.role_id)
+                )
             else:
-                role = sn_schema.Role(name=row.role_name, id=row.role_id)
+                role = sn_schema.Role(name=row.access_role_name, id=row.role_id)
                 users[row.user_id] = sn_schema.User(
                     id=row.user_id, username=row.username, roles=[role]
                 )
-        if row.group_id is not None:
+        elif row.group_id is not None:
             if (group := groups.get(row.group_id)) is not None:
-                group.roles.append(sn_schema.Role(name=row.role_name, id=row.role_id))
+                group.roles.append(
+                    sn_schema.Role(name=row.access_role_name, id=row.role_id)
+                )
             else:
-                role = sn_schema.Role(name=row.role_name, id=row.role_id)
+                role = sn_schema.Role(name=row.access_role_name, id=row.role_id)
                 groups[row.group_id] = sn_schema.Group(
                     id=row.group_id, name=row.group_name, roles=[role]
                 )
+        elif row.recipient_role_id is not None:
+            if (ar := audience_roles.get(row.recipient_role_id)) is not None:
+                ar.roles.append(
+                    sn_schema.Role(name=row.access_role_name, id=row.role_id)
+                )
+            else:
+                role = sn_schema.Role(name=row.access_role_name, id=row.role_id)
+                audience_roles[row.recipient_role_id] = sn_schema.AudienceRole(
+                    id=row.recipient_role_id,
+                    name=row.audience_role_name,
+                    roles=[role],
+                )
 
-    for user_id, user in users.items():
+    for uid, user in users.items():
         results.users.append(
             sn_schema.User(
-                id=user_id, username=user.username, roles=list(set(user.roles))
+                id=uid, username=user.username, roles=list(set(user.roles))
             )
         )
 
-    for group_id, group in groups.items():
+    for gid, group in groups.items():
         results.groups.append(
-            sn_schema.Group(id=group_id, name=group.name, roles=list(set(group.roles)))
+            sn_schema.Group(id=gid, name=group.name, roles=list(set(group.roles)))
+        )
+
+    for aid, ar in audience_roles.items():
+        results.audience_roles.append(
+            sn_schema.AudienceRole(
+                id=aid, name=ar.name, roles=list(set(ar.roles))
+            )
         )
 
     return results
@@ -265,6 +330,7 @@ async def update_shared_node_access(
 
     new_user_role_pairs = []
     new_group_role_pairs = []
+    new_audience_role_pairs = []
     for user in access_update.users:
         for role_id in user.role_ids:
             new_user_role_pairs.append((user.id, role_id))
@@ -273,28 +339,49 @@ async def update_shared_node_access(
         for role_id in group.role_ids:
             new_group_role_pairs.append((group.id, role_id))
 
-    existing_user_role_pairs = (await db_session.execute(
-        select(orm.SharedNode.user_id, orm.SharedNode.role_id).where(
-            orm.SharedNode.node_id == node_id
+    for aud in access_update.audience_roles:
+        for role_id in aud.role_ids:
+            new_audience_role_pairs.append((aud.id, role_id))
+
+    existing_user_role_pairs = (
+        await db_session.execute(
+            select(orm.SharedNode.user_id, orm.SharedNode.role_id).where(
+                orm.SharedNode.node_id == node_id,
+                orm.SharedNode.user_id.isnot(None),
+            )
         )
-    )).all()
-    existing_group_role_pairs = (await db_session.execute(
-        select(orm.SharedNode.group_id, orm.SharedNode.role_id).where(
-            orm.SharedNode.node_id == node_id
+    ).all()
+    existing_group_role_pairs = (
+        await db_session.execute(
+            select(orm.SharedNode.group_id, orm.SharedNode.role_id).where(
+                orm.SharedNode.node_id == node_id,
+                orm.SharedNode.group_id.isnot(None),
+            )
         )
-    )).all()
+    ).all()
+    existing_audience_role_pairs = (
+        await db_session.execute(
+            select(orm.SharedNode.recipient_role_id, orm.SharedNode.role_id).where(
+                orm.SharedNode.node_id == node_id,
+                orm.SharedNode.recipient_role_id.isnot(None),
+            )
+        )
+    ).all()
 
     existing_user_set = set(existing_user_role_pairs)
     desired_user_set = set(new_user_role_pairs)
     existing_group_set = set(existing_group_role_pairs)
     desired_group_set = set(new_group_role_pairs)
+    existing_audience_set = set(existing_audience_role_pairs)
+    desired_audience_set = set(new_audience_role_pairs)
 
     to_add_users = desired_user_set - existing_user_set
     to_remove_users = existing_user_set - desired_user_set
     to_add_groups = desired_group_set - existing_group_set
     to_remove_groups = existing_group_set - desired_group_set
+    to_add_audience = desired_audience_set - existing_audience_set
+    to_remove_audience = existing_audience_set - desired_audience_set
 
-    # Delete removed user pairs
     if to_remove_users:
         await db_session.execute(
             delete(orm.SharedNode).where(
@@ -305,7 +392,6 @@ async def update_shared_node_access(
             )
         )
 
-    # Delete removed group pairs
     if to_remove_groups:
         await db_session.execute(
             delete(orm.SharedNode).where(
@@ -316,15 +402,46 @@ async def update_shared_node_access(
             )
         )
 
+    if to_remove_audience:
+        await db_session.execute(
+            delete(orm.SharedNode).where(
+                orm.SharedNode.node_id == node_id,
+                tuple_(orm.SharedNode.recipient_role_id, orm.SharedNode.role_id).in_(
+                    to_remove_audience
+                ),
+            )
+        )
+
     for user_id, role_id in to_add_users:
         shared = orm.SharedNode(
-            node_id=node_id, user_id=user_id, role_id=role_id, owner_id=owner_id
+            node_id=node_id,
+            user_id=user_id,
+            role_id=role_id,
+            owner_id=owner_id,
+            group_id=None,
+            recipient_role_id=None,
         )
         db_session.add(shared)
 
     for group_id, role_id in to_add_groups:
         shared = orm.SharedNode(
-            node_id=node_id, group_id=group_id, role_id=role_id, owner_id=owner_id
+            node_id=node_id,
+            group_id=group_id,
+            role_id=role_id,
+            owner_id=owner_id,
+            user_id=None,
+            recipient_role_id=None,
+        )
+        db_session.add(shared)
+
+    for aud_id, role_id in to_add_audience:
+        shared = orm.SharedNode(
+            node_id=node_id,
+            recipient_role_id=aud_id,
+            role_id=role_id,
+            owner_id=owner_id,
+            user_id=None,
+            group_id=None,
         )
         db_session.add(shared)
 

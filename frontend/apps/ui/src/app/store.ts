@@ -21,6 +21,7 @@ import usersReducer from "@/features/users/usersSlice"
 import currentUserReducer from "@/slices/currentUser"
 import {configureStore} from "@reduxjs/toolkit"
 import {listenerMiddleware} from "./listenerMiddleware"
+import "@/features/library/libraryApiSlice"
 
 export const store = configureStore({
   reducer: {

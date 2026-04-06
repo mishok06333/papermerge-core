@@ -4,15 +4,17 @@ import {
   useUpdateSharedNodeAccessMutation
 } from "@/features/shared_nodes/store/apiSlice"
 import type {
+  AudienceRoleUpdate,
   GroupUpdate,
   SharedNodeAccessDetails,
   SharedNodeAccessUpdate,
   UserUpdate
 } from "@/types.d/shared_nodes"
 import {Button, Container, Group, Loader, Modal, Tabs} from "@mantine/core"
-import {IconUsers, IconUsersGroup} from "@tabler/icons-react"
+import {IconShield, IconUsers, IconUsersGroup} from "@tabler/icons-react"
 import {produce} from "immer"
 import {useEffect, useState} from "react"
+import ManageAccessAudienceRoles from "./ManageAccessAudienceRoles"
 import ManageAccessGroups from "./ManageAccessGroups"
 import ManageAccessUsers from "./ManageAccessUsers"
 import ManageRole from "./ManageRole"
@@ -50,12 +52,18 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
   const [updateAccess] = useUpdateSharedNodeAccessMutation()
   const [selectedUserIDs, setSelectedUserIDs] = useState<string[]>([])
   const [selectedGroupIDs, setSelectedGroupIDs] = useState<string[]>([])
+  const [selectedAudienceRoleIDs, setSelectedAudienceRoleIDs] = useState<
+    string[]
+  >([])
   const [access, setAccess] = useState<SharedNodeAccessDetails>()
   const [managedRoles, setManagedRoles] = useState<ManagedRole>()
 
   useEffect(() => {
     if (initialData) {
-      setAccess(initialData)
+      setAccess({
+        ...initialData,
+        audience_roles: initialData.audience_roles ?? []
+      })
     }
   }, [initialData])
 
@@ -70,10 +78,20 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
 
   const onGroupSelectionChange = (group_id: string, checked: boolean) => {
     if (checked) {
-      setSelectedGroupIDs([...selectedUserIDs, group_id])
+      setSelectedGroupIDs([...selectedGroupIDs, group_id])
     } else {
       const newSelIDs = selectedGroupIDs.filter(id => id != group_id)
       setSelectedGroupIDs(newSelIDs)
+    }
+  }
+
+  const onAudienceSelectionChange = (audience_id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedAudienceRoleIDs([...selectedAudienceRoleIDs, audience_id])
+    } else {
+      setSelectedAudienceRoleIDs(
+        selectedAudienceRoleIDs.filter(id => id != audience_id)
+      )
     }
   }
 
@@ -114,6 +132,16 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
         setAccess(nextDataState)
       }
       setSelectedGroupIDs([])
+    } else if (idType == "audience_role") {
+      if (access) {
+        const nextDataState = produce(access, draft => {
+          draft.audience_roles = draft.audience_roles.filter(
+            a => !selectedIDs.includes(a.id)
+          )
+        })
+        setAccess(nextDataState)
+      }
+      setSelectedAudienceRoleIDs([])
     }
   }
 
@@ -121,6 +149,7 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
     stack.close("manage-role")
     setSelectedUserIDs([])
     setSelectedGroupIDs([])
+    setSelectedAudienceRoleIDs([])
   }
 
   const onSubmitRoleView = () => {
@@ -151,6 +180,25 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
           setAccess(nextDataState)
         }
       } // update for group
+      if (managedRoles.idType == "audience_role") {
+        const changed = access.audience_roles.find(
+          a => a.id == managedRoles.selectedID
+        )
+        if (changed) {
+          const nextDataState = produce(access, draft => {
+            const rest = draft.audience_roles.filter(a => a.id != changed.id)
+            draft.audience_roles = [
+              ...rest,
+              {
+                id: changed.id,
+                name: changed.name,
+                roles: newRolesWithIDs
+              }
+            ]
+          })
+          setAccess(nextDataState)
+        }
+      }
       if (managedRoles.idType == "user") {
         const changedUser = access.users.find(
           u => u.id == managedRoles.selectedID
@@ -190,6 +238,7 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
   const onClickTab = () => {
     setSelectedUserIDs([])
     setSelectedGroupIDs([])
+    setSelectedAudienceRoleIDs([])
   }
 
   if (isLoading) {
@@ -232,14 +281,21 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
               >
                 Users
               </Tabs.Tab>
-              <Tabs.Tab
-                value="groups"
-                onClick={onClickTab}
-                leftSection={<IconUsersGroup size={18} />}
-              >
-                Groups
-              </Tabs.Tab>
-            </Tabs.List>
+            <Tabs.Tab
+              value="groups"
+              onClick={onClickTab}
+              leftSection={<IconUsersGroup size={18} />}
+            >
+              Groups
+            </Tabs.Tab>
+            <Tabs.Tab
+              value="audience_roles"
+              onClick={onClickTab}
+              leftSection={<IconShield size={18} />}
+            >
+              Role audiences
+            </Tabs.Tab>
+          </Tabs.List>
             <Tabs.Panel value="users">
               <ManageAccessUsers
                 data={access}
@@ -254,6 +310,15 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
                 data={access}
                 onSelectionChange={onGroupSelectionChange}
                 selectedIDs={selectedGroupIDs}
+                onClickViewButton={onClickViewRole}
+                onClickDeleteButton={onClickDeleteRole}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="audience_roles">
+              <ManageAccessAudienceRoles
+                data={access}
+                onSelectionChange={onAudienceSelectionChange}
+                selectedIDs={selectedAudienceRoleIDs}
                 onClickViewButton={onClickViewRole}
                 onClickDeleteButton={onClickDeleteRole}
               />
@@ -279,8 +344,10 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
           <ManageRole
             selectedGroupIDs={selectedGroupIDs}
             selectedUserIDs={selectedUserIDs}
+            selectedAudienceRoleIDs={selectedAudienceRoleIDs}
             users={access?.users || []}
             groups={access?.groups || []}
+            audienceRoles={access?.audience_roles || []}
             onChange={onRoleChanged}
           />
           <Group gap="lg" justify="space-between">
@@ -310,21 +377,23 @@ function getAccessData4BE({
   access,
   node_id
 }: GetAccessData4BEArgs): SharedNodeAccessUpdate {
-  let result = {
+  const result: SharedNodeAccessUpdate = {
     id: node_id,
     users: [],
-    groups: []
+    groups: [],
+    audience_roles: []
   }
 
   if (!access) {
     return result
   }
 
-  let users: UserUpdate[] = []
-  let groups: GroupUpdate[] = []
+  const users: UserUpdate[] = []
+  const groups: GroupUpdate[] = []
+  const audience_roles: AudienceRoleUpdate[] = []
 
   for (let i = 0; i < access.users.length; i++) {
-    let user: UserUpdate = {
+    const user: UserUpdate = {
       id: access.users[i].id,
       role_ids: access.users[i].roles.map(r => r.id)
     }
@@ -332,16 +401,26 @@ function getAccessData4BE({
   }
 
   for (let i = 0; i < access.groups.length; i++) {
-    let group: GroupUpdate = {
+    const group: GroupUpdate = {
       id: access.groups[i].id,
       role_ids: access.groups[i].roles.map(r => r.id)
     }
     groups.push(group)
   }
 
+  const aud = access.audience_roles ?? []
+  for (let i = 0; i < aud.length; i++) {
+    const ar: AudienceRoleUpdate = {
+      id: aud[i].id,
+      role_ids: aud[i].roles.map(r => r.id)
+    }
+    audience_roles.push(ar)
+  }
+
   return {
     id: node_id,
     users: users,
-    groups: groups
+    groups: groups,
+    audience_roles: audience_roles
   }
 }

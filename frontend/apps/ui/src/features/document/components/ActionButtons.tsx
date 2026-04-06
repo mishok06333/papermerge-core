@@ -10,12 +10,13 @@ import {useViewportSize} from "@mantine/hooks"
 import {useContext, useEffect, useRef} from "react"
 
 import DuplicatePanelButton from "@/components/DualPanel/DuplicatePanelButton"
+import LibraryFavoriteToggle from "@/features/library/components/LibraryFavoriteToggle"
 import DownloadButton from "@/features/document/components/DownloadButton"
 import RotateButton from "@/features/document/components/RotateButton"
 import RotateCCButton from "@/features/document/components/RotateCCButton"
 import RunOCRButton from "@/features/document/components/RunOCRButton"
 import {isBuiltinTextDocument} from "@/features/document/documentPreview"
-import {useCurrentDocVer, useSelectedPages} from "@/features/document/hooks"
+import {useCurrentDoc, useCurrentDocVer, useSelectedPages} from "@/features/document/hooks"
 
 interface Args {
   onEditNodeTitleClicked: () => void
@@ -34,6 +35,7 @@ export default function ActionButtons({
   const dispatch = useAppDispatch()
   const ref = useRef<HTMLDivElement>(null)
   const mode = useContext(PanelContext)
+  const {doc} = useCurrentDoc()
   const {docVer} = useCurrentDocVer()
   const selectedPages = useSelectedPages({mode, docVerID: docVer?.id})
   const runtimeConfig = useRuntimeConfig()
@@ -55,6 +57,7 @@ export default function ActionButtons({
     <Group ref={ref} justify="space-between">
       <Group>
         <EditTitleButton onClick={onEditNodeTitleClicked} />
+        {doc?.id ? <LibraryFavoriteToggle nodeId={doc.id} /> : null}
         {!runtimeConfig.ocr__automatic &&
           !isBuiltinTextDocument(docVer?.file_name) && <RunOCRButton />}
         <DownloadButton />

@@ -9,7 +9,8 @@ import {
   currentSharedNodeRootChanged,
   selectContentHeight,
   selectCurrentSharedNodeID,
-  selectLastPageSize
+  selectLastPageSize,
+  selectThumbnailsPanelOpen
 } from "@/features/ui/uiSlice"
 
 import SharedBreadcrumbs from "@/components/SharedBreadcrumb"
@@ -21,7 +22,12 @@ import DocumentDetails from "@/components/document/DocumentDetails/DocumentDetai
 import DocumentDetailsToggle from "@/components/document/DocumentDetailsToggle"
 import ThumbnailsToggle from "@/components/document/ThumbnailsToggle"
 import classes from "@/components/document/Viewer.module.css"
+import BlobDocumentViewer from "@/features/document/components/BlobDocumentViewer/BlobDocumentViewer"
+import DocxPageColumn from "@/features/document/components/DocxViewer/DocxPageColumn"
+import DocxThumbnailList from "@/features/document/components/DocxViewer/DocxThumbnailList"
+import {DocxScrollProvider} from "@/features/document/components/DocxViewer/DocxScrollContext"
 import {DOC_VER_PAGINATION_PAGE_BATCH_SIZE} from "@/features/document/constants"
+import {getViewerChromeKind} from "@/features/document/documentPreview"
 import useGeneratePreviews from "@/features/document/hooks/useGeneratePreviews"
 import PageList from "./PageList"
 import ThumbnailList from "./ThumbnailList"
@@ -53,6 +59,10 @@ export default function SharedViewer() {
 
   const lastPageSize = useAppSelector(s => selectLastPageSize(s, mode))
   const currentNodeID = useAppSelector(selectCurrentSharedNodeID)
+  const thumbnailsIsOpen = useAppSelector(s =>
+    selectThumbnailsPanelOpen(s, mode)
+  )
+  const chrome = getViewerChromeKind(docVer?.file_name)
 
   const onClick = (node: NType) => {
     if (node.ctype == "folder") {
@@ -96,6 +106,7 @@ export default function SharedViewer() {
   if (!allPreviewsAreAvailable) {
     return <Loader />
   }
+
   return (
     <div>
       <ActionButtons />
@@ -104,9 +115,17 @@ export default function SharedViewer() {
         <DocumentDetailsToggle />
       </Group>
       <Flex ref={ref} className={classes.inner} style={{height: `${height}px`}}>
-        <ThumbnailList />
-        <ThumbnailsToggle />
-        <PageList />
+        {chrome === "pdf" && thumbnailsIsOpen && <ThumbnailList />}
+        {chrome === "pdf" && <ThumbnailsToggle />}
+        {chrome === "pdf" && <PageList />}
+        {chrome === "docx" && (
+          <DocxScrollProvider>
+            {thumbnailsIsOpen && <DocxThumbnailList />}
+            <ThumbnailsToggle />
+            <DocxPageColumn />
+          </DocxScrollProvider>
+        )}
+        {chrome === "blob" && <BlobDocumentViewer />}
         <DocumentDetails
           doc={doc}
           docVer={docVer}

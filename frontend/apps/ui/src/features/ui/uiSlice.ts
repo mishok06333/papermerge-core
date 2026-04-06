@@ -1076,6 +1076,12 @@ export const selectCurrentNodeCType = (state: RootState, mode: PanelMode) => {
 
 export const selectCurrentDocumentID = (state: RootState, mode: PanelMode) => {
   if (mode == "main") {
+    if (state.ui.mainPanelComponent === "sharedViewer") {
+      const sn = state.ui.currentSharedNode
+      if (sn?.ctype === "document") {
+        return sn.id
+      }
+    }
     const node = state.ui.currentNodeMain
     if (node?.ctype == "document") {
       return node.id

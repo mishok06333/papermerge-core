@@ -30,6 +30,7 @@ import {
 import type {ClientDocumentVersion, PanelMode} from "@/types"
 import DocumentDetailsToggle from "../DocumentDetailsToggle"
 import CustomFields from "./CustomFields"
+import DocumentLibraryPanel from "@/features/library/components/DocumentLibraryPanel"
 
 interface Args {
   doc?: DocumentType
@@ -97,6 +98,7 @@ export default function DocumentDetails({doc, docVer, docID, isLoading}: Args) {
               mt="md"
             />
           )}
+          {docID ? <DocumentLibraryPanel documentId={docID} /> : null}
         </Stack>
       </Group>
     )

@@ -295,6 +295,15 @@ function getPermissionTree(txt?: I18NPermissionTree) {
       ]
     },
     {
+      value: "comment",
+      label: txt?.comments || "Comments",
+      children: [
+        {value: "comment.create", label: txt?.create || "Create"},
+        {value: "comment.update", label: txt?.update || "Update"},
+        {value: "comment.delete", label: txt?.delete || "Delete"}
+      ]
+    },
+    {
       value: "shared_node",
       label: txt?.shares || "Shares",
       children: [
@@ -365,6 +374,10 @@ const PERMISSION_DEPENDENCIES = {
   "document.update.title": ["folder.update"],
   "document.update.tags": ["tag.select"],
   "document.update.document_type": ["document_type.select"],
+  comment: ["document.view"],
+  "comment.create": ["document.view"],
+  "comment.update": ["document.view"],
+  "comment.delete": ["document.view"],
   shared_node: ["user.select", "group.select", "role.select"],
   "shared_node.create": ["user.select", "group.select", "role.select"],
   "shared_node.update": ["user.select", "group.select", "role.select"],

@@ -38,6 +38,16 @@ class SharedNode(Base):
         ),
         nullable=True,
     )
+    # When set, every user assigned this *account* role (users_roles) receives the share.
+    recipient_role_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey(
+            "roles.id",
+            use_alter=True,
+            name="shared_nodes_recipient_role_id_fkey",
+            ondelete="CASCADE",
+        ),
+        nullable=True,
+    )
     role_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
             "roles.id",
@@ -63,8 +73,10 @@ class SharedNode(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "user_id IS NOT NULL OR group_id IS NOT NULL",
-            name="check__user_id_not_null__or__group_id_not_null",
+            "(CASE WHEN user_id IS NOT NULL THEN 1 ELSE 0 END + "
+            "CASE WHEN group_id IS NOT NULL THEN 1 ELSE 0 END + "
+            "CASE WHEN recipient_role_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            name="check__shared_nodes_exactly_one_audience",
         ),
     )
 

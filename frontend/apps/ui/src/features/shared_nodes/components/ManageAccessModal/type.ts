@@ -1,1 +1,1 @@
-export type IDType = "user" | "group"
+export type IDType = "user" | "group" | "audience_role"

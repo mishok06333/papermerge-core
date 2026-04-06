@@ -1,5 +1,5 @@
 import {useGetRolesQuery} from "@/features/roles/apiSlice"
-import type {Group, User} from "@/types.d/shared_nodes"
+import type {AudienceRole, Group, User} from "@/types.d/shared_nodes"
 import {MultiSelect} from "@mantine/core"
 import {useEffect, useState} from "react"
 import type {IDType} from "./type"
@@ -7,16 +7,20 @@ import type {IDType} from "./type"
 interface Args {
   selectedUserIDs: string[]
   selectedGroupIDs: string[]
+  selectedAudienceRoleIDs: string[]
   users: User[]
   groups: Group[]
+  audienceRoles: AudienceRole[]
   onChange: (sel_id: string, id_type: IDType, new_roles: string[]) => void
 }
 
 export default function ManageRole({
   selectedGroupIDs,
   selectedUserIDs,
+  selectedAudienceRoleIDs,
   users,
   groups,
+  audienceRoles,
   onChange
 }: Args) {
   const [roles, setRoles] = useState<string[]>()
@@ -26,22 +30,27 @@ export default function ManageRole({
     const roles = getCurrentRoles({
       groupIDs: selectedGroupIDs,
       userIDs: selectedUserIDs,
+      audienceRoleIDs: selectedAudienceRoleIDs,
       users,
-      groups
+      groups,
+      audienceRoles
     })
     setRoles(roles)
-  }, [selectedGroupIDs, selectedUserIDs])
+  }, [selectedGroupIDs, selectedUserIDs, selectedAudienceRoleIDs])
 
   const onLocalRoleChange = (value: string[]) => {
     const idType = getIDType({
       groupIDs: selectedGroupIDs,
-      userIDs: selectedUserIDs
+      userIDs: selectedUserIDs,
+      audienceRoleIDs: selectedAudienceRoleIDs
     })
     setRoles(value)
     if (idType == "user") {
       onChange(selectedUserIDs[0], "user", value)
     } else if (idType == "group") {
       onChange(selectedGroupIDs[0], "group", value)
+    } else if (idType == "audience_role") {
+      onChange(selectedAudienceRoleIDs[0], "audience_role", value)
     }
   }
 
@@ -59,17 +68,21 @@ export default function ManageRole({
 interface GetCurrentRolesArgs {
   groupIDs: string[]
   userIDs: string[]
+  audienceRoleIDs: string[]
   groups: Group[]
   users: User[]
+  audienceRoles: AudienceRole[]
 }
 
 function getCurrentRoles({
   groupIDs,
   userIDs,
+  audienceRoleIDs,
   users,
-  groups
+  groups,
+  audienceRoles
 }: GetCurrentRolesArgs): string[] {
-  const idType = getIDType({groupIDs, userIDs})
+  const idType = getIDType({groupIDs, userIDs, audienceRoleIDs})
 
   if (idType == "group") {
     const sel_id = groupIDs[0]
@@ -89,6 +102,15 @@ function getCurrentRoles({
       }
     }
   }
+  if (idType == "audience_role") {
+    const sel_id = audienceRoleIDs[0]
+    if (sel_id) {
+      const found = audienceRoles.find(a => a.id == sel_id)
+      if (found) {
+        return found.roles.map(r => r.name)
+      }
+    }
+  }
 
   return []
 }
@@ -96,9 +118,17 @@ function getCurrentRoles({
 interface GetIDTypeArgs {
   groupIDs: string[]
   userIDs: string[]
+  audienceRoleIDs: string[]
 }
 
-function getIDType({groupIDs, userIDs}: GetIDTypeArgs): IDType | undefined {
+function getIDType({
+  groupIDs,
+  userIDs,
+  audienceRoleIDs
+}: GetIDTypeArgs): IDType | undefined {
+  if (audienceRoleIDs && audienceRoleIDs.length == 1) {
+    return "audience_role"
+  }
   if (groupIDs && groupIDs.length == 1) {
     return "group"
   }

@@ -51,6 +51,7 @@ export default function RoleFormModalContainer() {
             page_management: "Seitenverwaltung",
             categories: "Kategorien",
             shares: "Freigaben",
+            comments: "Kommentare",
             users: "Benutzer",
             roles: "Rollen",
             groups: "Gruppen",

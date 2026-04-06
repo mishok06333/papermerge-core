@@ -31,6 +31,7 @@ from papermerge.core.types import OrderEnum, PaginatedResponse
 from papermerge.core.db import common as dbapi_common
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
 from papermerge.core.db.engine import get_db
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 
 router = APIRouter(
     prefix="/documents",
@@ -312,6 +313,16 @@ async def get_document_details(
             raise exc.HTTP403Forbidden()
 
         doc = await dbapi.get_doc(db_session, id=document_id)
+        await lib_ts_api.increment_view(db_session, document_id)
+        await lib_ts_api.record_recent_view(db_session, user.id, document_id)
+        await lib_ts_api.add_audit(
+            db_session,
+            user_id=user.id,
+            action="document_view",
+            resource_type="document",
+            resource_id=document_id,
+        )
+        await db_session.commit()
     except NoResultFound:
         raise exc.HTTP404NotFound()
     return doc

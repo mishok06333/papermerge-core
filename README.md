@@ -32,6 +32,7 @@ Papermerge is perfect tool for long term storage of your documents.
 - Custom Fields (metadata) per document type
 - Multi-User
 - Group ownership
+- Role-based access control (permissions assigned per role; users can have multiple roles)
 - Share documents and folders between users and/or groups of users
 - UI is available in multiple languages
 - Page Management - delete, reorder, cut, move, extract pages
@@ -97,6 +98,71 @@ $ poetry run task server
 
 This command will start BE server on localhost port 8000.
 Access its swagger docs via `http://localhost:8000/docs`
+
+### Command line (`paper-cli`)
+
+The package installs a Typer-based CLI entry point as `paper-cli`. It talks to the
+database configured by `PAPERMERGE__DATABASE__URL` (same as the app). Run it from
+the project root with Poetry:
+
+```
+$ poetry run paper-cli --help
+```
+
+Typical workflow after migrations:
+
+```
+$ poetry run task migrate
+$ poetry run paper-cli perms sync
+```
+
+`perms sync` fills the `permissions` table from the permission scopes defined in code.
+Run it whenever scopes change or on a fresh database before creating roles.
+
+**Command groups** (each has its own `--help`):
+
+| Group | Purpose |
+|-------|---------|
+| `users` | Create, list, update, delete users |
+| `groups` | List groups, create the default `admin` group |
+| `roles` | List roles, create `admin`, seed preset test roles (see below) |
+| `perms` | List permissions in the database, sync with code |
+| `scopes` | List scopes as defined in application code |
+| `tokens` | Token-related utilities |
+| `search`, `index`, `index-schema` | Search index maintenance |
+
+**Roles and preset test roles**
+
+Roles bundle permission scopes. Assign roles to users in the web UI (or via the API).
+For local testing, you can create two built-in presets that are safe to reset or tweak
+in `papermerge/core/features/roles/test_role_presets.py`:
+
+- **`worker`** — Document workflow: nodes, documents, tags, pages, OCR, custom fields,
+  document types, shared nodes, and `user.me` only (no admin screens for users/groups/roles).
+- **`modder`** — Same as `worker`, plus view/select/update on users, groups, and roles
+  (still no create/delete of those entities via those permissions).
+
+Create or update both presets in the database (idempotent):
+
+```
+$ poetry run paper-cli roles seed-test-roles
+```
+
+Create or update a single preset:
+
+```
+$ poetry run paper-cli roles seed-test-role worker
+$ poetry run paper-cli roles seed-test-role modder
+```
+
+Other useful commands:
+
+```
+$ poetry run paper-cli roles ls
+$ poetry run paper-cli roles create-admin
+```
+
+Always run `paper-cli perms sync` before seeding roles if permissions are missing.
 
 ### Frontend
 

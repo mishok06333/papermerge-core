@@ -7,6 +7,9 @@ export const SHARED_NODE_VIEW = "shared_node.view"
 export const SHARED_NODE_CREATE = "shared_node.create"
 export const SHARED_NODE_UPDATE = "shared_node.update"
 export const SHARED_NODE_DELETE = "shared_node.delete"
+export const COMMENT_CREATE = "comment.create"
+export const COMMENT_UPDATE = "comment.update"
+export const COMMENT_DELETE = "comment.delete"
 export const DOCUMENT_UPLOAD = "document.upload"
 export const DOCUMENT_DOWNLOAD = "document.download"
 export const TAG_CREATE = "tag.create"
@@ -84,6 +87,9 @@ export const ALL_PERMS = [
   NODE_CREATE,
   NODE_UPDATE,
   NODE_DELETE,
+  COMMENT_CREATE,
+  COMMENT_UPDATE,
+  COMMENT_DELETE,
   TASK_OCR,
   OCRLANG_VIEW
 ]

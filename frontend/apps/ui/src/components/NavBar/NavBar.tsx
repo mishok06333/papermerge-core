@@ -34,14 +34,16 @@ import {
   IconTriangleSquareCircle,
   IconUsers,
   IconUsersGroup,
-  IconUserShare
+  IconUserShare,
+  IconBookmark,
+  IconClipboardList
 } from "@tabler/icons-react"
 import { useContext } from "react"
 import { useSelector } from "react-redux"
 import { NavLink } from "react-router-dom"
 
 import { useGetVersionQuery } from "@/features/version/apiSlice"
-import type { User } from "@/types.ts"
+import type { UserDetails } from "@/types.ts"
 import { useTranslation } from "react-i18next"
 
 function NavBarFull() {
@@ -57,7 +59,7 @@ function NavBarFull() {
   )
   const categoryURL = categoryID ? `/category/${categoryID}` : "/category"
 
-  const user = useSelector(selectCurrentUser) as User
+  const user = useSelector(selectCurrentUser) as UserDetails
   const status = useSelector(selectCurrentUserStatus)
   const error = useSelector(selectCurrentUserError)
 
@@ -117,6 +119,11 @@ function NavBarFull() {
             {NavLinkWithFeedback(t("shared.name"), <IconUserShare />)}
           </NavLink>
         )}
+        {scopes.includes(NODE_VIEW) && (
+          <NavLink to="/library/favorites" onClick={onClick}>
+            {NavLinkWithFeedback(t("library.nav"), <IconBookmark />)}
+          </NavLink>
+        )}
         {scopes.includes(TAG_VIEW) && (
           <NavLink to="/tags">
             {NavLinkWithFeedback(t("tags.name"), <IconTag />)}
@@ -153,6 +160,11 @@ function NavBarFull() {
             {NavLinkWithFeedback(t("roles.name"), <IconMasksTheater />)}
           </NavLink>
         )}
+        {user.is_superuser && (
+          <NavLink to="/audit-log">
+            {NavLinkWithFeedback(t("audit_log.nav"), <IconClipboardList />)}
+          </NavLink>
+        )}
       </div>
       <Center className="navbar-bg-color">
         <Text size="sm" c="dimmed">
@@ -168,7 +180,7 @@ function NavBarCollapsed() {
   const dispatch = useAppDispatch()
   const {data, isLoading} = useGetVersionQuery()
   const viewOption = useAppSelector(s => selectCommanderViewOption(s, mode))
-  const user = useSelector(selectCurrentUser) as User
+  const user = useSelector(selectCurrentUser) as UserDetails
   const status = useSelector(selectCurrentUserStatus)
   const error = useSelector(selectCurrentUserError)
   const categoryID = useAppSelector(s =>
@@ -226,6 +238,11 @@ function NavBarCollapsed() {
             {NavLinkWithFeedbackShort(<IconUserShare />)}
           </NavLink>
         )}
+        {scopes.includes(NODE_VIEW) && (
+          <NavLink to="/library/favorites" onClick={onClick}>
+            {NavLinkWithFeedbackShort(<IconBookmark />)}
+          </NavLink>
+        )}
         {scopes.includes(TAG_VIEW) && (
           <NavLink to="/tags">{NavLinkWithFeedbackShort(<IconTag />)}</NavLink>
         )}
@@ -252,6 +269,11 @@ function NavBarCollapsed() {
         {scopes.includes(ROLE_VIEW) && (
           <NavLink to="/roles">
             {NavLinkWithFeedbackShort(<IconMasksTheater />)}
+          </NavLink>
+        )}
+        {user.is_superuser && (
+          <NavLink to="/audit-log">
+            {NavLinkWithFeedbackShort(<IconClipboardList />)}
           </NavLink>
         )}
       </div>

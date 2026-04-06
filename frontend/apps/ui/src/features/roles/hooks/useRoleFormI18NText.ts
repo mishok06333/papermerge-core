@@ -26,6 +26,7 @@ export default function useI18NText(): I18NRoleFormModal | undefined {
             page_management: t("roleForm.permissionTree.page_management"),
             categories: t("roleForm.permissionTree.categories"),
             shares: t("roleForm.permissionTree.shares"),
+            comments: t("roleForm.permissionTree.comments"),
             users: t("roleForm.permissionTree.users"),
             roles: t("roleForm.permissionTree.roles"),
             groups: t("roleForm.permissionTree.groups"),

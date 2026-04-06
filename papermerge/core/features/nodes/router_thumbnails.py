@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import uuid
@@ -89,11 +90,12 @@ async def get_document_thumbnail(
 
     if not os.path.exists(jpg_abs_path):
         try:
-            image.gen_doc_thumbnail(
-                page_id=page.id,
-                doc_ver_id=doc_ver.id,
-                page_number=1,
-                file_name=doc_ver.file_name,
+            await asyncio.to_thread(
+                image.gen_doc_thumbnail,
+                page.id,
+                doc_ver.id,
+                1,
+                doc_ver.file_name,
             )
         except Exception:
             logger.exception(
@@ -102,8 +104,10 @@ async def get_document_thumbnail(
             raise HTTPException(
                 status_code=503,
                 detail=(
-                    "Could not generate thumbnail. On Windows, install Poppler "
-                    "and ensure it is on PATH (pdf2image needs pdftoppm). "
+                    "Could not generate thumbnail. For PDFs, install Poppler and "
+                    "ensure it is on PATH (pdf2image needs pdftoppm). For video, "
+                    "install ffmpeg on PATH or rely on the imageio-ffmpeg bundled "
+                    "binary from the papermerge dependencies. "
                     "Also verify PAPERMERGE__MAIN__MEDIA_ROOT contains the document files."
                 ),
             )

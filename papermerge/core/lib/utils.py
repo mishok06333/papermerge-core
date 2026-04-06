@@ -4,7 +4,50 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-SAFE_EXTENSIONS = [".svg", ".txt", ".jpg", ".jpeg", ".png", ".hocr", ".pdf", ".tiff"]
+SAFE_EXTENSIONS = [
+    ".aac",
+    ".bmp",
+    ".csv",
+    ".doc",
+    ".docx",
+    ".flac",
+    ".gif",
+    ".hocr",
+    ".htm",
+    ".html",
+    ".jpeg",
+    ".jpg",
+    ".json",
+    ".m4a",
+    ".m4v",
+    ".md",
+    ".mkv",
+    ".mov",
+    ".mp3",
+    ".mp4",
+    ".odp",
+    ".ods",
+    ".odt",
+    ".oga",
+    ".ogg",
+    ".opus",
+    ".pdf",
+    ".png",
+    ".ppt",
+    ".pptx",
+    ".rtf",
+    ".svg",
+    ".tif",
+    ".tiff",
+    ".txt",
+    ".wav",
+    ".webm",
+    ".webp",
+    ".xls",
+    ".xlsx",
+    ".xml",
+    ".zip",
+]
 
 
 def get_bool(key, default="NO"):

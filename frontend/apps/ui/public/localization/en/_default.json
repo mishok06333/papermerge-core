@@ -31,9 +31,18 @@
   },
   "supportedFilesInfo": {
     "title": "Supported Files Info",
-    "supportedFiles": "You can upload PDF, PNG, JPEG, or TIFF files.",
+    "supportedFiles": "You can upload PDFs, images, Office documents, text and data files, videos, audio, archives, and more. See the extension list below.",
     "allowedExtentions": "Allowed extensions:",
     "caseSensitivity": "Uppercase and lowercase letters don't matter."
+  },
+  "blobPreview": {
+    "unsupported": "Preview is not available in the browser for “{{name}}”.",
+    "downloadHint": "Use the Download button in the toolbar to open the file in another application.",
+    "loadError": "Could not load this file for preview.",
+    "docxError": "Could not convert this Word file for preview.",
+    "legacyDoc": "Preview for older Word 97–2003 (.doc) files is not available in the browser. Save the document as .docx or open the downloaded file in Microsoft Word.",
+    "videoUnsupported": "Your browser cannot play this video format.",
+    "audioUnsupported": "Your browser cannot play this audio format."
   },
   "editNodeTitleModal": {
     "title": "Edit Title",
@@ -157,6 +166,9 @@
   "documents.delete.one": "Delete Document",
   "nodes.delete.many.title": "Delete Nodes",
   "nodes.delete.many.description": "Are you sure you want to delete following nodes",
+  "nodes.upload.title": "Upload Files",
+  "nodes.upload.confirm_lead": "Are you sure you want to upload to",
+  "nodes.upload.file_name": "File name",
   "document_types.name": "Categories",
   "document_types.name.by": "Categories",
   "document_types.new.title": "New Category",
@@ -192,6 +204,10 @@
   "groups.delete.many.description": "Are you sure you want to delete selected groups?",
   "home.name": "Home",
   "home.name.my": "My Home",
+  "homeFolderTree": {
+    "show": "Show folder tree",
+    "resizeHandle": "Drag to resize the folder tree panel"
+  },
   "inbox.name": "Inbox",
   "inbox.name.my": "My Inbox",
   "shared.name": "Shared",

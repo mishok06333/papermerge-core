@@ -82,10 +82,16 @@ function NavBarFull() {
     return <>{error}</>
   }
 
+  if (!user) {
+    return <>Loading...</>
+  }
+
+  const scopes = user.scopes ?? []
+
   return (
     <>
       <div className="navbar">
-        {user.scopes.includes(NODE_VIEW) && (
+        {scopes.includes(NODE_VIEW) && (
           <NavLink
             to={`/home/${lastHome?.home_id || user.home_folder_id}`}
             onClick={onClick}
@@ -93,7 +99,7 @@ function NavBarFull() {
             {NavLinkWithFeedback(t("home.name"), <IconHome />)}
           </NavLink>
         )}
-        {user.scopes.includes(NODE_VIEW) && (
+        {scopes.includes(NODE_VIEW) && (
           <NavLink
             to={`/inbox/${lastInbox?.inbox_id || user.inbox_folder_id}`}
             onClick={onClick}
@@ -101,22 +107,22 @@ function NavBarFull() {
             {NavLinkWithFeedback(t("inbox.name"), <IconInbox />)}
           </NavLink>
         )}
-        {user.scopes.includes(NODE_VIEW) && (
+        {scopes.includes(NODE_VIEW) && (
           <NavLink to={categoryURL} onClick={onClick}>
             {NavLinkWithFeedback(t("by_document_type.name"), <IconCategory />)}
           </NavLink>
         )}
-        {user.scopes.includes(SHARED_NODE_VIEW) && (
+        {scopes.includes(SHARED_NODE_VIEW) && (
           <NavLink to={"/shared"} onClick={onClick}>
             {NavLinkWithFeedback(t("shared.name"), <IconUserShare />)}
           </NavLink>
         )}
-        {user.scopes.includes(TAG_VIEW) && (
+        {scopes.includes(TAG_VIEW) && (
           <NavLink to="/tags">
             {NavLinkWithFeedback(t("tags.name"), <IconTag />)}
           </NavLink>
         )}
-        {user.scopes.includes(CUSTOM_FIELD_VIEW) && (
+        {scopes.includes(CUSTOM_FIELD_VIEW) && (
           <NavLink to="/custom-fields">
             {NavLinkWithFeedback(
               t("custom_fields.name"),
@@ -124,7 +130,7 @@ function NavBarFull() {
             )}
           </NavLink>
         )}
-        {user.scopes.includes(DOCUMENT_TYPE_VIEW) && (
+        {scopes.includes(DOCUMENT_TYPE_VIEW) && (
           <NavLink to="/document-types">
             {NavLinkWithFeedback(
               t("document_types.name.by"),
@@ -132,17 +138,17 @@ function NavBarFull() {
             )}
           </NavLink>
         )}
-        {user.scopes.includes(USER_VIEW) && (
+        {scopes.includes(USER_VIEW) && (
           <NavLink to="/users">
             {NavLinkWithFeedback(t("users.name"), <IconUsers />)}
           </NavLink>
         )}
-        {user.scopes.includes(GROUP_VIEW) && (
+        {scopes.includes(GROUP_VIEW) && (
           <NavLink to="/groups">
             {NavLinkWithFeedback(t("groups.name"), <IconUsersGroup />)}
           </NavLink>
         )}
-        {user.scopes.includes(ROLE_VIEW) && (
+        {scopes.includes(ROLE_VIEW) && (
           <NavLink to="/roles">
             {NavLinkWithFeedback(t("roles.name"), <IconMasksTheater />)}
           </NavLink>
@@ -191,53 +197,59 @@ function NavBarCollapsed() {
     return <>{error}</>
   }
 
+  if (!user) {
+    return <>Loading...</>
+  }
+
+  const scopes = user.scopes ?? []
+
   return (
     <>
       <div className="navbar">
-        {user.scopes.includes(NODE_VIEW) && (
+        {scopes.includes(NODE_VIEW) && (
           <NavLink to={`/home/${user.home_folder_id}`} onClick={onClick}>
             {NavLinkWithFeedbackShort(<IconHome />)}
           </NavLink>
         )}
-        {user.scopes.includes(NODE_VIEW) && (
+        {scopes.includes(NODE_VIEW) && (
           <NavLink to={`/inbox/${user.inbox_folder_id}`} onClick={onClick}>
             {NavLinkWithFeedbackShort(<IconInbox />)}
           </NavLink>
         )}
-        {user.scopes.includes(NODE_VIEW) && (
+        {scopes.includes(NODE_VIEW) && (
           <NavLink to={categoryURL} onClick={onClick}>
             {NavLinkWithFeedbackShort(<IconCategory />)}
           </NavLink>
         )}
-        {user.scopes.includes(SHARED_NODE_VIEW) && (
+        {scopes.includes(SHARED_NODE_VIEW) && (
           <NavLink to={"/shared"} onClick={onClick}>
             {NavLinkWithFeedbackShort(<IconUserShare />)}
           </NavLink>
         )}
-        {user.scopes.includes(TAG_VIEW) && (
+        {scopes.includes(TAG_VIEW) && (
           <NavLink to="/tags">{NavLinkWithFeedbackShort(<IconTag />)}</NavLink>
         )}
-        {user.scopes.includes(CUSTOM_FIELD_VIEW) && (
+        {scopes.includes(CUSTOM_FIELD_VIEW) && (
           <NavLink to="/custom-fields">
             {NavLinkWithFeedbackShort(<IconAlignJustified />)}
           </NavLink>
         )}
-        {user.scopes.includes(DOCUMENT_TYPE_VIEW) && (
+        {scopes.includes(DOCUMENT_TYPE_VIEW) && (
           <NavLink to="/document-types">
             {NavLinkWithFeedbackShort(<IconTriangleSquareCircle />)}
           </NavLink>
         )}
-        {user.scopes.includes(USER_VIEW) && (
+        {scopes.includes(USER_VIEW) && (
           <NavLink to="/users">
             {NavLinkWithFeedbackShort(<IconUsers />)}
           </NavLink>
         )}
-        {user.scopes.includes(GROUP_VIEW) && (
+        {scopes.includes(GROUP_VIEW) && (
           <NavLink to="/groups">
             {NavLinkWithFeedbackShort(<IconUsersGroup />)}
           </NavLink>
         )}
-        {user.scopes.includes(ROLE_VIEW) && (
+        {scopes.includes(ROLE_VIEW) && (
           <NavLink to="/roles">
             {NavLinkWithFeedbackShort(<IconMasksTheater />)}
           </NavLink>

@@ -76,7 +76,11 @@ export default function Document({
       <Checkbox onChange={onCheck} checked={selectedIds.includes(node.id)} />
       <a onClick={() => onClick(node)}>
         {node.is_shared && <IconUsers className={classes.iconUsers} />}
-        <Thumbnail nodeID={node.id} />
+        <Thumbnail
+          nodeID={node.id}
+          fileName={node.title}
+          serverThumbnailUrl={node.thumbnail_url}
+        />
         <Tags names={tagNames} />
         <div className={classes.title}>{node.title}</div>
       </a>

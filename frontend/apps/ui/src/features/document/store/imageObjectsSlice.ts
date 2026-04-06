@@ -8,6 +8,10 @@ import {
   createSlice,
   PayloadAction
 } from "@reduxjs/toolkit"
+import {
+  getBlobViewerCategory,
+  guessMimeTypeFromFileName
+} from "../documentPreview"
 import type {BasicPage, GeneratePreviewInputType} from "../types"
 import {getDocLastVersion, rotateImageObjectURL} from "../utils"
 
@@ -99,6 +103,44 @@ export const generatePreviews = createAsyncThunk<
         error: "There was an error generating thumbnail image"
       }
     }
+  }
+
+  const viewerKind = getBlobViewerCategory(item.docVer.file_name)
+  if (viewerKind !== "pdf-pages") {
+    const mime = guessMimeTypeFromFileName(item.docVer.file_name)
+    const blob = new Blob([fileItem.buffer], {type: mime})
+    const objectURL = URL.createObjectURL(blob)
+
+    let firstPage = (item.pageNumber - 1) * item.pageSize
+    if (item.thumbnailListPageCount && item.thumbnailListPageCount > 0) {
+      firstPage = item.thumbnailListPageCount
+    }
+    const lastPage = Math.min(firstPage + item.pageSize, item.pageTotal)
+    const sortedPages = item.docVer.pages
+      .slice()
+      .sort((a, b) => a.number - b.number)
+    const sortedPagesTotal = sortedPages.length
+
+    for (let pIndex = firstPage; pIndex < lastPage; pIndex++) {
+      if (pIndex >= sortedPagesTotal) {
+        console.error(`Page index ${pIndex} out of bound: ${sortedPagesTotal}`)
+        return {
+          items: [],
+          error: `Page index ${pIndex} out of bound: ${sortedPagesTotal}`
+        }
+      }
+      const page = sortedPages[pIndex]
+      result.items.push({
+        pageID: page.id,
+        docID: item.docVer.document_id,
+        docVerID: item.docVer.id,
+        pageNumber: page.number,
+        objectURL,
+        size: item.size
+      })
+    }
+
+    return result
   }
 
   const file = new File([fileItem.buffer], "filename.pdf", {

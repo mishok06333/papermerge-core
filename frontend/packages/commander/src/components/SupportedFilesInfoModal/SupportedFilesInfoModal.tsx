@@ -27,7 +27,7 @@ export default function SupportedFilesInfoModal({
       >
         <Text>
           {txt?.supportedFiles ||
-            "You can upload PDF, PNG, JPEG, or TIFF files."}
+            "You can upload PDFs, images, Office documents, text and data files, videos, audio, archives, and more (see the list below)."}
         </Text>
         <Text>{txt?.allowedExtentions || "Allowed extensions:"}</Text>
         {supportedExtentions && <List m="md">{extList}</List>}

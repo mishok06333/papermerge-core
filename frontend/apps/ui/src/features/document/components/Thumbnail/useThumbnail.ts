@@ -7,7 +7,7 @@ import type {UUID} from "@/types.d/common"
 import {RefObject, useEffect, useRef, useState} from "react"
 
 interface ThumbnailState {
-  ref: RefObject<HTMLImageElement | null>
+  ref: RefObject<HTMLElement | null>
   imageURL: string | undefined
   isLoading: boolean
   isDragged: boolean
@@ -21,17 +21,21 @@ interface ThumbnailState {
   clearBorderTop: () => void
 }
 
-export default function useThumbnail(pageID: UUID): ThumbnailState {
+export default function useThumbnail(
+  pageID: UUID,
+  iconMode = false
+): ThumbnailState {
   const mode = usePanelMode()
   const [isDragged, setIsDragged] = useState<boolean>(false)
   const [checked, setChecked] = useState<boolean>(false)
   const [withBorderBottom, setWithBorderBottom] = useState<boolean>(false)
   const [withBorderTop, setWithBorderTop] = useState<boolean>(false)
-  const ref = useRef<HTMLImageElement>(null)
+  const ref = useRef<HTMLElement | null>(null)
   const draggedPages = useAppSelector(selectDraggedPages)
   const selectedIds = useAppSelector(s => selectSelectedPageIDs(s, mode))
   const draggedPagesIDs = draggedPages?.map(p => p.id)
-  const imageURL = useAppSelector(s => selectSmallImageByPageId(s, pageID))
+  const rawImageURL = useAppSelector(s => selectSmallImageByPageId(s, pageID))
+  const imageURL = iconMode ? undefined : rawImageURL
 
   useEffect(() => {
     const cur_page_is_being_dragged = draggedPages?.find(p => p.id == pageID)
@@ -87,7 +91,7 @@ export default function useThumbnail(pageID: UUID): ThumbnailState {
 
   return {
     ref: ref,
-    isLoading: !imageURL,
+    isLoading: iconMode ? false : !imageURL,
     imageURL: imageURL,
     isDragged,
     checked,

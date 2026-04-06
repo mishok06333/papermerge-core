@@ -33,7 +33,12 @@ import {
 } from "@/features/ui/uiSlice"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {NType, PanelMode} from "@/types"
+import {getViewerChromeKind} from "@/features/document/documentPreview"
+import DocxPageColumn from "@/features/document/components/DocxViewer/DocxPageColumn"
+import {DocxScrollProvider} from "@/features/document/components/DocxViewer/DocxScrollContext"
+import DocxThumbnailList from "@/features/document/components/DocxViewer/DocxThumbnailList"
 import {DOC_VER_PAGINATION_PAGE_BATCH_SIZE} from "../constants"
+import BlobDocumentViewer from "./BlobDocumentViewer/BlobDocumentViewer"
 import ContextMenu from "./ContextMenu"
 
 import {useSelectedPages} from "@/features/document/hooks"
@@ -182,6 +187,8 @@ export default function Viewer() {
     return <Loader />
   }
 
+  const chrome = getViewerChromeKind(docVer.file_name)
+
   return (
     <div ref={ref}>
       <ActionButtons
@@ -195,9 +202,17 @@ export default function Viewer() {
         <DocumentDetailsToggle />
       </Group>
       <Flex className={classes.inner} style={{height: `${height}px`}}>
-        {thumbnailsIsOpen && <ThumbnailList />}
-        <ThumbnailsToggle />
-        <PageList />
+        {chrome === "pdf" && thumbnailsIsOpen && <ThumbnailList />}
+        {chrome === "pdf" && <ThumbnailsToggle />}
+        {chrome === "pdf" && <PageList />}
+        {chrome === "docx" && (
+          <DocxScrollProvider>
+            {thumbnailsIsOpen && <DocxThumbnailList />}
+            <ThumbnailsToggle />
+            <DocxPageColumn />
+          </DocxScrollProvider>
+        )}
+        {chrome === "blob" && <BlobDocumentViewer />}
         <DocumentDetails
           docVer={docVer}
           doc={doc}

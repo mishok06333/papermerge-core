@@ -56,6 +56,9 @@
   "documents.delete.one": "Удалить документ",
   "nodes.delete.many.title": "Удалить узлы",
   "nodes.delete.many.description": "Вы действительно хотите удалить следующие узлы",
+  "nodes.upload.title": "Загрузка файлов",
+  "nodes.upload.confirm_lead": "Вы уверены, что хотите загрузить в",
+  "nodes.upload.file_name": "Имя файла",
   "document_types.name": "Типы документов",
   "document_types.name.by": "По категориям",
   "document_types.new.title": "Новый тип документа",
@@ -91,6 +94,10 @@
   "groups.delete.many.description": "Вы уверены, что хотите удалить выбранные группы?",
   "home.name": "Главная",
   "home.name.my": "Моя страница",
+  "homeFolderTree": {
+    "show": "Показать дерево папок",
+    "resizeHandle": "Потяните, чтобы изменить ширину панели дерева папок"
+  },
   "inbox.name": "Почта",
   "inbox.name.my": "Моя Почта",
   "shared.name": "Общие",

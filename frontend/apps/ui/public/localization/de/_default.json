@@ -31,9 +31,18 @@
   },
   "supportedFilesInfo": {
     "title": "Unterstützte Dateien",
-    "supportedFiles": "Du kannst PDF-, PNG-, JPEG- oder TIFF-Dateien hochladen.",
+    "supportedFiles": "Du kannst PDFs, Bilder, Office-Dokumente, Text- und Datendateien, Videos, Audio, Archive und mehr hochladen. Siehe die Liste der Dateiendungen unten.",
     "allowedExtentions": "Erlaubte Dateiendungen:",
     "caseSensitivity": "Groß- und Kleinschreibung spielt keine Rolle."
+  },
+  "blobPreview": {
+    "unsupported": "Für „{{name}}“ ist keine Vorschau im Browser verfügbar.",
+    "downloadHint": "Verwende die Schaltfläche „Herunterladen“ in der Symbolleiste, um die Datei in einer anderen Anwendung zu öffnen.",
+    "loadError": "Diese Datei konnte nicht zur Vorschau geladen werden.",
+    "docxError": "Diese Word-Datei konnte nicht für die Vorschau umgewandelt werden.",
+    "legacyDoc": "Eine Vorschau für ältere Word-97-2003-Dateien (.doc) ist im Browser nicht verfügbar. Speichere das Dokument als .docx oder öffne die heruntergeladene Datei in Microsoft Word.",
+    "videoUnsupported": "Dein Browser kann dieses Videoformat nicht wiedergeben.",
+    "audioUnsupported": "Dein Browser kann dieses Audioformat nicht wiedergeben."
   },
   "editNodeTitleModal": {
     "title": "Dokumenttitel bearbeiten",
@@ -157,6 +166,9 @@
   "documents.delete.one": "Dockument löschen",
   "nodes.delete.many.title": "Dockumente und Ordner löschen",
   "nodes.delete.many.description": "Löschen?",
+  "nodes.upload.title": "Dateien hochladen",
+  "nodes.upload.confirm_lead": "Möchten Sie wirklich hochladen nach",
+  "nodes.upload.file_name": "Dateiname",
   "document_types.name": "Kategorien",
   "document_types.name.by": "Kategorien",
   "document_types.new.title": "Neue Kategorie",
@@ -192,6 +204,10 @@
   "groups.delete.many.description": "Gruppen löschen?",
   "home.name": "Startseite",
   "home.name.my": "Meine Startseite",
+  "homeFolderTree": {
+    "show": "Ordnerbaum anzeigen",
+    "resizeHandle": "Ziehen, um die Breite des Ordnerbaums zu ändern"
+  },
   "inbox.name": "Eingang",
   "inbox.name.my": "Mein Eingang",
   "shared.name": "Verteilte",

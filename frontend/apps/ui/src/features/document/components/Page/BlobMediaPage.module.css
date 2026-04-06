@@ -1,0 +1,91 @@
+.docxWrap {
+  background: var(--mantine-color-body);
+  padding: var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-sm);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* docx-preview root wrapper often gets a fixed pixel width from the file; keep it within the pane */
+.docxWrap :global(.docx-docviewer-wrapper) {
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.docxWrap :global(section.docx-docviewer) {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.mediaWrap {
+  display: flex;
+  justify-content: center;
+  padding: var(--mantine-spacing-md);
+  box-sizing: border-box;
+}
+
+.videoStandalone {
+  width: 100%;
+  max-width: min(960px, 100%);
+  height: auto;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.audioStandalone {
+  width: 100%;
+  max-width: 560px;
+}
+
+.textStandalone {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: var(--mantine-spacing-lg);
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
+    monospace;
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.55;
+  color: light-dark(var(--mantine-color-dark-8), var(--mantine-color-gray-2));
+  background-color: light-dark(
+    var(--mantine-color-gray-0),
+    var(--mantine-color-dark-6)
+  );
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-sm);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.htmlIframe {
+  width: 100%;
+  min-height: min(70vh, 720px);
+  border: 1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+}
+
+/* docx-preview root uses className option; improve readability vs plain theme text */
+.docxWrap :global(.docx-preview) {
+  font-family: "Calibri", "Segoe UI", system-ui, sans-serif;
+  font-size: 11pt;
+  line-height: 1.35;
+  color: #1a1a1a;
+}
+
+.docxWrap :global(.docx-preview table) {
+  border-collapse: collapse;
+}
+
+.docxWrap :global(.docx-preview td),
+.docxWrap :global(.docx-preview th) {
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+  vertical-align: top;
+}

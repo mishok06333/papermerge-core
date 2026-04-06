@@ -4,7 +4,7 @@ import {PanelMode} from "@/types"
 import {ActionIcon, FileButton, Loader, Tooltip} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
 import {IconUpload} from "@tabler/icons-react"
-import {useContext, useState} from "react"
+import {useContext, useRef, useState} from "react"
 import {useGetFolderQuery} from "../../../apiSlice"
 
 import {
@@ -27,6 +27,7 @@ export default function UploadButton() {
     {open: supportedFilesInfoOpen, close: supportedFilesInfoClose}
   ] = useDisclosure(false)
   const [uploadFiles, setUploadFiles] = useState<File[]>()
+  const clearFileInputRef = useRef<() => void>(null)
   const mode: PanelMode = useContext(PanelContext)
   const folderID = useAppSelector(s => selectCurrentNodeID(s, mode))
 
@@ -54,9 +55,20 @@ export default function UploadButton() {
     open()
   }
 
+  const onUploadModalClose = () => {
+    close()
+    setUploadFiles(undefined)
+    clearFileInputRef.current?.()
+  }
+
   return (
     <>
-      <FileButton onChange={onUpload} accept={MIME_TYPES} multiple>
+      <FileButton
+        resetRef={clearFileInputRef}
+        onChange={onUpload}
+        accept={MIME_TYPES}
+        multiple
+      >
         {props => (
           <Tooltip label={t("common.upload")} withArrow>
             <ActionIcon {...props} size="lg" variant="default">
@@ -70,8 +82,8 @@ export default function UploadButton() {
           opened={opened}
           source_files={uploadFiles}
           target={target!}
-          onSubmit={close}
-          onCancel={close}
+          onSubmit={onUploadModalClose}
+          onCancel={onUploadModalClose}
         />
       )}
       {supportedFilesInfoOpened && (

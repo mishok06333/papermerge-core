@@ -18,7 +18,7 @@ export const selectFiles = (state: RootState) =>
 export const selectNodesWithoutExistingThumbnails = (node_ids: string[]) =>
   createSelector([selectThumbnailObjects, selectFiles], (thumbnailObjects, files) => {
     const notInThumbnails = (nodeID: string) => {
-      return !thumbnailObjects[nodeID]
+      return !thumbnailObjects[nodeID]?.url
     }
 
     const notInFiles = (nodeID: string) => {

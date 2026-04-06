@@ -14,6 +14,7 @@ import DownloadButton from "@/features/document/components/DownloadButton"
 import RotateButton from "@/features/document/components/RotateButton"
 import RotateCCButton from "@/features/document/components/RotateCCButton"
 import RunOCRButton from "@/features/document/components/RunOCRButton"
+import {isBuiltinTextDocument} from "@/features/document/documentPreview"
 import {useCurrentDocVer, useSelectedPages} from "@/features/document/hooks"
 
 interface Args {
@@ -54,7 +55,8 @@ export default function ActionButtons({
     <Group ref={ref} justify="space-between">
       <Group>
         <EditTitleButton onClick={onEditNodeTitleClicked} />
-        {!runtimeConfig.ocr__automatic && <RunOCRButton />}
+        {!runtimeConfig.ocr__automatic &&
+          !isBuiltinTextDocument(docVer?.file_name) && <RunOCRButton />}
         <DownloadButton />
         {selectedPages.length > 0 && (
           <RotateButton onClick={onRotateCWClicked} />

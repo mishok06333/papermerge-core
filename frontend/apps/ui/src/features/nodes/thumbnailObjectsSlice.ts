@@ -1,8 +1,8 @@
 import type { UUID } from "@/types.d/common";
 import type { GenerateThumbnailInputType, LoadThumbnailInputType } from "@/types.d/node_thumbnail";
 import { getBaseURL, getDefaultHeaders } from "@/utils";
-import { generatePreview as util_pdf_generateThumbnail } from "@/utils/pdf";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { generateNodeThumbnailFromFile } from "@/features/nodes/generateClientThumbnail";
 
 export interface ThumbnailState {
   [node_id: UUID]: {
@@ -24,7 +24,7 @@ export const generateThumbnail = createAsyncThunk<
   GenerateThumbnailInputType
 >("images/generateNodeThumbnail", async item => {
 
-  const objectURL = await util_pdf_generateThumbnail({ file: item.file, width: 300, pageNumber: 1 })
+  const objectURL = await generateNodeThumbnailFromFile(item.file)
   if (objectURL) {
     return {
       node_id: item.node_id,
@@ -75,7 +75,13 @@ export const loadThumbnail = createAsyncThunk<
     url = `${getBaseURL(true)}${item.url}`
   }
 
-  const response = await fetch(url, { headers: headers })
+  const fetchHeaders = {...headers}
+  delete fetchHeaders["Content-Type"]
+
+  const response = await fetch(url, {
+    headers: fetchHeaders,
+    credentials: "include"
+  })
 
   if (response.ok) {
     const blob = await response.blob()
@@ -95,6 +101,14 @@ export const loadThumbnail = createAsyncThunk<
     error: "There was an error loading thumbnail image"
   }
 })
+
+function clearThumbnailEntry(state: ThumbnailState, node_id: string) {
+  const existing = state[node_id]
+  if (existing?.url) {
+    URL.revokeObjectURL(existing.url)
+  }
+  delete state[node_id]
+}
 
 const thumbnailObjectsSlice = createSlice({
   name: "thumbnailObjects",
@@ -132,10 +146,7 @@ const thumbnailObjectsSlice = createSlice({
         }
 
         if (payload.error) {
-          state[node_id] = {
-            url: null,
-            error: error
-          }
+          clearThumbnailEntry(state, node_id)
         }
       }
     })
@@ -160,19 +171,12 @@ const thumbnailObjectsSlice = createSlice({
         }
 
         if (payload.error) {
-          state[node_id] = {
-            url: null,
-            error: error
-          }
+          clearThumbnailEntry(state, node_id)
         }
       }
     })
     builder.addCase(loadThumbnail.rejected, (state, action) => {
-      const node_id = action.meta.arg.node_id
-      state[node_id] = {
-        url: null,
-        error: "Failed to load thumbnail"
-      }
+      clearThumbnailEntry(state, action.meta.arg.node_id)
     })
   }
 })

@@ -1,12 +1,15 @@
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {
+  homeFolderTreeToggled,
+  selectHomeFolderTreeOpen,
   selectOneSelectedSharedNode,
   selectSelectedNodeIds,
   selectSelectedNodesCount,
   updateActionPanel
 } from "@/features/ui/uiSlice"
-import {Group} from "@mantine/core"
+import {Group, Switch} from "@mantine/core"
 import {useViewportSize} from "@mantine/hooks"
+import {useTranslation} from "react-i18next"
 import {useContext, useEffect, useRef, useState} from "react"
 
 import ToggleSecondaryPanel from "@/components/DualPanel/ToggleSecondaryPanel"
@@ -27,7 +30,14 @@ import NewFolderButton from "./NewFolderButton"
 import SortMenu from "./SortMenu"
 import UploadButton from "./UploadButton"
 
-export default function FolderNodeActions() {
+type FolderNodeActionsProps = {
+  homeFolderTreeAvailable?: boolean
+}
+
+export default function FolderNodeActions({
+  homeFolderTreeAvailable = false
+}: FolderNodeActionsProps) {
+  const {t} = useTranslation()
   const [filterText, selectFilterText] = useState<string>()
   const {height, width} = useViewportSize()
   const dispatch = useAppDispatch()
@@ -40,6 +50,7 @@ export default function FolderNodeActions() {
   const oneSelectedSharedNode = useAppSelector(s =>
     selectOneSelectedSharedNode(s, mode)
   )
+  const homeFolderTreeOpen = useAppSelector(selectHomeFolderTreeOpen)
 
   const onQuickFilterClear = () => {
     selectFilterText(undefined)
@@ -78,6 +89,14 @@ export default function FolderNodeActions() {
         {selectedCount > 0 && <DeleteButton />}
       </Group>
       <Group grow preventGrowOverflow={false} wrap="nowrap">
+        {homeFolderTreeAvailable && (
+          <Switch
+            size="xs"
+            label={t("homeFolderTree.show")}
+            checked={homeFolderTreeOpen}
+            onChange={() => dispatch(homeFolderTreeToggled())}
+          />
+        )}
         <ViewOptionsMenu />
         <SortMenu />
         <QuickFilter

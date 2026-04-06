@@ -15,6 +15,7 @@ import {
 } from "@/features/ui/uiSlice"
 
 import {
+  isFetchBaseQueryError,
   isHTTP403Forbidden,
   isHTTP404NotFound,
   isHTTP422UnprocessableContent
@@ -43,6 +44,7 @@ import {
   selectDraggedNodes,
   selectDraggedNodesSourceFolderID,
   selectDraggedPages,
+  selectHomeFolderTreeOpen,
   selectLastPageSize
 } from "@/features/ui/uiSlice"
 import type {NType, PanelMode} from "@/types"
@@ -93,6 +95,7 @@ export default function Commander() {
   const user = useAppSelector(selectCurrentUser)
   const {data: groupHomes} = useGetUserGroupHomesQuery()
   const lastPageSize = useAppSelector(s => selectLastPageSize(s, mode))
+  const homeFolderTreeOpen = useAppSelector(selectHomeFolderTreeOpen)
   const currentNodeID = useAppSelector(s => selectCurrentNodeID(s, mode))
   const draggedPages = useAppSelector(selectDraggedPages)
   const draggedNodes = useAppSelector(selectDraggedNodes)
@@ -110,21 +113,21 @@ export default function Commander() {
   const sortColumn = useAppSelector(s => selectCommanderSortMenuColumn(s, mode))
 
   const {data, isLoading, isFetching, isError, refetch, error} =
-    useGetPaginatedNodesQuery({
-      nodeID: currentNodeID!,
-      page_number: page,
-      page_size: pageSize,
-      filter: filter,
-      sortDir: sortDir,
-      sortColumn: sortColumn
-    })
+    useGetPaginatedNodesQuery(
+      {
+        nodeID: currentNodeID!,
+        page_number: page,
+        page_size: pageSize,
+        filter: filter,
+        sortDir: sortDir,
+        sortColumn: sortColumn
+      },
+      {skip: !currentNodeID}
+    )
+  const {data: currentFolder} = useGetFolderQuery(currentNodeID!, {
+    skip: !currentNodeID
+  })
   const [uploadFiles, setUploadFiles] = useState<File[] | FileList>()
-
-  if (!currentNodeID) {
-    return <div>Loading...</div>
-  }
-
-  const {data: currentFolder} = useGetFolderQuery(currentNodeID)
 
   const {homeBrowseRootId, rootLabel} = useMemo(() => {
     if (!user || !currentFolder?.breadcrumb?.length) {
@@ -145,11 +148,17 @@ export default function Commander() {
     }
   }, [user, groupHomes, currentFolder?.breadcrumb])
 
-  const showHomeFolderTree =
+  if (!currentNodeID) {
+    return <div>Loading...</div>
+  }
+
+  const homeFolderTreeContext =
     mode === "main" &&
     Boolean(homeBrowseRootId) &&
     (location.pathname.startsWith("/home/") ||
       location.pathname.startsWith("/folder/"))
+
+  const showHomeFolderTree = homeFolderTreeContext && homeFolderTreeOpen
 
   if (isLoading && !data) {
     return <div>Loading...</div>
@@ -168,7 +177,10 @@ export default function Commander() {
   }
 
   if (isError) {
-    return <div>{`some error`}</div>
+    const detail = isFetchBaseQueryError(error)
+      ? `Could not load folder contents (HTTP ${String(error.status)}). Run the backend on port 8000 and/or set VITE_BASE_URL in .env (see README). The dev server proxies /api to port 8000 when no base URL is set.`
+      : String(error)
+    return <div>{detail}</div>
   }
 
   if (!data) {
@@ -268,6 +280,11 @@ export default function Commander() {
     }
   }
 
+  const onDropFilesModalClose = () => {
+    dropFilesClose()
+    setUploadFiles(undefined)
+  }
+
   const onPagesExtracted = () => {
     extractPagesClose()
     // Fetch again (bypassing cache) nodes of current folder.
@@ -344,7 +361,7 @@ export default function Commander() {
           onDragOver={onDragOver}
           onDrop={onDrop}
         >
-          <FolderNodeActions />
+          <FolderNodeActions homeFolderTreeAvailable={homeFolderTreeContext} />
           <Breadcrumbs
             breadcrumb={currentFolder?.breadcrumb}
             onClick={onClick}
@@ -364,8 +381,8 @@ export default function Commander() {
           opened={dropFilesOpened}
           source_files={uploadFiles}
           target={currentFolder}
-          onSubmit={dropFilesClose}
-          onCancel={dropFilesClose}
+          onSubmit={onDropFilesModalClose}
+          onCancel={onDropFilesModalClose}
         />
       )}
       {draggedPagesDocParentID &&

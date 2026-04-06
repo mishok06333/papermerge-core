@@ -18,7 +18,14 @@ import {useCallback, useEffect, useRef, useState} from "react"
 import {useTranslation} from "react-i18next"
 import {useNavigate} from "react-router-dom"
 
+import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {useLazyGetPaginatedNodesQuery} from "@/features/nodes/apiSlice"
+import {
+  HOME_FOLDER_TREE_WIDTH_MAX,
+  HOME_FOLDER_TREE_WIDTH_MIN,
+  homeFolderTreeWidthSet,
+  selectHomeFolderTreeWidth
+} from "@/features/ui/uiSlice"
 import type {NodeType} from "@/types"
 
 import classes from "./HomeFolderTree.module.scss"
@@ -68,8 +75,25 @@ export default function HomeFolderTree({
   height
 }: Props) {
   const {t} = useTranslation()
+  const dispatch = useAppDispatch()
+  const sidebarWidth = useAppSelector(selectHomeFolderTreeWidth)
   const navigate = useNavigate()
   const [trigger] = useLazyGetPaginatedNodesQuery()
+  const [resizeDrag, setResizeDrag] = useState<{
+    pointerId: number
+    startX: number
+    startWidth: number
+  } | null>(null)
+  const [resizePreviewWidth, setResizePreviewWidth] = useState<number | null>(
+    null
+  )
+
+  const clampTreeWidth = useCallback((w: number) => {
+    return Math.min(
+      HOME_FOLDER_TREE_WIDTH_MAX,
+      Math.max(HOME_FOLDER_TREE_WIDTH_MIN, Math.round(w))
+    )
+  }, [])
   const loadedRef = useRef(new Set<string>())
   const loadingRef = useRef(new Set<string>())
   const [treeData, setTreeData] = useState<TreeNodeData[]>([])
@@ -145,6 +169,7 @@ export default function HomeFolderTree({
   ensureLoadedRef.current = ensureLoaded
 
   const tree = useTree({
+    initialExpandedState: {[homeRootId]: true},
     onNodeExpand: (value: string) => {
       void ensureLoadedRef.current(value)
     }
@@ -288,8 +313,44 @@ export default function HomeFolderTree({
     [onTreeNavigate]
   )
 
+  const effectiveWidth = resizePreviewWidth ?? sidebarWidth
+
+  const onResizePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setResizeDrag({
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startWidth: sidebarWidth
+    })
+    setResizePreviewWidth(null)
+  }
+
+  const onResizePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeDrag || e.pointerId !== resizeDrag.pointerId) {
+      return
+    }
+    const delta = e.clientX - resizeDrag.startX
+    setResizePreviewWidth(clampTreeWidth(resizeDrag.startWidth + delta))
+  }
+
+  const endResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeDrag || e.pointerId !== resizeDrag.pointerId) {
+      return
+    }
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* capture may already be released */
+    }
+    const delta = e.clientX - resizeDrag.startX
+    dispatch(homeFolderTreeWidthSet(resizeDrag.startWidth + delta))
+    setResizeDrag(null)
+    setResizePreviewWidth(null)
+  }
+
   return (
-    <Box className={classes.sidebar}>
+    <Box className={classes.sidebar} style={{width: effectiveWidth}}>
       <Text size="sm" fw={600} mb="xs" px="xs">
         {t("home.name")}
       </Text>
@@ -307,6 +368,16 @@ export default function HomeFolderTree({
           />
         )}
       </ScrollArea>
+      <Box
+        className={classes.resizeHandle}
+        onPointerDown={onResizePointerDown}
+        onPointerMove={onResizePointerMove}
+        onPointerUp={endResize}
+        onPointerCancel={endResize}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={t("homeFolderTree.resizeHandle")}
+      />
     </Box>
   )
 }

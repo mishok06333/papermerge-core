@@ -4,6 +4,7 @@ import {
   APP_THUMBNAIL_KEY,
   APP_THUMBNAIL_VALUE
 } from "@/features/document/constants"
+import {getBlobViewerCategory} from "@/features/document/documentPreview"
 import {
   useCurrentDoc,
   useCurrentDocVer,
@@ -35,6 +36,7 @@ import type {DroppedThumbnailPosition} from "@/types"
 
 import TransferPagesModal from "@/features/document/components/TransferPagesModal"
 import {contains_every} from "@/utils"
+import MediaThumbnail from "./MediaThumbnail"
 import useThumbnail from "./useThumbnail"
 
 interface Args {
@@ -52,6 +54,11 @@ export default function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
     {open: trPagesDialogOpen, close: trPagesDialogClose}
   ] = useDisclosure(false)
 
+  const {doc} = useCurrentDoc()
+  const {docVer} = useCurrentDocVer()
+  const blobThumbnail =
+    getBlobViewerCategory(docVer?.file_name) !== "pdf-pages"
+
   const {
     ref,
     imageURL,
@@ -65,14 +72,11 @@ export default function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
     onDragLeave,
     clearBorderBottom,
     clearBorderTop
-  } = useThumbnail(pageID)
+  } = useThumbnail(pageID, blobThumbnail)
 
   const draggedPages = useAppSelector(selectDraggedPages)
   const draggedPagesDocID = useAppSelector(selectDraggedPagesDocID)
   const draggedPagesDocParentID = useAppSelector(selectDraggedPagesDocParentID)
-
-  const {doc} = useCurrentDoc()
-  const {docVer} = useCurrentDocVer()
   const docVerPages = useAppSelector(s => selectCurrentPages(s, docVer?.id))
   const selectedPages = useSelectedPages({mode, docVerID: docVer?.id})
   const page = useAppSelector(s =>
@@ -172,27 +176,49 @@ export default function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
     }
   }
 
+  const thumbCategory = getBlobViewerCategory(docVer?.file_name)
+
   return (
     <>
-      <Thumbnail
-        ref={ref}
-        onChange={onCheck}
-        checked={checked}
-        pageNumber={pageNumber}
-        angle={angle}
-        imageURL={imageURL}
-        isLoading={isLoading}
-        withBorderBottom={withBorderBottom}
-        withBorderTop={withBorderTop}
-        isDragged={isDragged}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDragEnter={onLocalDragEnter}
-        onDrop={onLocalDrop}
-        onClick={onClick}
-      />
+      {blobThumbnail ? (
+        <MediaThumbnail
+          ref={ref as React.RefObject<HTMLDivElement>}
+          category={thumbCategory}
+          onChange={onCheck}
+          checked={checked}
+          pageNumber={pageNumber}
+          withBorderBottom={withBorderBottom}
+          withBorderTop={withBorderTop}
+          isDragged={isDragged}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDragEnter={onLocalDragEnter}
+          onDrop={onLocalDrop}
+          onClick={onClick}
+        />
+      ) : (
+        <Thumbnail
+          ref={ref as React.RefObject<HTMLImageElement>}
+          onChange={onCheck}
+          checked={checked}
+          pageNumber={pageNumber}
+          angle={angle}
+          imageURL={imageURL}
+          isLoading={isLoading}
+          withBorderBottom={withBorderBottom}
+          withBorderTop={withBorderTop}
+          isDragged={isDragged}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDragEnter={onLocalDragEnter}
+          onDrop={onLocalDrop}
+          onClick={onClick}
+        />
+      )}
 
       {draggedPagesDocParentID &&
         draggedPagesDocID &&

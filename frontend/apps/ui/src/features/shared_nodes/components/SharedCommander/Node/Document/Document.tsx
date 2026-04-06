@@ -44,7 +44,11 @@ export default function Document({node, onClick, cssClassNames}: Args) {
     >
       <Checkbox onChange={onCheck} checked={selectedIds.includes(node.id)} />
       <a onClick={() => onClick(node)}>
-        <Thumbnail nodeID={node.id} />
+        <Thumbnail
+          nodeID={node.id}
+          fileName={node.title}
+          serverThumbnailUrl={node.thumbnail_url}
+        />
         <Tags names={tagNames} />
         <div className={classes.title}>{node.title}</div>
       </a>

@@ -5,7 +5,8 @@ import classes from "./PageList.module.css"
 interface Args {
   pageItems: Array<React.ReactNode>
   paginationInProgress: boolean
-  zoom: React.ReactNode
+  /** Omit for viewers that do not use zoom chrome (e.g. DOCX). */
+  zoom?: React.ReactNode
 }
 
 export const PageList = forwardRef<HTMLDivElement, Args>(

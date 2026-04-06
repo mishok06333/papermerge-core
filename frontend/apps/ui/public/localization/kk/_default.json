@@ -55,6 +55,9 @@
   "documents.delete.one": "Құжатты жою",
   "nodes.delete.many.title": "Түйіндерді жою",
   "nodes.delete.many.description": "Келесі түйіндерді жойғыңыз келетініне сенімдісіз бе?",
+  "nodes.upload.title": "Файлдарды жүктеу",
+  "nodes.upload.confirm_lead": "Мынаған жүктегіңіз келетініне сенімдісіз бе",
+  "nodes.upload.file_name": "Файл аты",
   "document_types.name": "Құжат түрлері",
   "document_types.name.by": "Categories",
   "document_types.new.title": "Жаңа құжат түрі",
@@ -90,6 +93,10 @@
   "groups.delete.many.description": "Таңдалған топтарды шынымен жойғыңыз келе ме?",
   "home.name": "Баска бетке",
   "home.name.my": "My Home",
+  "homeFolderTree": {
+    "show": "Қалта ағашын көрсету",
+    "resizeHandle": "Қалта ағашы панелінің енін өзгерту үшін сүйреңіз"
+  },
   "inbox.name": "Кіріс жәшігі",
   "inbox.name.my": "My Inbox",
   "shared.name": "Shared",

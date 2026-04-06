@@ -1,8 +1,25 @@
 .sidebar {
-  flex: 0 0 240px;
-  max-width: 240px;
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 0;
+  box-sizing: border-box;
   padding-right: 0.5rem;
   border-right: 1px solid var(--mantine-color-default-border);
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+
+  &:hover {
+    background-color: var(--mantine-color-default-hover);
+  }
 }
 
 .tree {

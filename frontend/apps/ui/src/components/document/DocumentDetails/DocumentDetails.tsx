@@ -11,6 +11,7 @@ import {useDisclosure} from "@mantine/hooks"
 import {useContext} from "react"
 import {useTranslation} from "react-i18next"
 
+import {shouldHideOcrLanguageInDetails} from "@/features/document/documentPreview"
 import PanelContext from "@/contexts/PanelContext"
 import {useGetDocumentQuery} from "@/features/document/store/apiSlice"
 import {selectDocumentVersionOCRLang} from "@/features/document/store/documentVersSlice"
@@ -64,18 +65,6 @@ export default function DocumentDetails({doc, docVer, docID, isLoading}: Args) {
       <Group align="flex-start" className={classes.documentDetailsOpened}>
         <Stack className={classes.documentDetailsContent} justify="flex-start">
           <TextInput
-            label="ID"
-            readOnly
-            value={docID}
-            rightSection={<CopyButton value={docID || ""} />}
-          />
-          <TextInput
-            label={t("common.version_id")}
-            readOnly
-            value={docVer?.id}
-            rightSection={<CopyButton value={docVer?.id || ""} />}
-          />
-          <TextInput
             label={t("common.version_number")}
             readOnly
             value={docVer?.number}
@@ -100,12 +89,14 @@ export default function DocumentDetails({doc, docVer, docID, isLoading}: Args) {
           <Group>
             <CustomFields docID={docID} doc={doc} isLoading={isLoading} />
           </Group>
-          <TextInput
-            label={t("common.ocr_language")}
-            readOnly
-            value={ocrLang}
-            mt="md"
-          />
+          {!shouldHideOcrLanguageInDetails(docVer?.file_name) && (
+            <TextInput
+              label={t("common.ocr_language")}
+              readOnly
+              value={ocrLang}
+              mt="md"
+            />
+          )}
         </Stack>
       </Group>
     )

@@ -40,8 +40,21 @@ const MAIN_DOCUMENT_DETAILS_PANEL_OPENED_COOKIE =
   "main_document_details_panel_opened"
 const SECONDARY_DOCUMENT_DETAILS_PANEL_OPENED_COOKIE =
   "secondary_document_details_panel_opened"
+const HOME_FOLDER_TREE_OPENED_COOKIE = "home_folder_tree_opened"
+const HOME_FOLDER_TREE_WIDTH_COOKIE = "home_folder_tree_width"
+
+export const HOME_FOLDER_TREE_WIDTH_MIN = 180
+export const HOME_FOLDER_TREE_WIDTH_MAX = 640
+export const HOME_FOLDER_TREE_WIDTH_DEFAULT = 240
 
 const SMALL_BOTTOM_MARGIN = 13 /* pixles */
+
+function clampHomeFolderTreeWidth(width: number): number {
+  return Math.min(
+    HOME_FOLDER_TREE_WIDTH_MAX,
+    Math.max(HOME_FOLDER_TREE_WIDTH_MIN, Math.round(width))
+  )
+}
 
 type DualArg = {
   mode: PanelMode
@@ -281,6 +294,8 @@ export interface UIState {
   /* current page (number) in secondary viewer */
   secondaryViewerCurrentPageNumber?: number
   viewerPageHaveChangedDialogVisibility?: DialogVisiblity
+  homeFolderTreeOpen?: boolean
+  homeFolderTreeWidth?: number
 }
 
 const initialState: UIState = {
@@ -306,7 +321,9 @@ const initialState: UIState = {
   secondaryViewerDocumentDetailsPanelOpen:
     secondaryDocumentDetailsPanelInitialState(),
   mainDocumentsByTypeCommanderColumns: {},
-  secondaryDocumentsByTypeCommanderColumns: {}
+  secondaryDocumentsByTypeCommanderColumns: {},
+  homeFolderTreeOpen: homeFolderTreeOpenInitialState(),
+  homeFolderTreeWidth: homeFolderTreeWidthInitialState()
 }
 
 const uiSlice = createSlice({
@@ -365,6 +382,19 @@ const uiSlice = createSlice({
         Cookies.set(NAVBAR_COLLAPSED_COOKIE, "true")
         Cookies.set(NAVBAR_WIDTH_COOKIE, `${COLLAPSED_WIDTH}`)
       }
+    },
+    homeFolderTreeToggled(state) {
+      const new_value = !Boolean(state.homeFolderTreeOpen)
+      state.homeFolderTreeOpen = new_value
+      Cookies.set(
+        HOME_FOLDER_TREE_OPENED_COOKIE,
+        new_value ? "true" : "false"
+      )
+    },
+    homeFolderTreeWidthSet(state, action: PayloadAction<number>) {
+      const w = clampHomeFolderTreeWidth(action.payload)
+      state.homeFolderTreeWidth = w
+      Cookies.set(HOME_FOLDER_TREE_WIDTH_COOKIE, `${w}`)
     },
     updateOutlet(state, action: PayloadAction<number>) {
       state.sizes.windowInnerHeight = window.innerHeight
@@ -911,6 +941,8 @@ export const {
   closeUploader,
   uploaderFileItemUpdated,
   toggleNavBar,
+  homeFolderTreeToggled,
+  homeFolderTreeWidthSet,
   updateOutlet,
   updateActionPanel,
   updateSearchActionPanel,
@@ -1152,6 +1184,18 @@ export const selectThumbnailsPanelOpen = (
   }
 
   return Boolean(state.ui.secondaryViewerThumbnailsPanelOpen)
+}
+
+export const selectHomeFolderTreeOpen = (state: RootState) => {
+  return state.ui.homeFolderTreeOpen !== false
+}
+
+export const selectHomeFolderTreeWidth = (state: RootState) => {
+  const w = state.ui.homeFolderTreeWidth
+  if (typeof w === "number" && w > 0) {
+    return clampHomeFolderTreeWidth(w)
+  }
+  return HOME_FOLDER_TREE_WIDTH_DEFAULT
 }
 
 export const selectDocumentDetailsPanelOpen = (
@@ -1429,4 +1473,23 @@ function secondaryDocumentDetailsPanelInitialState(): boolean {
   }
 
   return false
+}
+
+function homeFolderTreeOpenInitialState(): boolean {
+  const v = Cookies.get(HOME_FOLDER_TREE_OPENED_COOKIE) as BooleanString
+  if (v === "false") {
+    return false
+  }
+  return true
+}
+
+function homeFolderTreeWidthInitialState(): number {
+  const raw = Cookies.get(HOME_FOLDER_TREE_WIDTH_COOKIE)
+  if (raw) {
+    const n = parseInt(raw, 10)
+    if (!Number.isNaN(n)) {
+      return clampHomeFolderTreeWidth(n)
+    }
+  }
+  return HOME_FOLDER_TREE_WIDTH_DEFAULT
 }

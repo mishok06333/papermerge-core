@@ -1,5 +1,6 @@
 import io
 import logging
+import mimetypes
 import os
 from os.path import getsize
 import uuid
@@ -561,7 +562,28 @@ def file_type(content_type: str) -> str:
     if len(parts) == 2:
         return parts[1]
 
-    raise ValueError(f"Invalid content type {content_type}")
+    return "octet-stream"
+
+
+IMAGE_MIMES_IMG2PDF = frozenset(
+    {
+        constants.ContentType.IMAGE_JPEG,
+        constants.ContentType.IMAGE_PNG,
+        constants.ContentType.IMAGE_TIFF,
+        "image/jpg",
+    }
+)
+
+
+def normalize_upload_content_type(
+    content_type: str | None, file_name: str | None
+) -> str:
+    if content_type:
+        ct = content_type.split(";")[0].strip().lower()
+        if ct and ct != "application/octet-stream":
+            return ct
+    guessed, _ = mimetypes.guess_type(file_name or "")
+    return (guessed or "application/octet-stream").lower()
 
 
 def get_pdf_page_count(content: io.BytesIO | bytes) -> int:
@@ -623,11 +645,35 @@ async def upload(
 
     doc = await db_session.get(orm.Document, document_id)
     orig_ver = None
+    pdf_ver = None
+    blob_ver = None
 
-    if content_type != constants.ContentType.APPLICATION_PDF:
+    safe_file_name = file_name or "upload"
+    ct = normalize_upload_content_type(content_type, safe_file_name)
+
+    if ct == constants.ContentType.APPLICATION_PDF:
+        pdf_ver = await create_next_version(
+            db_session, doc=doc, file_name=safe_file_name, file_size=size
+        )
+        await copy_file(src=content, dst=abs_docver_path(pdf_ver.id, pdf_ver.file_name))
+
+        page_count = get_pdf_page_count(content)
+
+        pdf_ver.page_count = page_count
+        for page_number in range(1, page_count + 1):
+            db_page_pdf = orm.Page(
+                number=page_number,
+                page_count=page_count,
+                lang=pdf_ver.lang,
+                document_version_id=pdf_ver.id,
+            )
+            db_session.add(db_page_pdf)
+        db_session.add(pdf_ver)
+
+    elif ct in IMAGE_MIMES_IMG2PDF:
         try:
             with tempfile.TemporaryDirectory() as tmpdirname:
-                tmp_file_path = Path(tmpdirname) / f"{file_name}.pdf"
+                tmp_file_path = Path(tmpdirname) / f"{safe_file_name}.pdf"
                 with open(tmp_file_path, "wb") as f:
                     pdf_content = img2pdf.convert(content)
                     f.write(pdf_content)
@@ -636,15 +682,15 @@ async def upload(
             return None, error
 
         orig_ver = await create_next_version(
-            db_session, doc=doc, file_name=file_name, file_size=size
+            db_session, doc=doc, file_name=safe_file_name, file_size=size
         )
 
         pdf_ver = await create_next_version(
             db_session,
             doc=doc,
-            file_name=f"{file_name}.pdf",
+            file_name=f"{safe_file_name}.pdf",
             file_size=len(pdf_content),
-            short_description=f"{file_type(content_type)} -> pdf",
+            short_description=f"{file_type(ct)} -> pdf",
         )
         await copy_file(src=content, dst=abs_docver_path(orig_ver.id, orig_ver.file_name))
 
@@ -670,23 +716,23 @@ async def upload(
             db_session.add_all([db_page_orig, db_page_pdf])
 
     else:
-        pdf_ver = await create_next_version(
-            db_session, doc=doc, file_name=file_name, file_size=size
+        blob_ver = await create_next_version(
+            db_session,
+            doc=doc,
+            file_name=safe_file_name,
+            file_size=size,
+            short_description=ct,
         )
-        await copy_file(src=content, dst=abs_docver_path(pdf_ver.id, pdf_ver.file_name))
-
-        page_count = get_pdf_page_count(content)
-
-        pdf_ver.page_count = page_count
-        for page_number in range(1, page_count + 1):
-            db_page_pdf = orm.Page(
-                number=page_number,
-                page_count=page_count,
-                lang=pdf_ver.lang,
-                document_version_id=pdf_ver.id,
+        await copy_file(src=content, dst=abs_docver_path(blob_ver.id, blob_ver.file_name))
+        blob_ver.page_count = 1
+        db_session.add(
+            orm.Page(
+                number=1,
+                page_count=1,
+                lang=blob_ver.lang,
+                document_version_id=blob_ver.id,
             )
-            db_session.add(db_page_pdf)
-        db_session.add(pdf_ver)
+        )
 
     try:
         await db_session.commit()
@@ -706,25 +752,28 @@ async def upload(
     validated_model = schema.Document.model_validate(doc_with_relations)
 
     if orig_ver:
-        # non PDF document
-        # here `orig_ver` means - version which is not a PDF
-        # may be Jpg, PNG or TIFF
         tasks.send_task(
             constants.S3_WORKER_ADD_DOC_VER,
             kwargs={"doc_ver_ids": [str(orig_ver.id)]},
             route_name="s3",
         )
 
-    # PDF document
-    tasks.send_task(
-        constants.S3_WORKER_ADD_DOC_VER,
-        kwargs={"doc_ver_ids": [str(pdf_ver.id)]},
-        route_name="s3",
-    )
+    if pdf_ver:
+        tasks.send_task(
+            constants.S3_WORKER_ADD_DOC_VER,
+            kwargs={"doc_ver_ids": [str(pdf_ver.id)]},
+            route_name="s3",
+        )
+
+    if blob_ver:
+        tasks.send_task(
+            constants.S3_WORKER_ADD_DOC_VER,
+            kwargs={"doc_ver_ids": [str(blob_ver.id)]},
+            route_name="s3",
+        )
 
     if not settings.papermerge__ocr__automatic:
-        if doc.ocr is True:
-            # user chose "schedule OCR" when uploading document
+        if doc.ocr is True and blob_ver is None:
             tasks.send_task(
                 constants.WORKER_OCR_DOCUMENT,
                 kwargs={

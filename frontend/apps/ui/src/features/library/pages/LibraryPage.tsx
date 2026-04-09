@@ -9,11 +9,7 @@ import {
   useRemoveLibraryFavoriteMutation,
   useRestoreLibraryTrashMutation
 } from "@/features/library/libraryApiSlice"
-import {
-  NODE_DELETE,
-  NODE_UPDATE,
-  NODE_VIEW
-} from "@/scopes"
+import {NODE_DELETE, NODE_UPDATE, NODE_VIEW} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {User} from "@/types"
 import {
@@ -223,9 +219,7 @@ function RecentPanel() {
                 ) : null}
               </Table.Td>
               <Table.Td>{resolveTypeLabel(row.ctype, row.title, t)}</Table.Td>
-              <Table.Td>
-                {new Date(row.viewed_at).toLocaleString()}
-              </Table.Td>
+              <Table.Td>{new Date(row.viewed_at).toLocaleString()}</Table.Td>
             </Table.Tr>
           ))}
         </Table.Tbody>
@@ -290,7 +284,9 @@ function TrashPanel() {
         <Button
           size="sm"
           disabled={
-            selectedIds.length === 0 || !scopes.includes(NODE_UPDATE) || restoring
+            selectedIds.length === 0 ||
+            !scopes.includes(NODE_UPDATE) ||
+            restoring
           }
           loading={restoring}
           onClick={async () => {
@@ -348,7 +344,9 @@ function TrashPanel() {
               <Table.Th>
                 <Checkbox
                   checked={items.length > 0 && selected.size === items.length}
-                  indeterminate={selected.size > 0 && selected.size < items.length}
+                  indeterminate={
+                    selected.size > 0 && selected.size < items.length
+                  }
                   onChange={toggleAll}
                 />
               </Table.Th>
@@ -370,7 +368,9 @@ function TrashPanel() {
                     {node.title}
                   </Anchor>
                 </Table.Td>
-                <Table.Td>{resolveTypeLabel(node.ctype, node.title, t)}</Table.Td>
+                <Table.Td>
+                  {resolveTypeLabel(node.ctype, node.title, t)}
+                </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -387,4 +387,3 @@ function TrashPanel() {
     </Stack>
   )
 }
-

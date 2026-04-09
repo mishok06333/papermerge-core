@@ -65,7 +65,6 @@ export default function Thumbnail({
       revokeOnCleanupRef.current = null
     }
     setLocalBlobUrl(null)
-
     ;(async () => {
       try {
         const res = await fetch(url, {

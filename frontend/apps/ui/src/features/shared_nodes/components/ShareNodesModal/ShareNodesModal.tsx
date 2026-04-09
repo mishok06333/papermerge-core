@@ -51,9 +51,8 @@ export const ShareNodesModal = ({
     const role_ids =
       dataRoles?.filter(r => roles?.includes(r.name)).map(r => r.id) || []
     const recipient_role_ids =
-      dataRoles
-        ?.filter(r => recipientRoles?.includes(r.name))
-        .map(r => r.id) || []
+      dataRoles?.filter(r => recipientRoles?.includes(r.name)).map(r => r.id) ||
+      []
 
     const newSharedNodeData = {
       user_ids,
@@ -65,7 +64,8 @@ export const ShareNodesModal = ({
     if (role_ids.length === 0) {
       notifications.show({
         title: "Share",
-        message: "Pick at least one access role (defines what recipients can do with the item).",
+        message:
+          "Pick at least one access role (defines what recipients can do with the item).",
         color: "yellow"
       })
       return

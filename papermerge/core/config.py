@@ -1,7 +1,7 @@
 from enum import Enum
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -42,7 +42,12 @@ class Settings(BaseSettings):
     papermerge__main__cache_enabled: bool = False
     papermerge__database__url: str = "sqlite:////db/db.sqlite3"
     papermerge__redis__url: str | None = None
-    papermerge__ocr__default_lang_code: str = 'deu'
+    papermerge__ocr__default_lang_code: str = 'rus'
+    papermerge__ocr__lang_codes: str = Field(
+        default="deu,eng,rus",
+        description="Comma-separated OCR language codes shown in the UI. "
+                    "Must match languages available in the OCR worker (tesseract).",
+    )
     papermerge__preview__page_size_sm: int = 200  # pixels
     # When is OCR triggered ?
     # `ocr__automatic` = True means that OCR will be performed without
@@ -53,6 +58,21 @@ class Settings(BaseSettings):
     #   scheduler OCR later on any document.
     papermerge__ocr__automatic: bool = False
     papermerge__search__url: str | None = None
+
+    @model_validator(mode="after")
+    def default_lang_in_lang_codes(self) -> "Settings":
+        codes = {
+            c.strip()
+            for c in self.papermerge__ocr__lang_codes.split(",")
+            if c.strip()
+        }
+        if self.papermerge__ocr__default_lang_code not in codes:
+            raise ValueError(
+                f"papermerge__ocr__default_lang_code "
+                f"'{self.papermerge__ocr__default_lang_code}' must be present in "
+                f"papermerge__ocr__lang_codes '{self.papermerge__ocr__lang_codes}'"
+            )
+        return self
 
     def cors_origins_list(self) -> list[str]:
         raw = (self.papermerge__main__cors_origins or "*").strip()

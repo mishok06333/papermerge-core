@@ -1,12 +1,11 @@
-import { uploaderFileItemUpdated } from "@/features/ui/uiSlice";
-import type { FolderType, NodeType, OCRCode } from "@/types";
-import type { UUID } from "@/types.d/common";
-import { getBaseURL, getDefaultHeaders } from "@/utils";
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
-import { UploadFileOutput } from "../nodes/types";
-import { fileManager } from "./fileManager";
-
+import {uploaderFileItemUpdated} from "@/features/ui/uiSlice"
+import type {FolderType, NodeType, OCRCode} from "@/types"
+import type {UUID} from "@/types.d/common"
+import {getBaseURL, getDefaultHeaders} from "@/utils"
+import {createAsyncThunk, createSlice, PayloadAction} from "@reduxjs/toolkit"
+import axios from "axios"
+import {UploadFileOutput} from "../nodes/types"
+import {fileManager} from "./fileManager"
 
 type FilesAddedType = {
   nodeID: string
@@ -15,7 +14,6 @@ type FilesAddedType = {
   type: string
   size: number
 }
-
 
 type UploadFileInput = {
   file: File
@@ -222,18 +220,15 @@ const initialState: FilesState = {
   files: []
 }
 
-
 export const filesSlice = createSlice({
   name: "files",
   initialState,
   reducers: {
     filesAdded(state, action: PayloadAction<FilesAddedType>) {
-      state.files = [
-        ...state.files, action.payload
-      ]
+      state.files = [...state.files, action.payload]
     }
-  },
+  }
 })
 
 export default filesSlice.reducer
-export const { filesAdded } = filesSlice.actions
+export const {filesAdded} = filesSlice.actions

@@ -1,8 +1,7 @@
-import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
-import { viteStaticCopy } from 'vite-plugin-static-copy';
-import tsconfigPaths from 'vite-tsconfig-paths';
-
+import react from "@vitejs/plugin-react"
+import {defineConfig} from "vite"
+import {viteStaticCopy} from "vite-plugin-static-copy"
+import tsconfigPaths from "vite-tsconfig-paths"
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -22,9 +21,9 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: '../../node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
-          dest: '',
-          rename: 'pdf.worker.min.js'
+          src: "../../node_modules/pdfjs-dist/build/pdf.worker.min.mjs",
+          dest: "",
+          rename: "pdf.worker.min.js"
         }
       ]
     })
@@ -41,7 +40,7 @@ export default defineConfig({
   },
   */
   optimizeDeps: {
-    include: ['viewer', 'pdfjs-dist']
+    include: ["viewer", "pdfjs-dist"]
   },
   resolve: {
     alias: [
@@ -52,10 +51,17 @@ export default defineConfig({
       {
         find: "@tabler/icons-react",
         replacement: "@tabler/icons-react/dist/esm/icons/index.mjs"
-      },
+      }
     ],
     // Add dedupe to use the versions from apps/ui for workspace packages
-    dedupe: ['@mantine/core', '@mantine/hooks', '@tabler/icons-react', 'clsx', 'react', 'react-dom']
+    dedupe: [
+      "@mantine/core",
+      "@mantine/hooks",
+      "@tabler/icons-react",
+      "clsx",
+      "react",
+      "react-dom"
+    ]
   },
   css: {
     preprocessorOptions: {

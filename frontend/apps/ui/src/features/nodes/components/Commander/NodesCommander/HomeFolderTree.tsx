@@ -9,11 +9,7 @@ import {
   type TreeNodeData,
   useTree
 } from "@mantine/core"
-import {
-  IconChevronRight,
-  IconFile,
-  IconFolder
-} from "@tabler/icons-react"
+import {IconChevronRight, IconFile, IconFolder} from "@tabler/icons-react"
 import {useCallback, useEffect, useRef, useState} from "react"
 import {useTranslation} from "react-i18next"
 import {useNavigate} from "react-router-dom"
@@ -145,18 +141,14 @@ export default function HomeFolderTree({
 
   const ensureLoaded = useCallback(
     async (folderId: string) => {
-      if (
-        loadedRef.current.has(folderId) ||
-        loadingRef.current.has(folderId)
-      ) {
+      if (loadedRef.current.has(folderId) || loadingRef.current.has(folderId)) {
         return
       }
       loadingRef.current.add(folderId)
       try {
         const items = await fetchAllPages(folderId)
         loadedRef.current.add(folderId)
-        const mapped =
-          items.length > 0 ? items.map(nodeToTreeData) : undefined
+        const mapped = items.length > 0 ? items.map(nodeToTreeData) : undefined
         setTreeData(prev => replaceFolderChildren(prev, folderId, mapped ?? []))
       } finally {
         loadingRef.current.delete(folderId)
@@ -253,22 +245,13 @@ export default function HomeFolderTree({
     }: RenderTreeNodePayload) => {
       if (node.nodeProps?.["data-placeholder"] === "true") {
         return (
-          <span
-            className={classes.placeholder}
-            {...elementProps}
-            aria-hidden
-          />
+          <span className={classes.placeholder} {...elementProps} aria-hidden />
         )
       }
       const ctype = node.nodeProps?.["data-ctype"]
       const isFolder = ctype === "folder"
       return (
-        <Group
-          gap={6}
-          wrap="nowrap"
-          className={classes.row}
-          {...elementProps}
-        >
+        <Group gap={6} wrap="nowrap" className={classes.row} {...elementProps}>
           {hasChildren ? (
             <Box
               className={classes.chevron}

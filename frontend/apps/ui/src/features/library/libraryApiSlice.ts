@@ -114,11 +114,7 @@ export const apiSliceWithLibrary = apiSlice.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: [
-        {type: "LibraryTrash", id: "LIST"},
-        "Node",
-        "Folder"
-      ]
+      invalidatesTags: [{type: "LibraryTrash", id: "LIST"}, "Node", "Folder"]
     }),
     getLibraryNote: builder.query<LibraryNote | null, string>({
       query: documentId => `/library/documents/${documentId}/note`,
@@ -202,7 +198,10 @@ export const apiSliceWithLibrary = apiSlice.injectEndpoints({
         {type: "LibraryRating", id: documentId}
       ]
     }),
-    getLibraryNotifications: builder.query<LibraryNotification[], number | void>({
+    getLibraryNotifications: builder.query<
+      LibraryNotification[],
+      number | void
+    >({
       query: (limit = 50) => `/library/notifications/?limit=${limit}`,
       providesTags: [{type: "LibraryNotifications", id: "LIST"}]
     }),

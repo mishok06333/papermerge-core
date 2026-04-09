@@ -1,4 +1,4 @@
-import { Tooltip } from "@mantine/core"
+import {Tooltip} from "@mantine/core"
 
 interface Args {
   error?: string

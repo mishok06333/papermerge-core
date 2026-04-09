@@ -1,8 +1,8 @@
-import { store } from "@/app/store"
+import {store} from "@/app/store"
 import theme from "@/themes"
-import { CType } from "@/types"
-import { MantineProvider, Stack, Text } from "@mantine/core"
-import { IconFile, IconFolder } from "@tabler/icons-react"
+import {CType} from "@/types"
+import {MantineProvider, Stack, Text} from "@mantine/core"
+import {IconFile, IconFolder} from "@tabler/icons-react"
 
 interface Args {
   nodeID: string

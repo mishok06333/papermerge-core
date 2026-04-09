@@ -1,12 +1,12 @@
-import { RootState } from "@/app/types"
-import type { NodeType } from "@/types"
+import {RootState} from "@/app/types"
+import type {NodeType} from "@/types"
 import {
   EntityState,
   PayloadAction,
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit"
-import { apiSliceWithSearch } from "./apiSlice"
+import {apiSliceWithSearch} from "./apiSlice"
 
 export interface SearchSlice {
   /* Store here node details. Node details from this slice

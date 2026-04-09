@@ -10,6 +10,8 @@
 # env vars
 
 .envok.yaml
+.env
+.env.dev
 
 
 *.pid
@@ -62,3 +64,11 @@ coverage.xml
 Thumbs.db
 ehthumbs.db
 /node_modules/
+
+# Frontend generated artifacts
+**/node_modules/
+**/.vite/
+**/*.tsbuildinfo
+frontend/apps/ui/dist/
+frontend/apps/ui/vite.config.js
+frontend/apps/ui/vite.config.d.ts

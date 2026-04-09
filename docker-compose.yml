@@ -1,0 +1,98 @@
+services:
+  db:
+    image: postgres:16.1
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+    healthcheck:
+      test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  papermerge:
+    build:
+      context: .
+      dockerfile: docker/standard/Dockerfile
+    restart: unless-stopped
+    environment:
+      PAPERMERGE__SECURITY__SECRET_KEY: ${SECRET_KEY}
+      PAPERMERGE__MAIN__API_PREFIX: /api
+      PAPERMERGE__DATABASE__URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      PAPERMERGE__MAIN__MEDIA_ROOT: /var/media/pmg
+      PAPERMERGE__REDIS__URL: redis://redis:6379/0
+    volumes:
+      - media_root:/var/media/pmg
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  authserver:
+    image: papermerge/auth-server:1.1.5
+    restart: unless-stopped
+    environment:
+      PAPERMERGE__SECURITY__SECRET_KEY: ${SECRET_KEY}
+      PAPERMERGE__DATABASE__URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/native-auth/gateway.Dockerfile
+    restart: unless-stopped
+    environment:
+      PAPERMERGE_NATIVE_CORE_HOST: papermerge
+      PAPERMERGE_NATIVE_CORE_PORT: 80
+      PAPERMERGE_AUTH_UI_UPSTREAM: authserver:80
+      PAPERMERGE_AUTH_API_UPSTREAM: authserver:8000
+    ports:
+      - "${GATEWAY_PORT:-18000}:80"
+    depends_on:
+      papermerge:
+        condition: service_started
+      authserver:
+        condition: service_started
+
+  ocr_worker:
+    build:
+      context: .
+      dockerfile: docker/ocrworker/Dockerfile
+    command: worker
+    restart: unless-stopped
+    environment:
+      PAPERMERGE__DATABASE__URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      PAPERMERGE__REDIS__URL: redis://redis:6379/0
+      PAPERMERGE__MAIN__MEDIA_ROOT: /var/media/pmg
+      OCR_WORKER_ARGS: ${OCR_WORKER_ARGS:--Q ocr -c 2}
+    volumes:
+      - media_root:/var/media/pmg
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  media_root:
+  redisdata:

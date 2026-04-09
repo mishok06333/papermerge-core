@@ -2,8 +2,8 @@ import {RuntimeConfig} from "@/types/runtime_config"
 import {useEffect, useState} from "react"
 
 const RUNTIME_CONFIG_DEFAULT: RuntimeConfig = {
-  ocr__lang_codes: "deu,eng,ron",
-  ocr__default_lang_code: "deu",
+  ocr__lang_codes: "deu,eng,rus",
+  ocr__default_lang_code: "rus",
   ocr__automatic: false
 }
 

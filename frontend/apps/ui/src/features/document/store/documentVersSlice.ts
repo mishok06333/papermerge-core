@@ -125,7 +125,8 @@ const docVersSlice = createSlice({
             return {
               id: p.id,
               angle: p.angle + angle,
-              number: p.number
+              number: p.number,
+              text: p.text
             }
           }
         }
@@ -165,12 +166,12 @@ const docVersSlice = createSlice({
       state,
       action: PayloadAction<ClientDocumentVersion>
     ) => {
-      docVerAdapter.addOne(state, action.payload)
+      docVerAdapter.upsertOne(state, action.payload)
     },
     addDocVersion: (state, action: PayloadAction<DocumentVersion>) => {
       const dv = action.payload
       const cdv = clientDVFromDV(dv)
-      docVerAdapter.addOne(state, cdv)
+      docVerAdapter.upsertOne(state, cdv)
     }
   },
   extraReducers(builder) {
@@ -180,7 +181,7 @@ const docVersSlice = createSlice({
         const v: DocumentVersion = action.payload
         const ver = clientDVFromDV(v)
 
-        docVerAdapter.addOne(state, ver)
+        docVerAdapter.upsertOne(state, ver)
       }
     )
     builder.addMatcher(
@@ -198,12 +199,12 @@ const docVersSlice = createSlice({
             size: v.size,
             short_description: v.short_description,
             pages: v.pages.map(p => {
-              return {id: p.id, number: p.number, angle: 0}
+              return {id: p.id, number: p.number, angle: 0, text: p.text}
             }),
-            initial_pages: v.pages
+            initial_pages: [...v.pages]
               .sort((a, b) => a.number - b.number)
               .map(p => {
-                return {id: p.id, number: p.number, angle: 0}
+                return {id: p.id, number: p.number, angle: 0, text: p.text}
               }),
             pagination: {
               page_number: 1,

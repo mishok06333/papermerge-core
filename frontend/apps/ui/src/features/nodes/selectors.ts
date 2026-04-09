@@ -1,6 +1,6 @@
-import { RootState } from "@/app/types"
-import type { ObjectURLState } from "@/types.d/common"
-import { createSelector } from "@reduxjs/toolkit"
+import {RootState} from "@/app/types"
+import type {ObjectURLState} from "@/types.d/common"
+import {createSelector} from "@reduxjs/toolkit"
 
 export const selectThumbnailByNodeId = (
   state: RootState,
@@ -12,21 +12,23 @@ export const selectThumbnailByNodeId = (
 export const selectThumbnailObjects = (state: RootState) =>
   state.thumbnailObjects
 
-export const selectFiles = (state: RootState) =>
-  state.files.files
+export const selectFiles = (state: RootState) => state.files.files
 
 export const selectNodesWithoutExistingThumbnails = (node_ids: string[]) =>
-  createSelector([selectThumbnailObjects, selectFiles], (thumbnailObjects, files) => {
-    const notInThumbnails = (nodeID: string) => {
-      return !thumbnailObjects[nodeID]?.url
-    }
+  createSelector(
+    [selectThumbnailObjects, selectFiles],
+    (thumbnailObjects, files) => {
+      const notInThumbnails = (nodeID: string) => {
+        return !thumbnailObjects[nodeID]?.url
+      }
 
-    const notInFiles = (nodeID: string) => {
-      return !files.find(n => n.nodeID == nodeID)
-    }
+      const notInFiles = (nodeID: string) => {
+        return !files.find(n => n.nodeID == nodeID)
+      }
 
-    const result = node_ids.filter(
-      node_id => notInThumbnails(node_id) && notInFiles(node_id)
-    )
-    return result
-  })
+      const result = node_ids.filter(
+        node_id => notInThumbnails(node_id) && notInFiles(node_id)
+      )
+      return result
+    }
+  )

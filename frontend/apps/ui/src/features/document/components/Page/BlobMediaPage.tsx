@@ -4,11 +4,12 @@ import {
   type BlobViewerCategory
 } from "@/features/document/documentPreview"
 import {selectBestImageByPageId} from "@/features/document/store/selectors"
-import {Box, Loader, ScrollArea, Stack, Text} from "@mantine/core"
+import {Box, Loader, Stack, Text} from "@mantine/core"
 import {useEffect, useState, type ReactNode} from "react"
 import {useTranslation} from "react-i18next"
 
 import classes from "./BlobMediaPage.module.css"
+import {TextStandalonePreview} from "./TextStandalonePreview"
 
 export type BlobMediaPageLayout = "pageList" | "standalone"
 
@@ -162,11 +163,7 @@ function BlobInner({
   if (category === "video") {
     const video =
       layout === "standalone" ? (
-        <video
-          controls
-          src={objectURL}
-          className={classes.videoStandalone}
-        >
+        <video controls src={objectURL} className={classes.videoStandalone}>
           {t("blobPreview.videoUnsupported")}
         </video>
       ) : (
@@ -174,7 +171,11 @@ function BlobInner({
           {t("blobPreview.videoUnsupported")}
         </video>
       )
-    return <Box className={layout === "standalone" ? classes.mediaWrap : undefined}>{video}</Box>
+    return (
+      <Box className={layout === "standalone" ? classes.mediaWrap : undefined}>
+        {video}
+      </Box>
+    )
   }
 
   if (category === "audio") {
@@ -183,7 +184,9 @@ function BlobInner({
         <audio
           controls
           src={objectURL}
-          className={layout === "standalone" ? classes.audioStandalone : undefined}
+          className={
+            layout === "standalone" ? classes.audioStandalone : undefined
+          }
           style={layout === "pageList" ? {width: "100%"} : undefined}
         >
           {t("blobPreview.audioUnsupported")}
@@ -197,23 +200,11 @@ function BlobInner({
   }
 
   if (category === "text" && textContent !== null) {
-    const pre = (
-      <Box
-        component="pre"
-        className={embedScroll ? undefined : classes.textStandalone}
-        style={embedScroll ? {whiteSpace: "pre-wrap", margin: 0} : undefined}
-      >
+    return (
+      <TextStandalonePreview mode={embedScroll ? "embed" : "pane"}>
         {textContent}
-      </Box>
+      </TextStandalonePreview>
     )
-    if (embedScroll) {
-      return (
-        <ScrollArea style={{maxHeight: "80vh", width: "100%"}} type="auto">
-          {pre}
-        </ScrollArea>
-      )
-    }
-    return pre
   }
 
   if (category === "html" && htmlContent !== null) {

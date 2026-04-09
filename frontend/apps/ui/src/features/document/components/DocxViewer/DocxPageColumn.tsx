@@ -28,7 +28,13 @@ export default function DocxPageColumn() {
   }
 
   const pageBody = (
-    <Stack className="page" justify="flex-start" align="stretch" gap="md" w="100%">
+    <Stack
+      className="page"
+      justify="flex-start"
+      align="stretch"
+      gap="md"
+      w="100%"
+    >
       <DocxPreviewCore
         objectURL={objectURL}
         embedScroll={false}

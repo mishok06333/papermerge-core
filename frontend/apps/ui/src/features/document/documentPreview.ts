@@ -41,13 +41,7 @@ const AUDIO_EXTENSIONS = new Set([
   ".flac"
 ])
 
-const IMAGE_EXTENSIONS = new Set([
-  ".gif",
-  ".webp",
-  ".bmp",
-  ".svg",
-  ".avif"
-])
+const IMAGE_EXTENSIONS = new Set([".gif", ".webp", ".bmp", ".svg", ".avif"])
 
 const TEXT_EXTENSIONS = new Set([
   ".txt",
@@ -102,11 +96,14 @@ export function getFileExtension(fileName: string | null | undefined): string {
  * `ext` includes the leading dot. For dotfiles like `.gitignore`, stem is empty
  * and `ext` is the full file name.
  */
-export function splitStemAndExtension(fileName: string): { stem: string; ext: string } {
+export function splitStemAndExtension(fileName: string): {
+  stem: string
+  ext: string
+} {
   const lower = fileName.toLowerCase()
   const dot = lower.lastIndexOf(".")
   if (dot < 0) {
-    return { stem: fileName, ext: "" }
+    return {stem: fileName, ext: ""}
   }
   return {
     stem: dot === 0 ? "" : fileName.slice(0, dot),
@@ -119,7 +116,7 @@ export function buildFileNameWithOriginalExtension(
   originalFileName: string,
   editedStem: string
 ): string {
-  const { ext } = splitStemAndExtension(originalFileName)
+  const {ext} = splitStemAndExtension(originalFileName)
   const stem = editedStem.trim()
   return ext ? `${stem}${ext}` : stem
 }
@@ -133,7 +130,7 @@ export function isAcceptableUploadStem(
   if (!full.trim()) {
     return false
   }
-  const { stem: origStem, ext } = splitStemAndExtension(originalFileName)
+  const {stem: origStem, ext} = splitStemAndExtension(originalFileName)
   if (ext && origStem.length > 0 && editedStem.trim().length === 0) {
     return false
   }
@@ -180,7 +177,9 @@ export function isBuiltinTextDocument(
 }
 
 /** Whether the upload dialog should offer scheduling OCR for this file. */
-export function isOcrCandidateFile(fileName: string | null | undefined): boolean {
+export function isOcrCandidateFile(
+  fileName: string | null | undefined
+): boolean {
   if (!fileName) {
     return true
   }

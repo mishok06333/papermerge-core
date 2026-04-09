@@ -1,9 +1,9 @@
-from argparse import Namespace
 from typing import AbstractSet, Annotated
 
 from fastapi import APIRouter, Security
 
 from papermerge.core import schemas, utils
+from papermerge.core.config import get_settings
 from papermerge.core.features.auth import get_current_user
 from core.features.auth import scopes
 
@@ -24,7 +24,11 @@ def get_ocr_langs(
 
     Required scope: `{scope}`
 
-    Languages are given in 3-letter ISO 3166-1 codes
+    Languages are given in 3-letter ISO 639-2 codes
     """
-
-    return {"deu", "eng", "fra"}
+    settings = get_settings()
+    return {
+        code.strip()
+        for code in settings.papermerge__ocr__lang_codes.split(",")
+        if code.strip()
+    }

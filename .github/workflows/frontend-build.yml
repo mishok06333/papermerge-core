@@ -29,3 +29,7 @@ jobs:
         run: yarn install --immutable
       - name: Run yarn build UI
         run: yarn workspace ui build
+      - name: Install Playwright Chromium
+        run: yarn workspace ui exec playwright install chromium
+      - name: SelectablePdfPage DOM probe (Playwright)
+        run: yarn workspace ui test:e2e-dom

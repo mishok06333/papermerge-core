@@ -1,5 +1,5 @@
 import {Button, Container, Group, Loader, Modal} from "@mantine/core"
-import {useState} from "react"
+import {useEffect, useState} from "react"
 
 import {useScheduleOCRProcessMutation} from "@/features/tasks/apiSlice"
 
@@ -19,8 +19,14 @@ type Args = {
 export const RunOCRModal = ({node_id, onSubmit, onCancel, opened}: Args) => {
   const {t} = useTranslation()
   const runtimeConfig = useRuntimeConfig()
-  const [lang, setLang] = useState<OCRCode>("deu")
+  const [lang, setLang] = useState<OCRCode>(
+    runtimeConfig.ocr__default_lang_code
+  )
   const [scheduleOCRProcess] = useScheduleOCRProcessMutation()
+
+  useEffect(() => {
+    setLang(runtimeConfig.ocr__default_lang_code)
+  }, [runtimeConfig.ocr__default_lang_code])
 
   const onLangChange = (newLang: OCRCode) => {
     setLang(newLang)
@@ -48,14 +54,15 @@ export const RunOCRModal = ({node_id, onSubmit, onCancel, opened}: Args) => {
       onClose={localCancel}
     >
       <Container>
-        OCR processing will be performed in background. You will need to refresh
-        current document to see the outcome.
+        OCR processing runs in the background. When the server has new OCR text,
+        it appears after document data is refetched (for example, reopen this
+        document or the OCR text dialog).
         <ScheduleOCRProcess
           defaultLang={runtimeConfig.ocr__default_lang_code}
           onLangChange={onLangChange}
         />
         <Group gap="lg" justify="space-between">
-          <Button variant="default" onClick={localSubmit}>
+          <Button variant="default" onClick={localCancel}>
             {t("common.cancel")}
           </Button>
           <Button

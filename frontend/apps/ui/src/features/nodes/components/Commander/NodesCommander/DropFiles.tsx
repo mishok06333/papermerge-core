@@ -1,4 +1,13 @@
-import {Button, Container, Group, Loader, Modal, Stack, Text, TextInput} from "@mantine/core"
+import {
+  Button,
+  Container,
+  Group,
+  Loader,
+  Modal,
+  Stack,
+  Text,
+  TextInput
+} from "@mantine/core"
 import {useEffect, useState} from "react"
 import type {CSSProperties} from "react"
 
@@ -33,7 +42,10 @@ function fileWithRenamedStem(file: File, editedStem: string): File {
   if (!name || name === file.name) {
     return file
   }
-  return new File([file], name, {type: file.type, lastModified: file.lastModified})
+  return new File([file], name, {
+    type: file.type,
+    lastModified: file.lastModified
+  })
 }
 
 const extSuffixStyle: CSSProperties = {
@@ -68,14 +80,19 @@ export const DropFilesModal = ({
 
   useEffect(() => {
     if (opened) {
-      setFileStems(Array.from(source_files).map(f => splitStemAndExtension(f.name).stem))
+      setFileStems(
+        Array.from(source_files).map(f => splitStemAndExtension(f.name).stem)
+      )
     }
   }, [opened, source_files])
 
   const namesValid =
     filesArray.length > 0 &&
     filesArray.every((f, i) =>
-      isAcceptableUploadStem(f.name, fileStems[i] ?? splitStemAndExtension(f.name).stem)
+      isAcceptableUploadStem(
+        f.name,
+        fileStems[i] ?? splitStemAndExtension(f.name).stem
+      )
     )
 
   const onLangChange = (newLang: OCRCode) => {
@@ -123,7 +140,11 @@ export const DropFilesModal = ({
   }
 
   return (
-    <Modal title={t("nodes.upload.title")} opened={opened} onClose={localCancel}>
+    <Modal
+      title={t("nodes.upload.title")}
+      opened={opened}
+      onClose={localCancel}
+    >
       <Container>
         <Text component="div" mb="sm">
           {t("nodes.upload.confirm_lead")}{" "}

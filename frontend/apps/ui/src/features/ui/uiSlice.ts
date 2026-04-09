@@ -386,10 +386,7 @@ const uiSlice = createSlice({
     homeFolderTreeToggled(state) {
       const new_value = !Boolean(state.homeFolderTreeOpen)
       state.homeFolderTreeOpen = new_value
-      Cookies.set(
-        HOME_FOLDER_TREE_OPENED_COOKIE,
-        new_value ? "true" : "false"
-      )
+      Cookies.set(HOME_FOLDER_TREE_OPENED_COOKIE, new_value ? "true" : "false")
     },
     homeFolderTreeWidthSet(state, action: PayloadAction<number>) {
       const w = clampHomeFolderTreeWidth(action.payload)

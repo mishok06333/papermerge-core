@@ -12,7 +12,16 @@ import {useAppSelector} from "@/app/hooks"
 import {COMMENT_CREATE, COMMENT_DELETE, COMMENT_UPDATE} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {User} from "@/types"
-import {Button, Divider, Group, Rating, Stack, Text, Textarea, TextInput} from "@mantine/core"
+import {
+  Button,
+  Divider,
+  Group,
+  Rating,
+  Stack,
+  Text,
+  Textarea,
+  TextInput
+} from "@mantine/core"
 import {notifications} from "@mantine/notifications"
 import {useEffect, useState} from "react"
 import {useTranslation} from "react-i18next"
@@ -28,13 +37,17 @@ export default function DocumentLibraryPanel({documentId}: Props) {
   const canCreateComments = scopes.includes(COMMENT_CREATE)
   const canEditComments = scopes.includes(COMMENT_UPDATE)
   const canDeleteComments = scopes.includes(COMMENT_DELETE)
-  const {data: note, isLoading: noteLoading} = useGetLibraryNoteQuery(documentId)
+  const {data: note, isLoading: noteLoading} =
+    useGetLibraryNoteQuery(documentId)
   const {data: rating} = useGetLibraryRatingQuery(documentId)
-  const {data: comments, refetch: refetchComments} = useGetLibraryCommentsQuery(documentId)
+  const {data: comments, refetch: refetchComments} =
+    useGetLibraryCommentsQuery(documentId)
   const [putNote, {isLoading: savingNote}] = usePutLibraryNoteMutation()
   const [postComment, {isLoading: posting}] = usePostLibraryCommentMutation()
-  const [putComment, {isLoading: savingComment}] = usePutLibraryCommentMutation()
-  const [deleteComment, {isLoading: deletingComment}] = useDeleteLibraryCommentMutation()
+  const [putComment, {isLoading: savingComment}] =
+    usePutLibraryCommentMutation()
+  const [deleteComment, {isLoading: deletingComment}] =
+    useDeleteLibraryCommentMutation()
   const [putRating, {isLoading: savingRating}] = usePutLibraryRatingMutation()
 
   const [noteDraft, setNoteDraft] = useState("")
@@ -174,7 +187,10 @@ export default function DocumentLibraryPanel({documentId}: Props) {
                           })
                           refetchComments()
                         } catch {
-                          notifications.show({title: t("library.error"), color: "red"})
+                          notifications.show({
+                            title: t("library.error"),
+                            color: "red"
+                          })
                         }
                       }}
                     >
@@ -200,7 +216,10 @@ export default function DocumentLibraryPanel({documentId}: Props) {
                     loading={deletingComment}
                     onClick={async () => {
                       try {
-                        await deleteComment({documentId, commentId: c.id}).unwrap()
+                        await deleteComment({
+                          documentId,
+                          commentId: c.id
+                        }).unwrap()
                         if (editingCommentId === c.id) {
                           setEditingCommentId(null)
                           setEditingCommentDraft("")
@@ -211,7 +230,10 @@ export default function DocumentLibraryPanel({documentId}: Props) {
                         })
                         refetchComments()
                       } catch {
-                        notifications.show({title: t("library.error"), color: "red"})
+                        notifications.show({
+                          title: t("library.error"),
+                          color: "red"
+                        })
                       }
                     }}
                   >

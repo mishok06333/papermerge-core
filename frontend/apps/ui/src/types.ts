@@ -332,6 +332,7 @@ export interface ClientPage {
   angle: number
   /* Page number as it came from the server*/
   number: number
+  text?: string | null
 }
 
 export interface ClientDocumentVersion {

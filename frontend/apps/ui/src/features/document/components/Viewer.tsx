@@ -187,6 +187,21 @@ export default function Viewer() {
     return <Loader />
   }
 
+  /**
+   * Preview chrome switches on `docVer.file_name` (see `getViewerChromeKind` / `documentPreview.ts`).
+   * Only one branch mounts at a time; changing chrome unmounts the previous subtree. The `Viewer`
+   * shell (this component), `DocumentDetails`, dialogs, and Redux/fileManager/pdf.js caches are
+   * outside those subtrees and persist.
+   *
+   * - pdf: `ThumbnailList`? + `PageList` → `PagesListContainer` → per-page `Page` (`PageContainer`):
+   *   `.pdf` → `SelectablePdfPage` (internal loading / canvas+text / raster `<img>` without unmounting);
+   *   other `pdf-pages` extensions → viewer `Page` (raster); `PageContainer`’s `BlobMediaPage` branch
+   *   is defensive (normally unreachable while chrome is `pdf`).
+   * - docx: `DocxScrollProvider` → `DocxThumbnailList`? + `DocxPageColumn` (`DocxPreviewCore`), not `PageContainer`.
+   * - blob: `BlobDocumentViewer` → `BlobMediaPage` (`layout="standalone"`).
+   *
+   * While `!allPreviewsAreAvailable`, the early `<Loader />` return unmounts all chrome until previews exist.
+   */
   const chrome = getViewerChromeKind(docVer.file_name)
 
   return (

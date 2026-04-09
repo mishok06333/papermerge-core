@@ -8,11 +8,46 @@ type FileItem = {
 
 class FileManager {
   private files: FileItem[] = []
+  private docVerBufferListeners = new Map<UUID, Set<() => void>>()
+
+  /** React and other UI can subscribe; invoked when a buffer is stored or updated for this doc version id. */
+  subscribeDocVerBuffer(docVerID: UUID, listener: () => void): () => void {
+    let set = this.docVerBufferListeners.get(docVerID)
+    if (!set) {
+      set = new Set()
+      this.docVerBufferListeners.set(docVerID, set)
+    }
+    set.add(listener)
+    return () => {
+      set!.delete(listener)
+      if (set!.size === 0) {
+        this.docVerBufferListeners.delete(docVerID)
+      }
+    }
+  }
+
+  private emitDocVerBuffer(docVerID: UUID | undefined): void {
+    if (!docVerID) {
+      return
+    }
+    const set = this.docVerBufferListeners.get(docVerID)
+    if (!set) {
+      return
+    }
+    for (const fn of set) {
+      try {
+        fn()
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }
 
   store(item: FileItem): void {
     // Remove existing item with same nodeID to avoid duplicates
     this.files = this.files.filter(file => file.nodeID !== item.nodeID)
     this.files.push(item)
+    this.emitDocVerBuffer(item.docVerID)
   }
 
   get(nodeID: UUID): FileItem | undefined {
@@ -36,9 +71,17 @@ class FileManager {
     const index = this.files.findIndex(file => file.nodeID === nodeID)
     if (index === -1) return false
 
+    const prev = this.files[index]
     this.files[index] = {
-      ...this.files[index],
+      ...prev,
       ...updates
+    }
+    const next = this.files[index]
+    if (
+      next.docVerID &&
+      (updates.docVerID !== undefined || updates.buffer !== undefined)
+    ) {
+      this.emitDocVerBuffer(next.docVerID)
     }
     return true
   }

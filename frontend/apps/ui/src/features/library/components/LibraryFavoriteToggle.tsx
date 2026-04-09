@@ -42,11 +42,7 @@ export default function LibraryFavoriteToggle({nodeId}: Props) {
         }}
         aria-label={t("library.favorite")}
       >
-        {isFav ? (
-          <IconStarFilled size={18} />
-        ) : (
-          <IconStar size={18} />
-        )}
+        {isFav ? <IconStarFilled size={18} /> : <IconStar size={18} />}
       </ActionIcon>
     </Tooltip>
   )

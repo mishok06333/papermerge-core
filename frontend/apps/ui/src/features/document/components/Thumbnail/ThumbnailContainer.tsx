@@ -56,8 +56,7 @@ export default function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
 
   const {doc} = useCurrentDoc()
   const {docVer} = useCurrentDocVer()
-  const blobThumbnail =
-    getBlobViewerCategory(docVer?.file_name) !== "pdf-pages"
+  const blobThumbnail = getBlobViewerCategory(docVer?.file_name) !== "pdf-pages"
 
   const {
     ref,

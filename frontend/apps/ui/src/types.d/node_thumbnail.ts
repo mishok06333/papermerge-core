@@ -1,4 +1,4 @@
-import { ImageStatus, UUID } from "./common"
+import {ImageStatus, UUID} from "./common"
 
 export interface LoadThumbnailInputType {
   node_id: UUID

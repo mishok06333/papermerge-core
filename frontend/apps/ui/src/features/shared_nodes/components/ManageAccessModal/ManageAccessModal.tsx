@@ -281,21 +281,21 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
               >
                 Users
               </Tabs.Tab>
-            <Tabs.Tab
-              value="groups"
-              onClick={onClickTab}
-              leftSection={<IconUsersGroup size={18} />}
-            >
-              Groups
-            </Tabs.Tab>
-            <Tabs.Tab
-              value="audience_roles"
-              onClick={onClickTab}
-              leftSection={<IconShield size={18} />}
-            >
-              Role audiences
-            </Tabs.Tab>
-          </Tabs.List>
+              <Tabs.Tab
+                value="groups"
+                onClick={onClickTab}
+                leftSection={<IconUsersGroup size={18} />}
+              >
+                Groups
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="audience_roles"
+                onClick={onClickTab}
+                leftSection={<IconShield size={18} />}
+              >
+                Role audiences
+              </Tabs.Tab>
+            </Tabs.List>
             <Tabs.Panel value="users">
               <ManageAccessUsers
                 data={access}

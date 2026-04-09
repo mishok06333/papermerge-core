@@ -1,7 +1,11 @@
 import {useCurrentDocVer} from "@/features/document/hooks"
-import {getBlobViewerCategory} from "@/features/document/documentPreview"
+import {
+  getBlobViewerCategory,
+  getFileExtension
+} from "@/features/document/documentPreview"
 import {Page} from "viewer"
 import BlobMediaPage from "./BlobMediaPage"
+import SelectablePdfPage from "./SelectablePdfPage"
 import usePage from "./usePage"
 
 interface Args {
@@ -28,6 +32,20 @@ export default function PageContainer({
         pageNumber={pageNumber}
         zoomFactor={zoomFactor}
         fileName={docVer?.file_name}
+      />
+    )
+  }
+
+  if (getFileExtension(docVer?.file_name) === ".pdf" && docVer) {
+    return (
+      <SelectablePdfPage
+        ref={ref}
+        docVerId={docVer.id}
+        pageNumber={pageNumber}
+        angle={angle}
+        zoomFactor={zoomFactor}
+        fallbackImageURL={imageURL}
+        isImageLoading={isLoading}
       />
     )
   }

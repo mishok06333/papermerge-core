@@ -18,12 +18,12 @@ export function clientDVFromDV(v: DocumentVersion): ClientDocumentVersion {
     short_description: v.short_description,
     file_name: v.file_name,
     pages: v.pages.map(p => {
-      return {id: p.id, number: p.number, angle: 0}
+      return {id: p.id, number: p.number, angle: 0, text: p.text}
     }),
     initial_pages: [...v.pages]
       .sort((a, b) => a.number - b.number)
       .map(p => {
-        return {id: p.id, number: p.number, angle: 0}
+        return {id: p.id, number: p.number, angle: 0, text: p.text}
       }),
     pagination: {
       page_number: 1,
@@ -73,7 +73,7 @@ export async function rotateImageObjectURL(
       }, "image/png")
     }
 
-    img.onerror = e => reject(new Error("Image failed to load"))
+    img.onerror = () => reject(new Error("Image failed to load"))
     img.src = objectURL
   })
 }

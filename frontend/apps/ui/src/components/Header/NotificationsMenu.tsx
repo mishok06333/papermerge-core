@@ -30,7 +30,7 @@ const NotificationsMenu: React.FC = () => {
   const hasScope = scopes.includes(USER_ME)
   const {data, isLoading} = useGetLibraryNotificationsQuery(50, {
     skip: !hasScope,
-    pollingInterval: 60_000,
+    pollingInterval: 60_000
   })
   const [markRead] = useMarkLibraryNotificationReadMutation()
   const [markingId, setMarkingId] = React.useState<string | null>(null)

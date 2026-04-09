@@ -12,7 +12,10 @@ export const apiSliceWithTasks = apiSlice.injectEndpoints({
         url: "/tasks/ocr",
         method: "POST",
         body: data
-      })
+      }),
+      invalidatesTags: (_result, _error, arg) => [
+        {type: "DocumentVersion", id: arg.document_id}
+      ]
     })
   })
 })

@@ -1,8 +1,11 @@
-import type { UUID } from "@/types.d/common";
-import type { GenerateThumbnailInputType, LoadThumbnailInputType } from "@/types.d/node_thumbnail";
-import { getBaseURL, getDefaultHeaders } from "@/utils";
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { generateNodeThumbnailFromFile } from "@/features/nodes/generateClientThumbnail";
+import type {UUID} from "@/types.d/common"
+import type {
+  GenerateThumbnailInputType,
+  LoadThumbnailInputType
+} from "@/types.d/node_thumbnail"
+import {getBaseURL, getDefaultHeaders} from "@/utils"
+import {createAsyncThunk, createSlice} from "@reduxjs/toolkit"
+import {generateNodeThumbnailFromFile} from "@/features/nodes/generateClientThumbnail"
 
 export interface ThumbnailState {
   [node_id: UUID]: {
@@ -23,7 +26,6 @@ export const generateThumbnail = createAsyncThunk<
   PayloadType,
   GenerateThumbnailInputType
 >("images/generateNodeThumbnail", async item => {
-
   const objectURL = await generateNodeThumbnailFromFile(item.file)
   if (objectURL) {
     return {
@@ -56,15 +58,15 @@ export const loadThumbnail = createAsyncThunk<
   }
 
   if (item.status == "pending") {
-    return { node_id: item.node_id, objectURL: null, error: null }
+    return {node_id: item.node_id, objectURL: null, error: null}
   }
 
   if (!item.status) {
-    return { node_id: item.node_id, objectURL: null, error: null }
+    return {node_id: item.node_id, objectURL: null, error: null}
   }
 
   if (!item.url) {
-    return { node_id: item.node_id, objectURL: null, error: null }
+    return {node_id: item.node_id, objectURL: null, error: null}
   }
 
   if (item.url && !item.url.startsWith("/api/")) {
@@ -181,5 +183,5 @@ const thumbnailObjectsSlice = createSlice({
   }
 })
 
-export const { clearImages } = thumbnailObjectsSlice.actions
+export const {clearImages} = thumbnailObjectsSlice.actions
 export default thumbnailObjectsSlice.reducer

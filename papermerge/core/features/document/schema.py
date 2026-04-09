@@ -132,6 +132,10 @@ class BasicPage(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PageWithText(BasicPage):
+    text: str | None = None
+
+
 class Page(BasicPage):
     text: str | None = None
     document_version_id: UUID
@@ -150,7 +154,7 @@ class DocumentVersion(BaseModel):
     short_description: str | None = None
     document_id: UUID
     download_url: DownloadUrl = None
-    pages: list[BasicPage] | None = Field(default_factory=list)
+    pages: list[PageWithText] | None = Field(default_factory=list)
 
     @field_validator("download_url", mode="before")
     def download_url_validator(cls, _, info):

@@ -128,6 +128,7 @@
   "common.empty": "Empty",
   "common.change_title": "Change title",
   "common.run_ocr": "Run OCR",
+  "common.view_ocr_text": "View OCR Text",
   "common.category": "Category",
   "common.owner": "Owner",
   "common.download": "Download",

@@ -19,8 +19,8 @@ ENV PAPERMERGE__DATABASE__URL=sqlite:////db/db.sqlite3
 ENV PAPERMERGE__AUTH__USERNAME=admin
 ENV PAPERMERGE__AUTH__EMAIL=admin@example.com
 ENV PAPERMERGE__MAIN__API_PREFIX=""
-ENV PAPERMERGE__OCR__LANG_CODES="deu,eng,ron"
-ENV PAPERMERGE__OCR__DEFAULT_LANG_CODE="deu"
+ENV PAPERMERGE__OCR__LANG_CODES="deu,eng,rus"
+ENV PAPERMERGE__OCR__DEFAULT_LANG_CODE="rus"
 ENV PAPERMERGE__OCR__AUTOMATIC="false"
 
 # Install dependencies and ensure all packages are up-to-date

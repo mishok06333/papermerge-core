@@ -40,6 +40,7 @@ export interface GeneratePreviewInputType {
 export type BasicPageType = {
   id: string
   number: number
+  text?: string | null
 }
 
 export type PageType = BasicPageType & {

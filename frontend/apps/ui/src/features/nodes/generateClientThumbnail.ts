@@ -19,7 +19,10 @@ const RASTER_IMAGE_EXT = new Set([
   ".tiff"
 ])
 
-function captureVideoFrame(file: File, maxWidth: number): Promise<string | null> {
+function captureVideoFrame(
+  file: File,
+  maxWidth: number
+): Promise<string | null> {
   return new Promise(resolve => {
     const video = document.createElement("video")
     video.muted = true
@@ -70,13 +73,10 @@ function captureVideoFrame(file: File, maxWidth: number): Promise<string | null>
           return
         }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        canvas.toBlob(
-          b => {
-            cleanup()
-            resolve(b ? URL.createObjectURL(b) : null)
-          },
-          "image/png"
-        )
+        canvas.toBlob(b => {
+          cleanup()
+          resolve(b ? URL.createObjectURL(b) : null)
+        }, "image/png")
       } catch {
         cleanup()
         resolve(null)
@@ -85,7 +85,10 @@ function captureVideoFrame(file: File, maxWidth: number): Promise<string | null>
   })
 }
 
-function audioPlaceholder(maxWidth: number, maxHeight: number): Promise<string | null> {
+function audioPlaceholder(
+  maxWidth: number,
+  maxHeight: number
+): Promise<string | null> {
   const canvas = document.createElement("canvas")
   canvas.width = maxWidth
   canvas.height = maxHeight
@@ -139,7 +142,10 @@ async function captureTextThumbnail(
   })
 }
 
-async function thumbnailFromDocx(file: File, maxWidth: number): Promise<string | null> {
+async function thumbnailFromDocx(
+  file: File,
+  maxWidth: number
+): Promise<string | null> {
   const host = document.createElement("div")
   host.style.cssText =
     "position:fixed;left:-20000px;top:0;width:720px;max-height:2400px;overflow:hidden;visibility:hidden;pointer-events:none"

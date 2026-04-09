@@ -64,16 +64,10 @@ async def get_user_group_inboxes(
 
 
 @router.get("/me")
-@utils.docstring_parameter(scope=scopes.USER_ME)
 async def get_current_user(
-    user: Annotated[
-        schema.User, Security(auth.get_current_user, scopes=[scopes.USER_ME])
-    ],
+    user: Annotated[schema.User, Depends(auth.get_current_user)],
 ) -> schema.User:
-    """Returns current user
-
-    Required scope: `{scope}`
-    """
+    """Returns current authenticated user."""
     logger.debug(f"User {user} found")
     return schema.User.model_validate(user)
 

@@ -25,6 +25,8 @@ remote_user_scheme = RemoteUserScheme()
 
 logger = logging.getLogger(__name__)
 
+BASELINE_AUTHENTICATED_SCOPES = [scopes.NODE_VIEW]
+
 
 def extract_token_data(token: str = Depends(oauth2_scheme)) -> types.TokenData | None:
     if "." in token:
@@ -76,6 +78,8 @@ async def get_current_user(
                     password="-",
                 )
         total_scopes = token_data.scopes
+        # Baseline read access for authenticated users so they can load Home.
+        total_scopes.extend(BASELINE_AUTHENTICATED_SCOPES)
         # superusers have all privileges
         if user.is_superuser:
             total_scopes.extend(scopes.SCOPES.keys())
@@ -83,10 +87,19 @@ async def get_current_user(
         if len(token_data.groups) > 0:
             s = await usr_dbapi.get_user_scopes_from_groups(
                 db_session,
-                user_id=UUID(token_data.user_id),
+                user_id=user.id,
                 groups=token_data.groups,
             )
             total_scopes.extend(s)
+        if len(token_data.roles) > 0:
+            s = await usr_dbapi.get_user_scopes_from_roles(
+                db_session, user_id=user.id, roles=token_data.roles
+            )
+            total_scopes.extend(s)
+            # Persist role links so recipient_role-based sharing checks can match.
+            await usr_dbapi.attach_user_roles_by_names(
+                db_session, user_id=user.id, roles=token_data.roles
+            )
 
     elif remote_user:  # get user from headers
         # Using here external identity provider i.e.
@@ -104,6 +117,7 @@ async def get_current_user(
                 password="-",
             )
         # superusers have all privileges
+        total_scopes.extend(BASELINE_AUTHENTICATED_SCOPES)
         if user.is_superuser:
             total_scopes.extend(scopes.SCOPES.keys())
         # augment user scopes with permissions associated to local roles
@@ -112,6 +126,10 @@ async def get_current_user(
                 db_session, user_id=user.id, roles=remote_user.roles
             )
             total_scopes.extend(s)
+            # Persist role links so recipient_role-based sharing checks can match.
+            await usr_dbapi.attach_user_roles_by_names(
+                db_session, user_id=user.id, roles=remote_user.roles
+            )
 
         if user is None:
             raise HTTPException(status_code=401, detail="No credentials provided")

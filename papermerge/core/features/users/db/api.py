@@ -380,6 +380,41 @@ async def get_user_scopes_from_roles(
     return list(result)
 
 
+async def attach_user_roles_by_names(
+    db_session: AsyncSession, user_id: uuid.UUID, roles: list[str]
+) -> None:
+    """
+    Ensure user has local DB role links for given role names.
+
+    This is additive: existing local role assignments are preserved.
+    """
+    if not roles:
+        return
+
+    db_user = (await db_session.scalars(
+        select(User).options(selectinload(User.roles)).where(User.id == user_id)
+    )).one_or_none()
+    if db_user is None:
+        return
+
+    lowercase_roles = [role.lower() for role in roles]
+    db_roles = (await db_session.scalars(
+        select(orm.Role).where(func.lower(orm.Role.name).in_(lowercase_roles))
+    )).all()
+    if not db_roles:
+        return
+
+    existing_role_ids = {role.id for role in db_user.roles}
+    has_updates = False
+    for role in db_roles:
+        if role.id not in existing_role_ids:
+            db_user.roles.append(role)
+            has_updates = True
+
+    if has_updates:
+        await db_session.commit()
+
+
 async def delete_user(
     db_session: AsyncSession,
     user_id: uuid.UUID | None = None,

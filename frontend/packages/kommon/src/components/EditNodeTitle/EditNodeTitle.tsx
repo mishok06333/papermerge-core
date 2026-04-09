@@ -1,5 +1,5 @@
 import {Button, Group, Modal, Text, TextInput, rem} from "@mantine/core"
-import {SubmitButton} from "kommon"
+import SubmitButton from "../SubmitButton/SubmitButton"
 import type {I18NEditNodeTitleModal} from "./types"
 
 const EmptyFunc = () => {}

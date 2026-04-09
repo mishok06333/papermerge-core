@@ -1,15 +1,51 @@
 FROM node:20.19 AS frontend_build
-# ensure all packages are up-to-date
-RUN apt update && apt upgrade -y && rm -rf /var/cache/apk/*
+# Ensure all packages are up-to-date.
+# Use retries for transient mirror/network issues during image builds.
+RUN set -eux; \
+    attempts=0; \
+    max_attempts=5; \
+    until [ "$attempts" -ge "$max_attempts" ]; do \
+        if apt-get update && apt-get upgrade -y; then \
+            break; \
+        fi; \
+        attempts=$((attempts + 1)); \
+        echo "apt-get failed (attempt ${attempts}/${max_attempts}), retrying..."; \
+        sleep $((attempts * 5)); \
+    done; \
+    if [ "$attempts" -ge "$max_attempts" ]; then \
+        echo "apt-get update/upgrade failed after ${max_attempts} attempts"; \
+        exit 1; \
+    fi; \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build_frontend_app
 COPY frontend/ .
 
 # Use corepack to manage Yarn version and install dependencies
-RUN corepack enable && \
-    yarn set version 4.9.2 && \
-    yarn install --immutable && \
-    yarn workspace ui build
+RUN set -eux; \
+    attempts=0; \
+    max_attempts=5; \
+    until [ "$attempts" -ge "$max_attempts" ]; do \
+      if corepack enable && \
+         yarn set version 4.9.2 && \
+         yarn install --immutable && \
+         mkdir -p node_modules && \
+         for d in packages/*; do \
+           [ -d "$d" ] || continue; \
+           name="$(basename "$d")"; \
+           ln -sfn "/build_frontend_app/$d" "node_modules/$name"; \
+         done && \
+         yarn workspace ui build; then \
+        break; \
+      fi; \
+      attempts=$((attempts + 1)); \
+      echo "yarn build failed (attempt ${attempts}/${max_attempts}), retrying..."; \
+      sleep $((attempts * 5)); \
+    done; \
+    if [ "$attempts" -ge "$max_attempts" ]; then \
+      echo "yarn build failed after ${max_attempts} attempts"; \
+      exit 1; \
+    fi
 
 FROM papermerge/auth-server:1.1.5 AS auth_server
 FROM python:3.13-alpine AS papermerge_core
@@ -23,17 +59,32 @@ ENV PAPERMERGE__OCR__LANG_CODES="deu,eng,rus"
 ENV PAPERMERGE__OCR__DEFAULT_LANG_CODE="rus"
 ENV PAPERMERGE__OCR__AUTOMATIC="false"
 
-# Install dependencies and ensure all packages are up-to-date
-RUN apk update && apk add --no-cache linux-headers python3-dev \
-    gcc \
-    curl \
-    libc-dev \
-    supervisor \
-    imagemagick \
-    nginx \
-    libpq-dev \
-    poppler-utils && \
-    apk upgrade --no-cache && \
+# Install dependencies and ensure all packages are up-to-date.
+# Retry package operations to handle transient DNS/TLS failures from apk mirrors.
+RUN set -eux; \
+    attempts=0; \
+    max_attempts=5; \
+    until [ "$attempts" -ge "$max_attempts" ]; do \
+        if apk update && apk add --no-cache linux-headers python3-dev \
+            gcc \
+            curl \
+            libc-dev \
+            supervisor \
+            imagemagick \
+            nginx \
+            libpq-dev \
+            poppler-utils && \
+            apk upgrade --no-cache; then \
+            break; \
+        fi; \
+        attempts=$((attempts + 1)); \
+        echo "apk failed (attempt ${attempts}/${max_attempts}), retrying..."; \
+        sleep $((attempts * 5)); \
+    done; \
+    if [ "$attempts" -ge "$max_attempts" ]; then \
+        echo "apk install/upgrade failed after ${max_attempts} attempts"; \
+        exit 1; \
+    fi; \
     rm -rf /var/cache/apk/*
 
 RUN pip install --upgrade poetry==2.0.1 roco==0.4.2 && \
@@ -53,7 +104,8 @@ COPY ./papermerge ${CORE_APP}/papermerge/
 
 COPY docker/standard/scripts/ /usr/bin/
 # Set execute permissions
-RUN chmod +x /usr/bin/*.sh && \
+RUN sed -i 's/\r$//' /entrypoint.sh /usr/bin/*.sh && \
+    chmod +x /usr/bin/*.sh && \
     chmod +x /entrypoint.sh
 
 # Copy auth server artifacts

@@ -25,9 +25,7 @@ export default function UserMenu() {
 
   const onSignOutClicked = () => {
     Cookies.remove("access_token")
-    let a = document.createElement("a")
-    a.href = "/login"
-    a.click()
+    window.location.href = "/"
   }
   if (status == "loading") {
     return <>Loading...</>

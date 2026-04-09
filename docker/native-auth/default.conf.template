@@ -51,6 +51,14 @@ server {
         proxy_pass http://${PAPERMERGE_NATIVE_CORE_HOST}:${PAPERMERGE_NATIVE_CORE_PORT}/openapi.json;
     }
 
+    # Always route login URLs to the auth UI, even if a stale session still passes auth_request.
+    location ~ ^/login/?$ {
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://${PAPERMERGE_AUTH_UI_UPSTREAM}$request_uri;
+    }
+
     location /ws {
         auth_request /verify;
         auth_request_set $auth_cookie $upstream_http_set_cookie;

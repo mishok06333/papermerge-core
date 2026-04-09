@@ -8,7 +8,9 @@ import {
   Text,
   CheckedNodeStatus
 } from "@mantine/core"
-import {I18NRoleFormModal, RoleForm, SubmitButton} from "kommon"
+import RoleForm from "../RoleForm"
+import SubmitButton from "../SubmitButton/SubmitButton"
+import type {I18NRoleFormModal} from "./types"
 
 interface Args {
   txt?: I18NRoleFormModal

@@ -61,7 +61,7 @@ async def download_document_version(
         if not await dbapi_common.has_node_perm(
                 db_session,
                 node_id=doc_id,
-                codename=scopes.DOCUMENT_DOWNLOAD,
+                codename=scopes.NODE_VIEW,
                 user_id=user.id,
         ):
             raise exc.HTTP403Forbidden()

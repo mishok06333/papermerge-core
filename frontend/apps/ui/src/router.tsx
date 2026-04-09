@@ -46,6 +46,14 @@ import {
 
 const router = createBrowserRouter([
   {
+    path: "/login",
+    element: <Navigate to="/" replace />
+  },
+  {
+    path: "/login/",
+    element: <Navigate to="/" replace />
+  },
+  {
     path: "/home",
     element: <App />
   },

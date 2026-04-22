@@ -152,46 +152,54 @@ async def has_node_perm(
         AND sn.node_id IN (<node_id> ancestors)
     )
     """
-    ancestor_ids = [item[0] for item in await get_ancestors(db_session, node_id)]
-
     ug = aliased(groups_orm.user_groups_association)
     # groups user belongs to
     user_group_ids = select(ug.c.group_id).where(ug.c.user_id == user_id)
+
+    # Fast path: direct ownership/group access on the node itself.
+    node_access_stmt = exists(
+        select(orm.Node.id).where(
+            (orm.Node.id == node_id)
+            & ((orm.Node.user_id == user_id) | (orm.Node.group_id.in_(user_group_ids)))
+            & (orm.Node.deleted_at.is_(None))
+        )
+    ).select()
+    has_direct_access = (await db_session.execute(node_access_stmt)).scalar_one()
+    if has_direct_access:
+        return True
+
+    ancestor_ids = [item[0] for item in await get_ancestors(db_session, node_id)]
     # account roles assigned to the user (users_roles)
     user_account_role_ids = select(users_roles_association.c.role_id).where(
         users_roles_association.c.user_id == user_id
     )
 
-    node_access = select(orm.Node.id).where(
-        (orm.Node.id == node_id)
-        & ((orm.Node.user_id == user_id) | (orm.Node.group_id.in_(user_group_ids)))
-        & (orm.Node.deleted_at.is_(None))
-    )
-    sn = aliased(sn_orm.SharedNode)
-    n = aliased(orm.Node)
-    r = aliased(roles_orm.Role)
-    rp = aliased(roles_orm.roles_permissions_association)
-    p = aliased(roles_orm.Permission)
-
     node_shared_access = (
-        select(sn.id)
-        .select_from(sn)
-        .join(n, n.id == sn.node_id)
-        .join(r, r.id == sn.role_id)
-        .join(rp, rp.c.role_id == r.id)
-        .join(p, p.id == rp.c.permission_id)
+        select(sn_orm.SharedNode.id)
+        .select_from(sn_orm.SharedNode)
+        .join(orm.Node, orm.Node.id == sn_orm.SharedNode.node_id)
+        .join(roles_orm.Role, roles_orm.Role.id == sn_orm.SharedNode.role_id)
+        .join(
+            roles_orm.roles_permissions_association,
+            roles_orm.roles_permissions_association.c.role_id == roles_orm.Role.id,
+        )
+        .join(
+            roles_orm.Permission,
+            roles_orm.Permission.id
+            == roles_orm.roles_permissions_association.c.permission_id,
+        )
         .where(
-            (p.codename == codename)
-            & (sn.node_id.in_(ancestor_ids))
+            (roles_orm.Permission.codename == codename)
+            & (sn_orm.SharedNode.node_id.in_(ancestor_ids))
             & (
-                (sn.user_id == user_id)
-                | (sn.group_id.in_(user_group_ids))
-                | (sn.recipient_role_id.in_(user_account_role_ids))
+                (sn_orm.SharedNode.user_id == user_id)
+                | (sn_orm.SharedNode.group_id.in_(user_group_ids))
+                | (sn_orm.SharedNode.recipient_role_id.in_(user_account_role_ids))
             )
-            & (n.deleted_at.is_(None))
+            & (orm.Node.deleted_at.is_(None))
         )
     )
-    stmt = exists(node_access.union_all(node_shared_access)).select()
+    stmt = exists(node_shared_access).select()
 
     has_access = (await db_session.execute(stmt)).scalar_one()
 

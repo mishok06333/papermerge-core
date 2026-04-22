@@ -1055,6 +1055,69 @@ async def get_last_doc_ver(
     return (await db_session.scalars(stmt)).one()
 
 
+async def get_last_doc_ver_preview(
+    db_session: AsyncSession,
+    doc_id: uuid.UUID,
+) -> schema.DocumentVersion:
+    """
+    Returns last document version optimized for preview bootstrap:
+    lightweight page payload (id + number, text omitted).
+    """
+    ver_stmt = (
+        select(
+            orm.DocumentVersion.id,
+            orm.DocumentVersion.number,
+            orm.DocumentVersion.lang,
+            orm.DocumentVersion.file_name,
+            orm.DocumentVersion.size,
+            orm.DocumentVersion.page_count,
+            orm.DocumentVersion.short_description,
+            orm.DocumentVersion.document_id,
+        )
+        .where(orm.DocumentVersion.document_id == doc_id)
+        .order_by(orm.DocumentVersion.number.desc())
+        .limit(1)
+    )
+    ver = (await db_session.execute(ver_stmt)).one()
+
+    pages_stmt = (
+        select(orm.Page.id, orm.Page.number)
+        .where(orm.Page.document_version_id == ver.id)
+        .order_by(orm.Page.number.asc())
+    )
+    pages = [
+        {"id": row.id, "number": row.number, "text": None}
+        for row in (await db_session.execute(pages_stmt)).all()
+    ]
+
+    return schema.DocumentVersion(
+        id=ver.id,
+        number=ver.number,
+        lang=ver.lang,
+        file_name=ver.file_name,
+        size=ver.size,
+        page_count=ver.page_count,
+        short_description=ver.short_description,
+        document_id=ver.document_id,
+        pages=pages,
+    )
+
+
+async def get_doc_ver_download_meta(
+    db_session: AsyncSession,
+    document_version_id: uuid.UUID,
+) -> tuple[uuid.UUID, str]:
+    """
+    Returns `(document_id, file_name)` for download path without loading pages.
+    """
+    stmt = select(
+        orm.DocumentVersion.document_id,
+        orm.DocumentVersion.file_name,
+    ).where(orm.DocumentVersion.id == document_version_id)
+    row = (await db_session.execute(stmt)).one()
+    return row.document_id, row.file_name
+
+
 async def get_first_page(
     db_session: AsyncSession,
     doc_ver_id: uuid.UUID,

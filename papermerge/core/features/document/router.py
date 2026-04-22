@@ -221,6 +221,7 @@ async def get_document_last_version(
 
     Required scope: `{scope}`
     """
+    started = asyncio.get_running_loop().time()
     try:
         await dbapi_common.require_node_perm(
             db_session,
@@ -229,13 +230,20 @@ async def get_document_last_version(
             user_id=user.id,
         )
 
-        result = await dbapi.get_last_doc_ver(
+        result = await dbapi.get_last_doc_ver_preview(
             db_session,
             doc_id=doc_id,
         )
     except NoResultFound:
         raise exc.HTTP404NotFound()
 
+    elapsed = (asyncio.get_running_loop().time() - started) * 1000
+    logger.info(
+        "last_doc_version_ready doc_id=%s pages=%s elapsed_ms=%.2f",
+        doc_id,
+        len(result.pages or []),
+        elapsed,
+    )
     return result
 
 

@@ -14,6 +14,8 @@ interface Args {
   imageSize: ImageSize
 }
 
+const inflightBootstrapByDocVer = new Set<string>()
+
 export interface PreviewBootstrapState {
   allPreviewsAreAvailable: boolean
   isBootstrapping: boolean
@@ -83,15 +85,25 @@ export default function useGeneratePreviews({
         setIsBootstrapping(false)
         return
       }
-      dispatch(
-        generatePreviews({
-          docVer,
-          size: imageSize,
-          pageSize,
-          pageNumber,
-          pageTotal: docVer.pages.length
-        })
-      )
+      const bootstrapKey = `${docVer.id}:${imageSize}:${pageNumber}:${pageSize}`
+      if (inflightBootstrapByDocVer.has(bootstrapKey)) {
+        setIsBootstrapping(false)
+        return
+      }
+      inflightBootstrapByDocVer.add(bootstrapKey)
+      try {
+        await dispatch(
+          generatePreviews({
+            docVer,
+            size: imageSize,
+            pageSize,
+            pageNumber,
+            pageTotal: docVer.pages.length
+          })
+        )
+      } finally {
+        inflightBootstrapByDocVer.delete(bootstrapKey)
+      }
       console.info(
         `[preview-metric] bootstrap_complete docVer=${docVer.id} ms=${(performance.now() - startedAt).toFixed(2)}`
       )

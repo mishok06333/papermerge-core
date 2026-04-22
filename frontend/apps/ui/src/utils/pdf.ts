@@ -12,6 +12,7 @@ const workerSrc =
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
 
 interface GeneratePdfBatchPreviewArgs {
+  cacheKey: string
   buffer: ArrayBuffer
   width: number
   pageNumbers: number[]
@@ -19,9 +20,54 @@ interface GeneratePdfBatchPreviewArgs {
 }
 
 interface GeneratePreviewArgs {
+  cacheKey?: string
   file: File
   width: number
   pageNumber: number
+}
+
+interface CachedPdfDocument {
+  docPromise: Promise<pdfjsLib.PDFDocumentProxy>
+  disposeTimer?: number
+}
+
+const PDF_CACHE_TTL_MS = 30_000
+const pdfDocCache = new Map<string, CachedPdfDocument>()
+
+function cachePdfDocument(
+  cacheKey: string,
+  docPromiseFactory: () => Promise<pdfjsLib.PDFDocumentProxy>
+): Promise<pdfjsLib.PDFDocumentProxy> {
+  const existing = pdfDocCache.get(cacheKey)
+  if (existing) {
+    if (existing.disposeTimer) {
+      clearTimeout(existing.disposeTimer)
+      existing.disposeTimer = undefined
+    }
+    return existing.docPromise
+  }
+
+  const docPromise = docPromiseFactory()
+  const entry: CachedPdfDocument = {docPromise}
+  pdfDocCache.set(cacheKey, entry)
+  return docPromise
+}
+
+async function scheduleDispose(
+  cacheKey: string,
+  pdfDocument: pdfjsLib.PDFDocumentProxy
+): Promise<void> {
+  const entry = pdfDocCache.get(cacheKey)
+  if (!entry) {
+    return
+  }
+  if (entry.disposeTimer) {
+    clearTimeout(entry.disposeTimer)
+  }
+  entry.disposeTimer = window.setTimeout(() => {
+    void pdfDocument.destroy().catch(() => undefined)
+    pdfDocCache.delete(cacheKey)
+  }, PDF_CACHE_TTL_MS)
 }
 
 async function renderPageToObjectUrl(
@@ -51,6 +97,8 @@ async function renderPageToObjectUrl(
     })
     .promise
 
+  const outputType = width <= 320 ? "image/jpeg" : "image/webp"
+  const outputQuality = width <= 320 ? 0.72 : 0.78
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(blob => {
       if (blob) {
@@ -58,13 +106,14 @@ async function renderPageToObjectUrl(
       } else {
         reject(new Error("Failed to create blob from canvas"))
       }
-    }, "image/png")
+    }, outputType, outputQuality)
   })
 
   return URL.createObjectURL(blob)
 }
 
 async function generatePdfBatchPreviews({
+  cacheKey,
   buffer,
   width,
   pageNumbers,
@@ -72,27 +121,25 @@ async function generatePdfBatchPreviews({
 }: GeneratePdfBatchPreviewArgs): Promise<Record<number, string>> {
   const result: Record<number, string> = {}
   const startedAt = performance.now()
-  let pdfDocument: pdfjsLib.PDFDocumentProxy | undefined
+  if (pageNumbers.length === 0) {
+    return result
+  }
   try {
     const parseStartedAt = performance.now()
-    // pdf.js may transfer/consume passed ArrayBuffer in worker mode.
-    // Keep fileManager buffer reusable by passing an isolated copy.
-    const data = new Uint8Array(buffer.slice(0))
-    const loadingTask = pdfjsLib.getDocument({data})
-
-    // Add timeout with proper typing
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("PDF loading timeout")), 20000)
+    const pdfDocument = await cachePdfDocument(cacheKey, async () => {
+      // pdf.js may transfer/consume passed ArrayBuffer in worker mode.
+      // Keep fileManager buffer reusable by passing an isolated copy.
+      const data = new Uint8Array(buffer.slice(0))
+      const loadingTask = pdfjsLib.getDocument({data})
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("PDF loading timeout")), 20000)
+      })
+      return Promise.race([loadingTask.promise, timeoutPromise])
     })
-
-    pdfDocument = await Promise.race([
-      loadingTask.promise,
-      timeoutPromise
-    ])
     const parseMs = performance.now() - parseStartedAt
 
     let cursor = 0
-    const workerCount = Math.max(1, Math.min(concurrency, pageNumbers.length))
+    const workerCount = Math.max(1, Math.min(concurrency, pageNumbers.length, 2))
     const workers = Array.from({length: workerCount}, async () => {
       while (cursor < pageNumbers.length) {
         const ownIndex = cursor
@@ -110,26 +157,25 @@ async function generatePdfBatchPreviews({
     console.info(
       `[preview-metric] pdf_batch_render pages=${pageNumbers.length} parse_ms=${parseMs.toFixed(2)} total_ms=${totalMs.toFixed(2)}`
     )
+    await scheduleDispose(cacheKey, pdfDocument)
     return result
   } catch (error) {
     const detail =
       error instanceof Error ? `${error.name}: ${error.message}` : String(error)
     console.error(`[pdf-preview] Error generating PDF preview: ${detail}`)
     throw error
-  } finally {
-    if (pdfDocument) {
-      await pdfDocument.destroy().catch(() => undefined)
-    }
   }
 }
 
 export {generatePdfBatchPreviews}
 export async function generatePreview({
+  cacheKey = "single-preview",
   file,
   width,
   pageNumber
 }: GeneratePreviewArgs): Promise<string> {
   const rendered = await generatePdfBatchPreviews({
+    cacheKey,
     buffer: await file.arrayBuffer(),
     width,
     pageNumbers: [pageNumber],

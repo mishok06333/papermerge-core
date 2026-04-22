@@ -167,10 +167,11 @@ export const generatePreviews = createAsyncThunk<
   }
 
   const renderedByPageNumber = await generatePdfBatchPreviews({
+    cacheKey: item.docVer.id,
     buffer: fileItem.buffer,
     width,
     pageNumbers: pagesToRender.map(p => p.number),
-    concurrency: 3
+    concurrency: 2
   })
 
   for (const page of pagesToRender) {
@@ -517,16 +518,16 @@ export const selectIsGeneratingPreviews = (
 
 function getWidth(size: ImageSize) {
   if (size == "sm") {
-    return 200
+    return 120
   }
 
   if (size == "md") {
-    return 1300
+    return 900
   }
 
   if (size == "lg") {
-    return 1600
+    return 1280
   }
 
-  return 1900
+  return 1440
 }

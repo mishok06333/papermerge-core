@@ -15,6 +15,7 @@ from papermerge.core import exceptions as exc
 from papermerge.core.db.engine import get_db
 from papermerge.core.features.document.response import DocumentFileResponse
 from papermerge.core.features.library_ts.db import api as lib_ts_api
+from papermerge.core.pathlib import abs_docver_path
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +56,8 @@ async def download_document_version(
     Required scope: `{scope}`
     """
     try:
-        doc_id = await dbapi.get_doc_id_from_doc_ver_id(
-            db_session, doc_ver_id=document_version_id
+        doc_id, file_name = await dbapi.get_doc_ver_download_meta(
+            db_session, document_version_id=document_version_id
         )
         await dbapi_common.require_node_perm(
             db_session,
@@ -75,21 +76,18 @@ async def download_document_version(
         )
         await db_session.commit()
 
-        doc_ver: orm.DocumentVersion = await dbapi.get_doc_ver(
-            db_session,
-            document_version_id=document_version_id,
-        )
     except NoResultFound:
         error = schema.Error(messages=["Document version not found"])
         raise HTTPException(status_code=404, detail=error.model_dump())
 
-    if not doc_ver.file_path.exists():
+    file_path = abs_docver_path(document_version_id, file_name)
+    if not file_path.exists():
         error = schema.Error(messages=["Document version file not found"])
         raise HTTPException(status_code=404, detail=error.model_dump())
 
     return DocumentFileResponse(
-        doc_ver.file_path,
-        filename=doc_ver.file_name,  # Will be in Content-Disposition header
+        file_path,
+        filename=file_name,  # Will be in Content-Disposition header
         content_disposition_type="attachment"
     )
 

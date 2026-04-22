@@ -15,8 +15,10 @@ from .features.users.db.api import (
 )
 from .features.document.db.api import (
     get_last_doc_ver,
+    get_last_doc_ver_preview,
     upload,
     get_doc_ver,
+    get_doc_ver_download_meta,
     get_doc,
     get_docs_by_type,
     get_docs_count_by_type,
@@ -70,8 +72,10 @@ __all__ = [
     "get_shared_folder",
     "move_pages",
     "get_last_doc_ver",
+    "get_last_doc_ver_preview",
     "get_doc_ver_pages",
     "get_doc_ver",
+    "get_doc_ver_download_meta",
     "get_doc",
     "get_doc_cfv",
     "get_docs_by_type",

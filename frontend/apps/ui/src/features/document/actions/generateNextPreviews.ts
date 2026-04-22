@@ -1,4 +1,4 @@
-import {AppDispatch} from "@/app/types"
+import {AppDispatch, RootState} from "@/app/types"
 import {
   DOC_VER_PAGINATION_PAGE_BATCH_SIZE,
   DOC_VER_PAGINATION_THUMBNAIL_BATCH_SIZE
@@ -10,7 +10,8 @@ import {
 import {
   generatePreviews,
   markGeneratingPreviewsBegin,
-  markGeneratingPreviewsEnd
+  markGeneratingPreviewsEnd,
+  selectIsGeneratingPreviews
 } from "@/features/document/store/imageObjectsSlice"
 
 import {ClientDocumentVersion} from "@/types"
@@ -25,8 +26,12 @@ interface Args {
 
 export const generateNextPreviews =
   ({docVer, pageNumber, size = "md", thumbnailListPageCount}: Args) =>
-  async (dispatch: AppDispatch) => {
+  async (dispatch: AppDispatch, getState: () => RootState) => {
     if (!docVer) {
+      return
+    }
+    const stateBefore = getState()
+    if (selectIsGeneratingPreviews(stateBefore, size, docVer.id)) {
       return
     }
 

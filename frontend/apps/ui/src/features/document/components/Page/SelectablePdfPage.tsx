@@ -23,6 +23,33 @@ function normalizeRotation(deg: number): number {
   return ((deg % 360) + 360) % 360
 }
 
+type PdfTextContentLike = {
+  items: Array<unknown>
+  styles: Record<string, unknown>
+  lang?: string
+}
+
+type PdfTextItemLike = {
+  str?: unknown
+  width?: unknown
+  height?: unknown
+}
+
+function pruneGhostTextSpans(textLayerEl: HTMLDivElement) {
+  const spans = Array.from(textLayerEl.querySelectorAll("span"))
+  for (const span of spans) {
+    const text = (span.textContent ?? "").replace(/\u00A0/g, " ").trim()
+    if (!text) {
+      span.remove()
+      continue
+    }
+    const rect = span.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) {
+      span.remove()
+    }
+  }
+}
+
 interface Props {
   docVerId: string
   pageNumber: number
@@ -62,10 +89,10 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
         return
       }
       const ro = new ResizeObserver(() => {
-        setInnerWidth(el.clientWidth)
+        setInnerWidth(el.getBoundingClientRect().width)
       })
       ro.observe(el)
-      setInnerWidth(el.clientWidth)
+      setInnerWidth(el.getBoundingClientRect().width)
       return () => ro.disconnect()
     }, [gate])
 
@@ -163,8 +190,12 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
             return
           }
 
-          canvas.width = viewport.width
-          canvas.height = viewport.height
+          canvas.width = Math.max(1, Math.round(viewport.width))
+          canvas.height = Math.max(1, Math.round(viewport.height))
+          canvas.style.width = `${viewport.width}px`
+          canvas.style.height = `${viewport.height}px`
+          textDiv.style.width = `${viewport.width}px`
+          textDiv.style.height = `${viewport.height}px`
           textDiv.replaceChildren()
 
           // pdf.js 5 TextLayer + setLayerDimensions() size spans via
@@ -172,16 +203,18 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
           // layer has invalid dimensions/font sizes and selection does not work.
           const innerEl = innerRef.current
           if (innerEl && session === pdfRenderGenRef.current) {
+            const userUnit = viewport.userUnit ?? 1
+            innerEl.style.setProperty(
+              "--scale-factor",
+              String(viewport.scale)
+            )
+            innerEl.style.setProperty("--user-unit", String(userUnit))
             innerEl.style.setProperty(
               "--total-scale-factor",
-              String(viewport.scale)
+              `calc(var(--scale-factor) * var(--user-unit))`
             )
             innerEl.style.setProperty("--scale-round-x", "1px")
             innerEl.style.setProperty("--scale-round-y", "1px")
-            innerEl.style.setProperty(
-              "--user-unit",
-              String(viewport.userUnit ?? 1)
-            )
           }
 
           renderTask = page.render({canvasContext: ctx, viewport})
@@ -190,7 +223,7 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
             return
           }
 
-          const textContent = await page.getTextContent()
+          const textContent = (await page.getTextContent()) as PdfTextContentLike
           if (session !== pdfRenderGenRef.current) {
             return
           }
@@ -201,6 +234,9 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
             viewport
           })
           await textLayer.render()
+          if (session === pdfRenderGenRef.current) {
+            pruneGhostTextSpans(textDiv)
+          }
         } catch {
           if (session === pdfRenderGenRef.current) {
             setPdfPaintFailed(true)
@@ -218,6 +254,7 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
         textDiv.replaceChildren()
         const innerEl = innerRef.current
         if (innerEl) {
+          innerEl.style.removeProperty("--scale-factor")
           innerEl.style.removeProperty("--total-scale-factor")
           innerEl.style.removeProperty("--scale-round-x")
           innerEl.style.removeProperty("--scale-round-y")

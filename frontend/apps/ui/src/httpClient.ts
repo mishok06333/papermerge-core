@@ -13,6 +13,16 @@ const client = axios.create({
 
 client.defaults.headers.common = defaultHeaders
 
+client.interceptors.request.use(config => {
+  const requestID =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  config.headers = config.headers ?? {}
+  config.headers["X-Correlation-ID"] = requestID
+  return config
+})
+
 export default client
 
 function get_file_ext(file_name: string): string {

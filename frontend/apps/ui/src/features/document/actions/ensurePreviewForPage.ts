@@ -22,7 +22,11 @@ export const ensurePreviewForPage =
     }
 
     const normalizedPageNumber = Math.max(1, Math.floor(targetPageNumber))
-    const targetPage = docVer.pages.find(p => p.number === normalizedPageNumber)
+    const sortedPages = docVer.pages.slice().sort((a, b) => a.number - b.number)
+    const targetIndex = sortedPages.findIndex(
+      p => p.number === normalizedPageNumber
+    )
+    const targetPage = targetIndex >= 0 ? sortedPages[targetIndex] : undefined
     if (!targetPage) {
       console.warn(
         `[ensurePreviewForPage] skipped: target page ${normalizedPageNumber} not found`
@@ -45,7 +49,10 @@ export const ensurePreviewForPage =
         ? DOC_VER_PAGINATION_THUMBNAIL_BATCH_SIZE
         : DOC_VER_PAGINATION_PAGE_BATCH_SIZE
     const maxBatches = Math.ceil(docVer.pages.length / pageSize)
+    // Use position in sorted page list, not page.number, because numbers may have gaps.
+    const targetBatchPage = Math.ceil((targetIndex + 1) / pageSize)
     let attempts = 0
+    let stalled = 0
 
     while (!hasTargetPreview() && attempts < maxBatches) {
       const state = getState()
@@ -54,8 +61,11 @@ export const ensurePreviewForPage =
           ? (state.docVers.entities[docVer.id]?.thumbnailsPagination?.page_number ??
             1)
           : state.docVers.entities[docVer.id]?.pagination?.page_number ?? 1
-      const nextPageNumber = currentPaginationPage + 1
-      const nextBatchStartIndex = (nextPageNumber - 1) * pageSize
+      const requestedPageNumber =
+        currentPaginationPage >= targetBatchPage
+          ? targetBatchPage
+          : currentPaginationPage + 1
+      const nextBatchStartIndex = (requestedPageNumber - 1) * pageSize
 
       if (nextBatchStartIndex >= docVer.pages.length) {
         console.warn(
@@ -64,8 +74,19 @@ export const ensurePreviewForPage =
         return
       }
 
-      await dispatch(generateNextPreviews({docVer, pageNumber: nextPageNumber, size}))
-      attempts += 1
+      const result = await dispatch(
+        generateNextPreviews({docVer, pageNumber: requestedPageNumber, size})
+      )
+      if (result?.dispatched && result?.progressed !== false) {
+        attempts += 1
+        stalled = 0
+      } else {
+        stalled += 1
+        if (stalled > 10) {
+          break
+        }
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
     }
     if (!hasTargetPreview()) {
       console.warn(

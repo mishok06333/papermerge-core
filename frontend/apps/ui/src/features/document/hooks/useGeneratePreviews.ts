@@ -33,6 +33,7 @@ export default function useGeneratePreviews({
   const [retryTick, setRetryTick] = useState(0)
   const [isBootstrapping, setIsBootstrapping] = useState(false)
   const [error, setError] = useState<string>()
+  const [activeBootstrapKey, setActiveBootstrapKey] = useState<string>()
   const allPreviewsAreAvailable = useAreAllPreviewsAvailable({
     docVer,
     pageSize,
@@ -49,6 +50,7 @@ export default function useGeneratePreviews({
     if (!docVer || allPreviewsAreAvailable) {
       setIsBootstrapping(false)
       setError(undefined)
+      setActiveBootstrapKey(undefined)
       return
     }
     let cancelled = false
@@ -56,6 +58,8 @@ export default function useGeneratePreviews({
 
     const run = async () => {
       const startedAt = performance.now()
+      const bootstrapKey = `${docVer.id}:${imageSize}:${pageNumber}:${pageSize}`
+      setActiveBootstrapKey(bootstrapKey)
       setIsBootstrapping(true)
       setError(undefined)
       const retries = [0, 500, 1500]
@@ -85,7 +89,6 @@ export default function useGeneratePreviews({
         setIsBootstrapping(false)
         return
       }
-      const bootstrapKey = `${docVer.id}:${imageSize}:${pageNumber}:${pageSize}`
       if (inflightBootstrapByDocVer.has(bootstrapKey)) {
         setIsBootstrapping(false)
         return
@@ -108,6 +111,7 @@ export default function useGeneratePreviews({
         `[preview-metric] bootstrap_complete docVer=${docVer.id} ms=${(performance.now() - startedAt).toFixed(2)}`
       )
       setIsBootstrapping(false)
+      setActiveBootstrapKey(undefined)
     }
 
     void run()
@@ -126,5 +130,14 @@ export default function useGeneratePreviews({
     retryTick
   ])
 
-  return {allPreviewsAreAvailable, isBootstrapping, error, retry}
+  const isCurrentBootstrapping =
+    isBootstrapping &&
+    Boolean(docVer) &&
+    activeBootstrapKey === `${docVer?.id}:${imageSize}:${pageNumber}:${pageSize}`
+  return {
+    allPreviewsAreAvailable,
+    isBootstrapping: isCurrentBootstrapping,
+    error,
+    retry
+  }
 }

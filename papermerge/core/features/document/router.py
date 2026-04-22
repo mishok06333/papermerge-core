@@ -9,6 +9,7 @@ from fastapi import (
     HTTPException,
     Security,
     UploadFile,
+    Request,
     status,
     Query,
     Depends,
@@ -177,7 +178,7 @@ async def upload_file(
 
     Obviously you can upload files directly via swagger UI.
     """
-    content = file.file.read()
+    content = await file.read()
 
     await dbapi_common.require_node_perm(
         db_session,
@@ -213,6 +214,7 @@ async def upload_file(
 @utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_document_last_version(
     doc_id: uuid.UUID,
+    request: Request,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     db_session: AsyncSession = Depends(get_db),
 ) -> schema.DocumentVersion:
@@ -239,7 +241,8 @@ async def get_document_last_version(
 
     elapsed = (asyncio.get_running_loop().time() - started) * 1000
     logger.info(
-        "last_doc_version_ready doc_id=%s pages=%s elapsed_ms=%.2f",
+        "last_doc_version_ready correlation_id=%s doc_id=%s pages=%s elapsed_ms=%.2f",
+        getattr(request.state, "correlation_id", None),
         doc_id,
         len(result.pages or []),
         elapsed,
@@ -442,7 +445,14 @@ async def get_document_doc_thumbnail_status(
     """
 
     started = asyncio.get_running_loop().time()
+    direct_access_ids = await dbapi_common.get_directly_accessible_node_ids(
+        db_session,
+        node_ids=doc_ids,
+        user_id=user.id,
+    )
     for doc_id in doc_ids:
+        if doc_id in direct_access_ids:
+            continue
         await dbapi_common.require_node_perm(
             db_session,
             node_id=doc_id,

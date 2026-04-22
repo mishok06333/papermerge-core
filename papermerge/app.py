@@ -1,9 +1,10 @@
 import os
 from pathlib import Path
 from logging.config import dictConfig
+import uuid
 
 import yaml
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from papermerge.core.features.users.router import router as usr_router
@@ -65,6 +66,16 @@ app.add_middleware(
         "ETag"
     ]
 )
+
+
+@app.middleware("http")
+async def correlation_id_middleware(request: Request, call_next):
+    correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+    request.state.correlation_id = correlation_id
+    response = await call_next(request)
+    response.headers["X-Correlation-ID"] = correlation_id
+    return response
+
 
 app.include_router(nodes_router, prefix=prefix)
 app.include_router(shared_nodes_router, prefix=prefix)

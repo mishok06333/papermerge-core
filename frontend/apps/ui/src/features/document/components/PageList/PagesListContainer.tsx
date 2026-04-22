@@ -35,6 +35,7 @@ export default function PageListContainer() {
     containerRef: containerRef
   })
   const nextPageNumber = pageNumber + 1
+  const hasMorePages = (docVer?.pages.length ?? 0) > pages.length
   const isPdfDocument = getFileExtension(docVer?.file_name) === ".pdf"
   const effectiveZoomFactor = isPdfDocument ? zoomFactor : 100
   const allPreviewsAreAvailable = useAreAllPreviewsAvailable({
@@ -55,18 +56,33 @@ export default function PageListContainer() {
   ))
 
   useEffect(() => {
-    if (loadMore && !isGenerating) {
-      if (!allPreviewsAreAvailable) {
-        dispatch(generateNextPreviews({docVer, pageNumber: nextPageNumber}))
-      }
+    if (!hasMorePages || isGenerating) {
+      return
     }
+    // Use real loaded pages count as the source of truth. This avoids stalls when
+    // pagination state and rendered pages diverge (e.g. after skipped/empty batches).
+    const nextMissingBatchPageNumber =
+      Math.floor(pages.length / DOC_VER_PAGINATION_PAGE_BATCH_SIZE) + 1
+    const shouldLoadMore =
+      loadMore ||
+      (pages.length > 0 && currentPageNumber >= Math.max(1, pages.length - 1))
+    if (!shouldLoadMore) {
+      return
+    }
+    dispatch(
+      generateNextPreviews({
+        docVer,
+        pageNumber: nextMissingBatchPageNumber
+      })
+    )
   }, [
-    loadMore,
-    isGenerating,
-    allPreviewsAreAvailable,
-    pageNumber,
+    currentPageNumber,
+    dispatch,
     docVer,
-    dispatch
+    hasMorePages,
+    isGenerating,
+    loadMore,
+    pages.length
   ])
 
   return (

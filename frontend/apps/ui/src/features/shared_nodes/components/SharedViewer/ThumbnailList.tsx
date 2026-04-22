@@ -28,6 +28,9 @@ export default function ThumbnailListContainer() {
   const isGenerating = useAppSelector(s =>
     selectIsGeneratingPreviews(s, "sm", docVer?.id)
   )
+  const isMainGenerating = useAppSelector(s =>
+    selectIsGeneratingPreviews(s, "md", docVer?.id)
+  )
   const allPreviewsAreAvailable = useAreAllPreviewsAvailable({
     docVer,
     pageSize: DOC_VER_PAGINATION_THUMBNAIL_BATCH_SIZE,
@@ -46,14 +49,19 @@ export default function ThumbnailListContainer() {
     if (!docVer?.id) {
       return
     }
-    if (pages.length == 0 && !isGenerating && initialRequestSentRef.current !== docVer.id) {
+    if (
+      pages.length == 0 &&
+      !isGenerating &&
+      !isMainGenerating &&
+      initialRequestSentRef.current !== docVer.id
+    ) {
       initialRequestSentRef.current = docVer.id
       dispatch(generateNextPreviews({docVer, size: "sm", pageNumber: 1}))
     }
-  }, [dispatch, docVer, isGenerating, pages.length])
+  }, [dispatch, docVer, isGenerating, isMainGenerating, pages.length])
 
   useEffect(() => {
-    if (loadMore && !isGenerating) {
+    if (loadMore && !isGenerating && !isMainGenerating) {
       if (!allPreviewsAreAvailable) {
         dispatch(
           generateNextPreviews({docVer, size: "sm", pageNumber: pageNumber + 1})
@@ -65,6 +73,7 @@ export default function ThumbnailListContainer() {
     dispatch,
     docVer,
     isGenerating,
+    isMainGenerating,
     loadMore,
     pageNumber
   ])

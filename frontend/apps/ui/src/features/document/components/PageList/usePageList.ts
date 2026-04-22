@@ -30,19 +30,20 @@ export default function usePageList({
   size = "md",
   cssSelector = ".page"
 }: Args): PageListState {
+  const pages = useAppSelector(s =>
+    selectClientPagesWithPreviews(s, size, docVerID)
+  )
   const {loadMore} = usePageLoader({
     containerRef,
     cssSelector,
-    totalPageCount: totalCount
+    totalPageCount: totalCount,
+    loadedPageCount: pages.length
   })
   const {currentPageNumber} = useCurrentPageNumber({
     containerRef,
     cssSelector,
     initialPageNumber: 1
   })
-  const pages = useAppSelector(s =>
-    selectClientPagesWithPreviews(s, size, docVerID)
-  )
 
   return {
     pages,

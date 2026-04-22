@@ -155,7 +155,7 @@ async function generatePdfBatchPreviews({
     await Promise.all(workers)
     const totalMs = performance.now() - startedAt
     console.info(
-      `[preview-metric] pdf_batch_render pages=${pageNumbers.length} parse_ms=${parseMs.toFixed(2)} total_ms=${totalMs.toFixed(2)}`
+      `[preview-metric] pdf_batch_render cache_key=${cacheKey} pages=${pageNumbers.length} parse_ms=${parseMs.toFixed(2)} total_ms=${totalMs.toFixed(2)}`
     )
     await scheduleDispose(cacheKey, pdfDocument)
     return result
@@ -163,7 +163,35 @@ async function generatePdfBatchPreviews({
     const detail =
       error instanceof Error ? `${error.name}: ${error.message}` : String(error)
     console.error(`[pdf-preview] Error generating PDF preview: ${detail}`)
-    throw error
+    // Fallback: recover by sequential rendering to avoid hard viewer stalls.
+    const fallbackResult: Record<number, string> = {}
+    try {
+      const pdfDocument = await cachePdfDocument(`${cacheKey}-fallback`, async () => {
+        const data = new Uint8Array(buffer.slice(0))
+        const loadingTask = pdfjsLib.getDocument({data})
+        return loadingTask.promise
+      })
+      for (const pageNumber of pageNumbers) {
+        fallbackResult[pageNumber] = await renderPageToObjectUrl(
+          pdfDocument,
+          pageNumber,
+          width
+        )
+      }
+      const totalMs = performance.now() - startedAt
+      console.info(
+        `[preview-metric] pdf_batch_fallback pages=${pageNumbers.length} total_ms=${totalMs.toFixed(2)}`
+      )
+      await scheduleDispose(`${cacheKey}-fallback`, pdfDocument)
+      return fallbackResult
+    } catch (fallbackError) {
+      const fallbackDetail =
+        fallbackError instanceof Error
+          ? `${fallbackError.name}: ${fallbackError.message}`
+          : String(fallbackError)
+      console.error(`[pdf-preview] Fallback failed: ${fallbackDetail}`)
+      throw fallbackError
+    }
   }
 }
 

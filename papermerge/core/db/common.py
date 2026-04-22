@@ -231,3 +231,25 @@ async def get_node_owner(db_session: AsyncSession, node_id: UUID) -> nodes_schem
     return nodes_schema.Owner(
         name=owner_name, user_id=row.user_id, group_id=row.group_id
     )
+
+
+async def get_directly_accessible_node_ids(
+    db_session: AsyncSession,
+    node_ids: list[UUID],
+    user_id: UUID,
+) -> set[UUID]:
+    """
+    Returns node IDs directly accessible by ownership/group membership.
+    Does not include inherited/shared access via ancestors.
+    """
+    if not node_ids:
+        return set()
+    ug = aliased(groups_orm.user_groups_association)
+    user_group_ids = select(ug.c.group_id).where(ug.c.user_id == user_id)
+    stmt = select(orm.Node.id).where(
+        orm.Node.id.in_(node_ids),
+        orm.Node.deleted_at.is_(None),
+        (orm.Node.user_id == user_id) | (orm.Node.group_id.in_(user_group_ids)),
+    )
+    rows = (await db_session.execute(stmt)).all()
+    return {row.id for row in rows}

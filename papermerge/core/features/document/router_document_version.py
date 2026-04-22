@@ -4,7 +4,7 @@ from typing import Annotated
 
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, HTTPException, Security, Depends, status
+from fastapi import APIRouter, HTTPException, Security, Depends, status, Request
 
 from papermerge.core import schema, utils, dbapi, orm
 from papermerge.core.features.auth import get_current_user
@@ -46,6 +46,7 @@ router = APIRouter(prefix="/document-versions", tags=["document-versions"])
 @utils.docstring_parameter(scope=scopes.DOCUMENT_DOWNLOAD)
 async def download_document_version(
     document_version_id: uuid.UUID,
+    request: Request,
     user: Annotated[
         schema.User, Security(get_current_user, scopes=[scopes.DOCUMENT_DOWNLOAD])
     ],
@@ -85,6 +86,11 @@ async def download_document_version(
         error = schema.Error(messages=["Document version file not found"])
         raise HTTPException(status_code=404, detail=error.model_dump())
 
+    logger.info(
+        "download_document_version_ready correlation_id=%s doc_ver_id=%s",
+        getattr(request.state, "correlation_id", None),
+        document_version_id,
+    )
     return DocumentFileResponse(
         file_path,
         filename=file_name,  # Will be in Content-Disposition header

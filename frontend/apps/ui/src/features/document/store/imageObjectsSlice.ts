@@ -74,8 +74,9 @@ interface Updates {
 export const generatePreviews = createAsyncThunk<
   ReturnType,
   GeneratePreviewInputType
->("images/generatePreview", async item => {
+>("images/generatePreview", async (item, {getState}) => {
   const width = getWidth(item.size)
+  const state = getState() as RootState
 
   const result: ReturnType = {
     items: []
@@ -121,6 +122,10 @@ export const generatePreviews = createAsyncThunk<
         }
       }
       const page = sortedPages[pIndex]
+      const existing = state.imageObjects.pageIDEntities[page.id]
+      if (existing?.docVerID === item.docVer.id && existing[item.size]) {
+        continue
+      }
       result.items.push({
         pageID: page.id,
         docID: item.docVer.document_id,
@@ -163,6 +168,10 @@ export const generatePreviews = createAsyncThunk<
       }
     }
     const page = sortedPages[pIndex]
+    const existing = state.imageObjects.pageIDEntities[page.id]
+    if (existing?.docVerID === item.docVer.id && existing[item.size]) {
+      continue
+    }
     pagesToRender.push({id: page.id, number: page.number})
   }
 

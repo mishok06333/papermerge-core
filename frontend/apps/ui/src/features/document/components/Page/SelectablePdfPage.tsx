@@ -82,6 +82,17 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
     const gateProbeGenRef = useRef(0)
     /** Monotonic generation for canvas/text-layer render; stale sessions skip DOM/state updates. */
     const pdfRenderGenRef = useRef(0)
+    /** Once true for current page session, keep selectable branch stable to avoid loading flicker. */
+    const gateLockedOnRef = useRef(false)
+    /** Once first canvas paint succeeded, never degrade to fallback for this page session. */
+    const firstSuccessfulPaintRef = useRef(false)
+
+    useEffect(() => {
+      gateLockedOnRef.current = false
+      firstSuccessfulPaintRef.current = false
+      setGate("loading")
+      setPdfPaintFailed(false)
+    }, [docVerId, pageNumber])
 
     useLayoutEffect(() => {
       const el = innerRef.current
@@ -104,16 +115,21 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
 
     useEffect(() => {
       const session = ++gateProbeGenRef.current
-      setGate("loading")
-      setPdfPaintFailed(false)
 
       const buf = fileManager.getByDocVerID(docVerId)?.buffer
       if (!buf) {
         if (session === gateProbeGenRef.current) {
-          setGate("off")
+          if (!gateLockedOnRef.current) {
+            setGate("off")
+          }
         }
         return
       }
+      if (gateLockedOnRef.current) {
+        return
+      }
+      setGate("loading")
+      setPdfPaintFailed(false)
 
       ;(async () => {
         try {
@@ -133,7 +149,11 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
           if (session !== gateProbeGenRef.current) {
             return
           }
-          setGate(textContentAppearsSearchable(tc) ? "on" : "off")
+          const searchable = textContentAppearsSearchable(tc)
+          if (searchable) {
+            gateLockedOnRef.current = true
+          }
+          setGate(searchable ? "on" : "off")
         } catch {
           if (session === gateProbeGenRef.current) {
             setGate("off")
@@ -148,7 +168,9 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
       }
 
       const session = ++pdfRenderGenRef.current
-      setPdfPaintFailed(false)
+      if (!firstSuccessfulPaintRef.current) {
+        setPdfPaintFailed(false)
+      }
 
       const canvas = canvasRef.current
       const textDiv = textLayerRef.current
@@ -222,6 +244,7 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
           if (session !== pdfRenderGenRef.current) {
             return
           }
+          firstSuccessfulPaintRef.current = true
 
           const textContent = (await page.getTextContent()) as PdfTextContentLike
           if (session !== pdfRenderGenRef.current) {
@@ -237,9 +260,17 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
           if (session === pdfRenderGenRef.current) {
             pruneGhostTextSpans(textDiv)
           }
-        } catch {
+        } catch (err) {
           if (session === pdfRenderGenRef.current) {
-            setPdfPaintFailed(true)
+            // pdf.js throws cancellation errors when a render task is superseded
+            // by a newer one (resize/zoom/layout updates). Treat as normal flow.
+            const normalizedErr = err as {name?: string} | undefined
+            const isRenderCancelled =
+              normalizedErr?.name === "RenderingCancelledException" ||
+              normalizedErr?.name === "AbortError"
+            if (!isRenderCancelled && !firstSuccessfulPaintRef.current) {
+              setPdfPaintFailed(true)
+            }
           }
         } finally {
           if (page) {

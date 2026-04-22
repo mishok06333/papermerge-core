@@ -8,6 +8,7 @@ interface Args {
   containerRef: React.RefObject<HTMLElement | null>
   cssSelector: string
   totalPageCount?: number
+  loadedPageCount?: number
 }
 
 /**
@@ -24,7 +25,8 @@ interface Args {
 export default function usePageLoader({
   containerRef,
   cssSelector,
-  totalPageCount
+  totalPageCount,
+  loadedPageCount = 0
 }: Args): State {
   const [loadMore, setLoadMore] = useState(false)
 
@@ -44,17 +46,12 @@ export default function usePageLoader({
       return
     }
 
-    const lastChild = pageElements[pageElements.length - 1] as HTMLElement
-    const containerRect = container.getBoundingClientRect()
-    const lastChildRect = lastChild.getBoundingClientRect()
-
-    const isFullyVisible = lastChildRect.bottom <= containerRect.bottom
-    const val = isFullyVisible && totalPageCount > pageElements.length
-
-    if (lastChildRect.height > 50) {
-      setLoadMore(val)
-    }
-  }, [containerRef, totalPageCount])
+    const nearBottomPx = 48
+    const reachedBottom =
+      container.scrollTop + container.clientHeight >=
+      container.scrollHeight - nearBottomPx
+    setLoadMore(reachedBottom)
+  }, [containerRef, cssSelector, totalPageCount, loadedPageCount])
 
   useEffect(() => {
     if (!containerRef) {
@@ -76,6 +73,10 @@ export default function usePageLoader({
       window.removeEventListener("resize", checkIfLastElementVisible)
     }
   }, [checkIfLastElementVisible])
+
+  useEffect(() => {
+    checkIfLastElementVisible()
+  }, [checkIfLastElementVisible, loadedPageCount])
 
   return {loadMore}
 }

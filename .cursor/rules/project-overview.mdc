@@ -25,8 +25,12 @@ module contracts, and recurring footguns.
   [docker/ocrworker/Dockerfile](mdc:docker/ocrworker/Dockerfile). It extends the
   upstream `papermerge/ocrworker:0.3.1` image and adds extra tesseract
   language packs. Talks to the same Postgres and Redis.
-- Shared volumes: `pgdata`, `redisdata`, `media_root`. The media volume
-  is mounted into both `app` and `ocr_worker`.
+- Persisted storage: named volumes `pgdata`, `redisdata` plus a bind mount
+  `./media -> /var/media/pmg` shared by `app` and `ocr_worker` (so native
+  backend on the host and containers see the same document files/previews).
+- `db` and `redis` publish localhost-only ports (`127.0.0.1:5432`,
+  `127.0.0.1:6379`) for native backend development without exposing them
+  on external interfaces.
 
 ### First-boot bootstrap (idempotent)
 
@@ -185,6 +189,15 @@ the uniform `orm.Foo` path.
   names the auth-server CLI reads for the `--superuser` flag. The
   compose file maps `ADMIN_*` from `.env` onto these. Don't rename one
   side without updating the other.
+- **Native dev helper**: [run-dev-native.bat](mdc:run-dev-native.bat)
+  starts backend+frontend on non-docker ports and sets all required env
+  vars in spawned shells. Keep `set "VAR=value"` quoting in that script;
+  plain `set VAR=value` can accidentally include trailing spaces before
+  command separators and break DB URLs (e.g. `papermerge `).
+- **Auth bypass is dev-only**: backend supports
+  `PAPERMERGE__DEV__AUTH_BYPASS_ENABLED=true` with
+  `PAPERMERGE__DEV__AUTH_BYPASS_USERNAME` (default `admin`) for local
+  debugging without tokens. Never enable it in production environments.
 - **Do not reintroduce** `docker-compose.dev.yml`,
   `docker-compose.native-auth.yml`, `.env.example`,
   `.env.native-auth.example`, nor the `docker/hybrid/`,

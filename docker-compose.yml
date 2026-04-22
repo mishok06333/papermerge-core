@@ -8,6 +8,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data/
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
       interval: 5s
@@ -20,6 +22,8 @@ services:
     restart: unless-stopped
     volumes:
       - redisdata:/data
+    ports:
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -51,7 +55,7 @@ services:
       PAPERMERGE__AUTH__EMAIL: ${ADMIN_EMAIL}
       PAPERMERGE__AUTH__PASSWORD: ${ADMIN_PASSWORD}
     volumes:
-      - media_root:/var/media/pmg
+      - ./media:/var/media/pmg
     depends_on:
       db:
         condition: service_healthy
@@ -70,7 +74,7 @@ services:
       PAPERMERGE__MAIN__MEDIA_ROOT: /var/media/pmg
       OCR_WORKER_ARGS: -Q ocr -c ${OCR_WORKER_CONCURRENCY:-2}
     volumes:
-      - media_root:/var/media/pmg
+      - ./media:/var/media/pmg
     depends_on:
       db:
         condition: service_healthy
@@ -80,4 +84,3 @@ services:
 volumes:
   pgdata:
   redisdata:
-  media_root:

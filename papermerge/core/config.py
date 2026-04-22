@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     #   scheduler OCR later on any document.
     papermerge__ocr__automatic: bool = False
     papermerge__search__url: str | None = None
+    # Development-only switch: when enabled, API requests without token
+    # are treated as authenticated as `papermerge__dev__auth_bypass_username`.
+    papermerge__dev__auth_bypass_enabled: bool = False
+    papermerge__dev__auth_bypass_username: str = "admin"
 
     @model_validator(mode="after")
     def default_lang_in_lang_codes(self) -> "Settings":

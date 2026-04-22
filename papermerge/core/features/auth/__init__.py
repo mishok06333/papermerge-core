@@ -11,6 +11,7 @@ from papermerge.core.features.users.db import api as usr_dbapi
 from papermerge.core.features.users import schema as users_schema
 from papermerge.core.features.auth import scopes
 from papermerge.core.db import exceptions as db_exc
+from papermerge.core.config import get_settings
 from papermerge.core.utils import base64
 from papermerge.core.db.engine import get_db
 
@@ -51,6 +52,28 @@ async def get_current_user(
     token: str | None = Depends(oauth2_scheme),
     db_session: AsyncSession = Depends(get_db),
 ) -> users_schema.User:
+    settings = get_settings()
+
+    if not token and settings.papermerge__dev__auth_bypass_enabled:
+        bypass_username = settings.papermerge__dev__auth_bypass_username
+        try:
+            user = await usr_dbapi.get_user(db_session, bypass_username)
+        except Exception:
+            user, error = await usr_dbapi.create_user(
+                db_session,
+                username=bypass_username,
+                email=f"{bypass_username}@local.dev",
+                password="-",
+                is_superuser=True,
+                is_active=True,
+            )
+            if not user or error:
+                logger.error("Failed to create dev bypass user: %s", error)
+                raise exc.HTTP401Unauthorized()
+
+        user.scopes = sorted(scopes.SCOPES.keys())
+        return user
+
     if not token:
         raise exc.HTTP401Unauthorized()
 

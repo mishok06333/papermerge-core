@@ -1,6 +1,6 @@
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {useCurrentDoc} from "@/features/document/hooks"
-import {Flex, Group, Loader} from "@mantine/core"
+import {Alert, Button, Flex, Group, Loader} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
 import {useContext} from "react"
 import {useNavigate} from "react-router-dom"
@@ -64,7 +64,7 @@ export default function Viewer() {
    * already cached in Redux from a previous visit. */
   useEnsureDocVerBuffer(docVer)
   /* generate first batch of previews: for pages and for their thumbnails */
-  const allPreviewsAreAvailable = useGeneratePreviews({
+  const previewState = useGeneratePreviews({
     docVer: docVer,
     pageNumber: 1,
     pageSize: DOC_VER_PAGINATION_PAGE_BATCH_SIZE,
@@ -187,10 +187,6 @@ export default function Viewer() {
     return <Loader />
   }
 
-  if (!allPreviewsAreAvailable) {
-    return <Loader />
-  }
-
   /**
    * Preview chrome switches on `docVer.file_name` (see `getViewerChromeKind` / `documentPreview.ts`).
    * Only one branch mounts at a time; changing chrome unmounts the previous subtree. The `Viewer`
@@ -204,7 +200,7 @@ export default function Viewer() {
    * - docx: `DocxScrollProvider` → `DocxPageColumn` (`DocxPreviewCore`), not `PageContainer`.
    * - blob: `BlobDocumentViewer` → `BlobMediaPage` (`layout="standalone"`).
    *
-   * While `!allPreviewsAreAvailable`, the early `<Loader />` return unmounts all chrome until previews exist.
+   * Viewer mounts immediately and keeps loading previews in the background.
    */
   const chrome = getViewerChromeKind(docVer.file_name)
 
@@ -249,6 +245,26 @@ export default function Viewer() {
           onDeleteDocumentItemClicked={onDeleteDocumentItemClicked}
         />
       </Flex>
+      {previewState.error && (
+        <Alert
+          color="red"
+          title="Preview loading failed"
+          mt="sm"
+          variant="light"
+        >
+          {previewState.error}
+          <Group mt="xs">
+            <Button size="xs" variant="light" onClick={previewState.retry}>
+              Retry preview loading
+            </Button>
+          </Group>
+        </Alert>
+      )}
+      {previewState.isBootstrapping && !previewState.allPreviewsAreAvailable && (
+        <Group mt="xs">
+          <Loader size="sm" />
+        </Group>
+      )}
       <EditNodeTitleModal
         opened={openedEditNodeTitleModal}
         node={{id: doc?.id!, title: doc?.title!}}

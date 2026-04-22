@@ -11,80 +11,133 @@ const workerSrc =
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
 
+interface GeneratePdfBatchPreviewArgs {
+  buffer: ArrayBuffer
+  width: number
+  pageNumbers: number[]
+  concurrency?: number
+}
+
 interface GeneratePreviewArgs {
   file: File
   width: number
   pageNumber: number
 }
 
-async function generatePreview({
+async function renderPageToObjectUrl(
+  pdfDocument: pdfjsLib.PDFDocumentProxy,
+  pageNumber: number,
+  width: number
+): Promise<string> {
+  const canvas = document.createElement("canvas")
+  const context = canvas.getContext("2d")
+
+  if (!context) {
+    throw new Error("Could not get canvas 2D context")
+  }
+
+  const page = await pdfDocument.getPage(pageNumber)
+  const originalViewport = page.getViewport({scale: 1.0})
+  const scale = width / originalViewport.width
+  const scaledViewport = page.getViewport({scale})
+
+  canvas.width = scaledViewport.width
+  canvas.height = scaledViewport.height
+
+  await page
+    .render({
+      canvasContext: context,
+      viewport: scaledViewport
+    })
+    .promise
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) {
+        resolve(blob)
+      } else {
+        reject(new Error("Failed to create blob from canvas"))
+      }
+    }, "image/png")
+  })
+
+  return URL.createObjectURL(blob)
+}
+
+async function generatePdfBatchPreviews({
+  buffer,
+  width,
+  pageNumbers,
+  concurrency = 2
+}: GeneratePdfBatchPreviewArgs): Promise<Record<number, string>> {
+  const result: Record<number, string> = {}
+  const startedAt = performance.now()
+  let pdfDocument: pdfjsLib.PDFDocumentProxy | undefined
+  try {
+    const parseStartedAt = performance.now()
+    // pdf.js may transfer/consume passed ArrayBuffer in worker mode.
+    // Keep fileManager buffer reusable by passing an isolated copy.
+    const data = new Uint8Array(buffer.slice(0))
+    const loadingTask = pdfjsLib.getDocument({data})
+
+    // Add timeout with proper typing
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("PDF loading timeout")), 20000)
+    })
+
+    pdfDocument = await Promise.race([
+      loadingTask.promise,
+      timeoutPromise
+    ])
+    const parseMs = performance.now() - parseStartedAt
+
+    let cursor = 0
+    const workerCount = Math.max(1, Math.min(concurrency, pageNumbers.length))
+    const workers = Array.from({length: workerCount}, async () => {
+      while (cursor < pageNumbers.length) {
+        const ownIndex = cursor
+        cursor += 1
+        const pageNumber = pageNumbers[ownIndex]
+        result[pageNumber] = await renderPageToObjectUrl(
+          pdfDocument,
+          pageNumber,
+          width
+        )
+      }
+    })
+    await Promise.all(workers)
+    const totalMs = performance.now() - startedAt
+    console.info(
+      `[preview-metric] pdf_batch_render pages=${pageNumbers.length} parse_ms=${parseMs.toFixed(2)} total_ms=${totalMs.toFixed(2)}`
+    )
+    return result
+  } catch (error) {
+    const detail =
+      error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+    console.error(`[pdf-preview] Error generating PDF preview: ${detail}`)
+    throw error
+  } finally {
+    if (pdfDocument) {
+      await pdfDocument.destroy().catch(() => undefined)
+    }
+  }
+}
+
+export {generatePdfBatchPreviews}
+export async function generatePreview({
   file,
   width,
   pageNumber
 }: GeneratePreviewArgs): Promise<string> {
-  try {
-    const arrayBuffer = await file.arrayBuffer()
-
-    const loadingTask = pdfjsLib.getDocument({data: arrayBuffer})
-
-    // Add timeout with proper typing
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("PDF loading timeout")), 5000) // 5 seconds
-    })
-
-    const pdfDocument = await Promise.race([
-      loadingTask.promise,
-      timeoutPromise
-    ])
-
-    const canvas = document.createElement("canvas")
-    const context = canvas.getContext("2d")
-
-    if (!context) {
-      throw new Error("Could not get canvas 2D context")
-    }
-
-    const page = await pdfDocument.getPage(pageNumber)
-
-    // Get the original viewport to calculate proper scaling
-    const originalViewport = page.getViewport({scale: 1.0})
-
-    // Calculate scale to achieve desired width
-    const scale = width / originalViewport.width
-    const scaledViewport = page.getViewport({scale})
-
-    // Set canvas dimensions
-    canvas.width = scaledViewport.width
-    canvas.height = scaledViewport.height
-
-    const renderContext = {
-      canvasContext: context,
-      viewport: scaledViewport
-    }
-
-    await page.render(renderContext).promise
-
-    // Convert canvas to blob and create object URL
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(blob => {
-        if (blob) {
-          resolve(blob)
-        } else {
-          reject(new Error("Failed to create blob from canvas"))
-        }
-      }, "image/png")
-    })
-
-    const objectUrl = URL.createObjectURL(blob)
-
-    // Clean up
-    pdfDocument.destroy()
-
-    return objectUrl
-  } catch (error) {
-    console.error("Error generating PDF preview:", error)
-    throw error
+  const rendered = await generatePdfBatchPreviews({
+    buffer: await file.arrayBuffer(),
+    width,
+    pageNumbers: [pageNumber],
+    concurrency: 1
+  })
+  const objectURL = rendered[pageNumber]
+  if (!objectURL) {
+    throw new Error(`Could not render page ${pageNumber}`)
   }
+  return objectURL
 }
-
-export {generatePreview}

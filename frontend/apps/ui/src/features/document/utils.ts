@@ -87,9 +87,24 @@ interface ClientReturn {
   data?: DocData
 }
 
-export async function getDocLastVersion(docID: UUID): Promise<ClientReturn> {
+interface GetDocLastVersionOptions {
+  signal?: AbortSignal
+  timeoutMs?: number
+}
+
+export async function getDocLastVersion(
+  docID: UUID,
+  options?: GetDocLastVersionOptions
+): Promise<ClientReturn> {
+  const timeoutMs = options?.timeoutMs ?? 15000
+  const start = performance.now()
   try {
-    let resp = await client.get(`/api/documents/${docID}/last-version/`)
+    const metadataStart = performance.now()
+    let resp = await client.get(`/api/documents/${docID}/last-version/`, {
+      signal: options?.signal,
+      timeout: timeoutMs
+    })
+    const metadataMs = performance.now() - metadataStart
 
     if (resp.status !== 200) {
       return {
@@ -100,7 +115,13 @@ export async function getDocLastVersion(docID: UUID): Promise<ClientReturn> {
 
     const docVer: DocVerShort = resp.data
 
-    resp = await client.get(docVer.download_url, {responseType: "blob"})
+    const downloadStart = performance.now()
+    resp = await client.get(docVer.download_url, {
+      responseType: "blob",
+      signal: options?.signal,
+      timeout: timeoutMs
+    })
+    const downloadMs = performance.now() - downloadStart
     if (resp.status !== 200) {
       return {
         ok: false,
@@ -108,12 +129,21 @@ export async function getDocLastVersion(docID: UUID): Promise<ClientReturn> {
       }
     }
 
+    console.info(
+      `[preview-metric] getDocLastVersion doc=${docID} meta_ms=${metadataMs.toFixed(2)} download_ms=${downloadMs.toFixed(2)} total_ms=${(performance.now() - start).toFixed(2)} blob_bytes=${resp.data.size ?? 0}`
+    )
     return {ok: true, data: {docVerID: docVer.id, blob: resp.data}}
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      const cancelled = error.code === "ERR_CANCELED"
+      const timeout = error.code === "ECONNABORTED"
       return {
         ok: false,
-        error: `Request failed: ${error.response?.status || "Network error"} - ${error.message}`
+        error: cancelled
+          ? "Request cancelled"
+          : timeout
+            ? "Request timeout"
+            : `Request failed: ${error.response?.status || "Network error"} - ${error.message}`
       }
     }
     return {

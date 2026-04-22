@@ -17,12 +17,16 @@ export const ensurePreviewForPage =
   ({docVer, targetPageNumber, size}: Args): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     if (!docVer) {
+      console.warn("[ensurePreviewForPage] skipped: missing docVer")
       return
     }
 
     const normalizedPageNumber = Math.max(1, Math.floor(targetPageNumber))
     const targetPage = docVer.pages.find(p => p.number === normalizedPageNumber)
     if (!targetPage) {
+      console.warn(
+        `[ensurePreviewForPage] skipped: target page ${normalizedPageNumber} not found`
+      )
       return
     }
 
@@ -54,10 +58,18 @@ export const ensurePreviewForPage =
       const nextBatchStartIndex = (nextPageNumber - 1) * pageSize
 
       if (nextBatchStartIndex >= docVer.pages.length) {
+        console.warn(
+          `[ensurePreviewForPage] stop: reached end of document docVer=${docVer.id}`
+        )
         return
       }
 
       await dispatch(generateNextPreviews({docVer, pageNumber: nextPageNumber, size}))
       attempts += 1
+    }
+    if (!hasTargetPreview()) {
+      console.warn(
+        `[ensurePreviewForPage] failed after ${attempts} attempts docVer=${docVer.id} page=${normalizedPageNumber} size=${size}`
+      )
     }
   }

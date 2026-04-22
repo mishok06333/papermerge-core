@@ -7,7 +7,8 @@ const baseUrl = getBaseURL()
 const defaultHeaders = getDefaultHeaders()
 
 const client = axios.create({
-  baseURL: baseUrl
+  baseURL: baseUrl,
+  timeout: 15000
 })
 
 client.defaults.headers.common = defaultHeaders

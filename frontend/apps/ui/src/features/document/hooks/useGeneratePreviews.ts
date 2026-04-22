@@ -5,7 +5,7 @@ import {generatePreviews} from "@/features/document/store/imageObjectsSlice"
 import {fileManager} from "@/features/files/fileManager"
 import {ClientDocumentVersion} from "@/types"
 import {ImageSize} from "@/types.d/common"
-import {useEffect} from "react"
+import {useCallback, useEffect, useState} from "react"
 
 interface Args {
   docVer?: ClientDocumentVersion
@@ -14,13 +14,23 @@ interface Args {
   imageSize: ImageSize
 }
 
+export interface PreviewBootstrapState {
+  allPreviewsAreAvailable: boolean
+  isBootstrapping: boolean
+  error?: string
+  retry: () => void
+}
+
 export default function useGeneratePreviews({
   docVer,
   pageSize,
   pageNumber,
   imageSize
-}: Args): boolean {
+}: Args): PreviewBootstrapState {
   const dispatch = useAppDispatch()
+  const [retryTick, setRetryTick] = useState(0)
+  const [isBootstrapping, setIsBootstrapping] = useState(false)
+  const [error, setError] = useState<string>()
   const allPreviewsAreAvailable = useAreAllPreviewsAvailable({
     docVer,
     pageSize,
@@ -28,21 +38,49 @@ export default function useGeneratePreviews({
     imageSize
   })
 
+  const retry = useCallback(() => {
+    setError(undefined)
+    setRetryTick(v => v + 1)
+  }, [])
+
   useEffect(() => {
     if (!docVer || allPreviewsAreAvailable) {
+      setIsBootstrapping(false)
+      setError(undefined)
       return
     }
     let cancelled = false
+    const abortController = new AbortController()
 
     const run = async () => {
-      if (!fileManager.getByDocVerID(docVer.id)?.buffer) {
-        await ensureDocVerBuffer(docVer)
+      const startedAt = performance.now()
+      setIsBootstrapping(true)
+      setError(undefined)
+      const retries = [0, 500, 1500]
+      let ensured = false
+      let lastError: string | undefined
+      for (const delayMs of retries) {
+        if (cancelled) {
+          return
+        }
+        if (delayMs > 0) {
+          await new Promise(resolve => setTimeout(resolve, delayMs))
+        }
+        const response = await ensureDocVerBuffer(docVer, {
+          signal: abortController.signal
+        })
+        ensured = response.ok
+        lastError = response.error
+        if (ensured) {
+          break
+        }
       }
       if (cancelled) {
         return
       }
-      if (!fileManager.getByDocVerID(docVer.id)?.buffer) {
-        // download failed; ensureDocVerBuffer already logged the reason.
+      if (!ensured || !fileManager.getByDocVerID(docVer.id)?.buffer) {
+        setError(lastError ?? "Preview bootstrap failed. Please retry.")
+        setIsBootstrapping(false)
         return
       }
       dispatch(
@@ -54,14 +92,27 @@ export default function useGeneratePreviews({
           pageTotal: docVer.pages.length
         })
       )
+      console.info(
+        `[preview-metric] bootstrap_complete docVer=${docVer.id} ms=${(performance.now() - startedAt).toFixed(2)}`
+      )
+      setIsBootstrapping(false)
     }
 
     void run()
 
     return () => {
       cancelled = true
+      abortController.abort()
     }
-  }, [dispatch, docVer, pageSize, pageNumber, allPreviewsAreAvailable])
+  }, [
+    dispatch,
+    docVer,
+    pageSize,
+    pageNumber,
+    allPreviewsAreAvailable,
+    imageSize,
+    retryTick
+  ])
 
-  return allPreviewsAreAvailable
+  return {allPreviewsAreAvailable, isBootstrapping, error, retry}
 }

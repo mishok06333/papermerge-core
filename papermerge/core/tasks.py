@@ -18,5 +18,7 @@ def send_task(*args, **kwargs):
     logger.debug("Send task args=%s kwargs=%s", args, kwargs)
     try:
         celery_app.send_task(*args, **kwargs)
+        return True
     except Exception:
         logger.exception("Failed to dispatch celery task args=%s kwargs=%s", args, kwargs)
+        return False

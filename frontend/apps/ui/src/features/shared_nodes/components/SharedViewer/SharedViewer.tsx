@@ -1,6 +1,6 @@
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
 
-import {Flex, Group, Loader} from "@mantine/core"
+import {Alert, Button, Flex, Group, Loader} from "@mantine/core"
 import {useContext, useRef} from "react"
 import {useNavigate} from "react-router-dom"
 
@@ -54,7 +54,7 @@ export default function SharedViewer() {
    * raster previews are already cached. */
   useEnsureDocVerBuffer(docVer)
   /* generate first batch of previews: for pages and for their thumbnails */
-  const allPreviewsAreAvailable = useGeneratePreviews({
+  const previewState = useGeneratePreviews({
     docVer: docVer,
     pageNumber: 1,
     pageSize: DOC_VER_PAGINATION_PAGE_BATCH_SIZE,
@@ -107,10 +107,6 @@ export default function SharedViewer() {
     return <Loader />
   }
 
-  if (!allPreviewsAreAvailable) {
-    return <Loader />
-  }
-
   return (
     <div>
       <ActionButtons />
@@ -135,6 +131,21 @@ export default function SharedViewer() {
           isLoading={false}
         />
       </Flex>
+      {previewState.error && (
+        <Alert color="red" title="Preview loading failed" mt="sm" variant="light">
+          {previewState.error}
+          <Group mt="xs">
+            <Button size="xs" variant="light" onClick={previewState.retry}>
+              Retry preview loading
+            </Button>
+          </Group>
+        </Alert>
+      )}
+      {previewState.isBootstrapping && !previewState.allPreviewsAreAvailable && (
+        <Group mt="xs">
+          <Loader size="sm" />
+        </Group>
+      )}
     </div>
   )
 }

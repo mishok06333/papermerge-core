@@ -2,7 +2,7 @@ import {RootState} from "@/app/types"
 import {ensureDocVerBuffer} from "@/features/document/hooks/useEnsureDocVerBuffer"
 import {fileManager} from "@/features/files/fileManager"
 import {ImageSize, UUID} from "@/types.d/common"
-import {generatePreview as util_pdf_generatePreview} from "@/utils/pdf"
+import {generatePdfBatchPreviews} from "@/utils/pdf"
 import {
   createAsyncThunk,
   createSelector,
@@ -134,10 +134,6 @@ export const generatePreviews = createAsyncThunk<
     return result
   }
 
-  const file = new File([fileItem.buffer], "filename.pdf", {
-    type: "application/pdf"
-  })
-
   // this number would be correct only if user never deletes
   // pages from thumbnail panel
   let firstPage = (item.pageNumber - 1) * item.pageSize
@@ -157,6 +153,7 @@ export const generatePreviews = createAsyncThunk<
 
   const sortedPagesTotal = sortedPages.length
 
+  const pagesToRender: {id: string; number: number}[] = []
   for (let pIndex = firstPage; pIndex < lastPage; pIndex++) {
     if (pIndex >= sortedPagesTotal) {
       console.error(`Page index ${pIndex} out of bound: ${sortedPagesTotal}`)
@@ -166,22 +163,29 @@ export const generatePreviews = createAsyncThunk<
       }
     }
     const page = sortedPages[pIndex]
-    const objectURL = await util_pdf_generatePreview({
-      file: file,
-      width,
-      pageNumber: page.number
-    })
+    pagesToRender.push({id: page.id, number: page.number})
+  }
 
-    if (objectURL) {
-      result.items.push({
-        pageID: page.id,
-        docID: item.docVer.document_id,
-        docVerID: item.docVer.id,
-        pageNumber: page.number,
-        objectURL: objectURL,
-        size: item.size
-      })
+  const renderedByPageNumber = await generatePdfBatchPreviews({
+    buffer: fileItem.buffer,
+    width,
+    pageNumbers: pagesToRender.map(p => p.number),
+    concurrency: 3
+  })
+
+  for (const page of pagesToRender) {
+    const objectURL = renderedByPageNumber[page.number]
+    if (!objectURL) {
+      continue
     }
+    result.items.push({
+      pageID: page.id,
+      docID: item.docVer.document_id,
+      docVerID: item.docVer.id,
+      pageNumber: page.number,
+      objectURL,
+      size: item.size
+    })
   }
 
   return result

@@ -28,6 +28,39 @@ router = APIRouter(
 )
 
 logger = logging.getLogger(__name__)
+_thumbnail_jobs: dict[uuid.UUID, asyncio.Task] = {}
+
+
+async def _generate_thumbnail_in_background(
+    document_id: uuid.UUID,
+    page_id: uuid.UUID,
+    doc_ver_id: uuid.UUID,
+    file_name: str,
+):
+    try:
+        start = asyncio.get_running_loop().time()
+        await asyncio.to_thread(
+            image.gen_doc_thumbnail,
+            page_id,
+            doc_ver_id,
+            1,
+            file_name,
+        )
+        elapsed = (asyncio.get_running_loop().time() - start) * 1000
+        logger.info(
+            "thumbnail_generated document_id=%s doc_ver_id=%s elapsed_ms=%.2f",
+            document_id,
+            doc_ver_id,
+            elapsed,
+        )
+    except Exception:
+        logger.exception(
+            "thumbnail_generation_failed document_id=%s doc_ver_id=%s",
+            document_id,
+            doc_ver_id,
+        )
+    finally:
+        _thumbnail_jobs.pop(document_id, None)
 
 
 class Message(BaseModel):
@@ -87,28 +120,24 @@ async def get_document_thumbnail(
     jpg_abs_path = rel2abs(thumbnail_path(page.id))
 
     if not os.path.exists(jpg_abs_path):
-        try:
-            await asyncio.to_thread(
-                image.gen_doc_thumbnail,
-                page.id,
+        if document_id not in _thumbnail_jobs:
+            logger.info(
+                "thumbnail_generation_queued document_id=%s doc_ver_id=%s",
+                document_id,
                 doc_ver.id,
-                1,
-                doc_ver.file_name,
             )
-        except Exception:
-            logger.exception(
-                "Thumbnail generation failed for document %s", document_id
+            _thumbnail_jobs[document_id] = asyncio.create_task(
+                _generate_thumbnail_in_background(
+                    document_id=document_id,
+                    page_id=page.id,
+                    doc_ver_id=doc_ver.id,
+                    file_name=doc_ver.file_name,
+                )
             )
-            raise HTTPException(
-                status_code=503,
-                detail=(
-                    "Could not generate thumbnail. For PDFs, install Poppler and "
-                    "ensure it is on PATH (pdf2image needs pdftoppm). For video, "
-                    "install ffmpeg on PATH or rely on the imageio-ffmpeg bundled "
-                    "binary from the papermerge dependencies. "
-                    "Also verify PAPERMERGE__MAIN__MEDIA_ROOT contains the document files."
-                ),
-            )
+        raise HTTPException(
+            status_code=423,
+            detail="Thumbnail is being prepared. Retry shortly.",
+        )
 
     if not os.path.exists(jpg_abs_path):
         raise HTTP404NotFound

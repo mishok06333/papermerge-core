@@ -17,6 +17,7 @@ export default function ThumbnailListContainer() {
     selectDocVerPaginationThumnailPageNumber(s, docVer?.id)
   )
   const containerRef = useRef<HTMLDivElement>(null)
+  const initialRequestSentRef = useRef<string>()
   const {pages, loadMore} = usePageList({
     docVerID: docVer?.id,
     totalCount: docVer?.pages.length,
@@ -38,10 +39,18 @@ export default function ThumbnailListContainer() {
   ))
 
   useEffect(() => {
-    if (pages.length == 0 && !isGenerating) {
+    initialRequestSentRef.current = undefined
+  }, [docVer?.id])
+
+  useEffect(() => {
+    if (!docVer?.id) {
+      return
+    }
+    if (pages.length == 0 && !isGenerating && initialRequestSentRef.current !== docVer.id) {
+      initialRequestSentRef.current = docVer.id
       dispatch(generateNextPreviews({docVer, size: "sm", pageNumber: 1}))
     }
-  }, [pages.length])
+  }, [dispatch, docVer, isGenerating, pages.length])
 
   useEffect(() => {
     if (loadMore && !isGenerating) {
@@ -51,7 +60,14 @@ export default function ThumbnailListContainer() {
         )
       }
     }
-  }, [loadMore])
+  }, [
+    allPreviewsAreAvailable,
+    dispatch,
+    docVer,
+    isGenerating,
+    loadMore,
+    pageNumber
+  ])
 
   return (
     <ThumbnailList

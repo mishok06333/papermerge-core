@@ -14,34 +14,59 @@ type UUID = string
  * race on the same API call.
  */
 const inflightFetches = new Map<UUID, Promise<void>>()
+const lastErrors = new Map<UUID, string>()
 
-async function ensureDocVerBuffer(docVer: DocVer): Promise<void> {
-  if (fileManager.getByDocVerID(docVer.id)?.buffer) {
-    return
+export interface EnsureDocVerBufferResult {
+  ok: boolean
+  error?: string
+}
+
+interface EnsureOptions {
+  force?: boolean
+  signal?: AbortSignal
+}
+
+async function ensureDocVerBuffer(
+  docVer: DocVer,
+  options?: EnsureOptions
+): Promise<EnsureDocVerBufferResult> {
+  if (fileManager.getByDocVerID(docVer.id)?.buffer && !options?.force) {
+    return {ok: true}
   }
 
   const existing = inflightFetches.get(docVer.id)
   if (existing) {
-    return existing
+    await existing
+    const hasBuffer = Boolean(fileManager.getByDocVerID(docVer.id)?.buffer)
+    return {
+      ok: hasBuffer,
+      error: hasBuffer ? undefined : lastErrors.get(docVer.id)
+    }
   }
 
   const task = (async () => {
-    const {ok, data, error} = await getDocLastVersion(docVer.document_id)
+    const {ok, data, error} = await getDocLastVersion(docVer.document_id, {
+      signal: options?.signal
+    })
     if (!ok || !data) {
       // Log and keep going; callers fall back to rasterised previews.
       console.warn(
         `[useEnsureDocVerBuffer] download failed for ${docVer.document_id}: ${error ?? "unknown"}`
       )
+      lastErrors.set(docVer.id, error ?? "Unknown buffer download error")
       return
     }
     const buffer = await data.blob.arrayBuffer()
     fileManager.store({buffer, docVerID: data.docVerID})
+    lastErrors.delete(docVer.id)
   })().finally(() => {
     inflightFetches.delete(docVer.id)
   })
 
   inflightFetches.set(docVer.id, task)
-  return task
+  await task
+  const hasBuffer = Boolean(fileManager.getByDocVerID(docVer.id)?.buffer)
+  return {ok: hasBuffer, error: hasBuffer ? undefined : lastErrors.get(docVer.id)}
 }
 
 /**

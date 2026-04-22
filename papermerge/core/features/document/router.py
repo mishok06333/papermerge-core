@@ -1,3 +1,4 @@
+import asyncio
 import io
 import logging
 import uuid
@@ -432,6 +433,7 @@ async def get_document_doc_thumbnail_status(
     Required scope: `{scope}`
     """
 
+    started = asyncio.get_running_loop().time()
     for doc_id in doc_ids:
         await dbapi_common.require_node_perm(
             db_session,
@@ -448,10 +450,23 @@ async def get_document_doc_thumbnail_status(
     if fserver == FileServer.S3:
         if len(doc_ids_not_yet_considered) > 0:
             for doc_id in doc_ids_not_yet_considered:
-                send_task(
+                queued = send_task(
                     const.S3_WORKER_GENERATE_DOC_THUMBNAIL,
                     kwargs={"doc_id": str(doc_id)},
                     route_name="s3preview",
                 )
+                logger.info(
+                    "thumbnail_status_enqueue doc_id=%s queued=%s",
+                    doc_id,
+                    queued,
+                )
+
+    elapsed = (asyncio.get_running_loop().time() - started) * 1000
+    logger.info(
+        "thumbnail_status_completed doc_count=%s missing_count=%s elapsed_ms=%.2f",
+        len(doc_ids),
+        len(doc_ids_not_yet_considered),
+        elapsed,
+    )
 
     return response

@@ -29,7 +29,10 @@ export default function usePage({pageNumber, pageID}: Args): PageState {
   useEffect(() => {
     if (currentPage == pageNumber) {
       if (targetRef.current) {
-        targetRef.current.scrollIntoView(false)
+        targetRef.current.scrollIntoView({
+          block: "center",
+          inline: "nearest"
+        })
       }
     }
   }, [currentPage, bestImageURL, pageNumber])

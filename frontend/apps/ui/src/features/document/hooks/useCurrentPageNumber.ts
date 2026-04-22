@@ -29,7 +29,8 @@ export default function useCurrentPageNumber({
     const containerRect = container.getBoundingClientRect()
     const containerMidPoint = containerRect.top + containerRect.height / 2
 
-    const currentIndex = Array.from(pageElements).findIndex(el => {
+    const pageList = Array.from(pageElements)
+    const currentIndex = pageList.findIndex(el => {
       const elRect = el.getBoundingClientRect()
       return (
         elRect.top <= containerMidPoint && elRect.bottom >= containerMidPoint
@@ -38,7 +39,21 @@ export default function useCurrentPageNumber({
 
     if (currentIndex !== -1) {
       setCurrentPage(currentIndex + 1)
+      return
     }
+
+    let closestIndex = 0
+    let closestDistance = Number.POSITIVE_INFINITY
+    pageList.forEach((el, index) => {
+      const elRect = el.getBoundingClientRect()
+      const pageMidPoint = elRect.top + elRect.height / 2
+      const distance = Math.abs(pageMidPoint - containerMidPoint)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestIndex = index
+      }
+    })
+    setCurrentPage(closestIndex + 1)
   }, [containerRef])
 
   useEffect(() => {

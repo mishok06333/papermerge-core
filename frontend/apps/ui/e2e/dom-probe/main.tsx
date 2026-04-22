@@ -5,6 +5,7 @@ import {MantineProvider} from "@mantine/core"
 import "@mantine/core/styles.css"
 import {useEffect, useState} from "react"
 import {createRoot} from "react-dom/client"
+import {Zoom} from "viewer"
 
 const params = new URLSearchParams(window.location.search)
 const mode = params.get("mode") ?? "canvas"
@@ -160,6 +161,37 @@ function DocSwitchProbe() {
   )
 }
 
+function ZoomControlsProbe() {
+  const [currentPage, setCurrentPage] = useState(2)
+  const [submittedPage, setSubmittedPage] = useState(0)
+  const [zoomInCount, setZoomInCount] = useState(0)
+  const [zoomOutCount, setZoomOutCount] = useState(0)
+  const [zoomResetCount, setZoomResetCount] = useState(0)
+
+  return (
+    <MantineProvider>
+      <div style={{width: 960, margin: "0 auto", paddingTop: 16}}>
+        <Zoom
+          pageNumber={currentPage}
+          pageTotal={9}
+          onZoomInClick={() => setZoomInCount(value => value + 1)}
+          onZoomOutClick={() => setZoomOutCount(value => value + 1)}
+          onFitClick={() => setZoomResetCount(value => value + 1)}
+          onPageNumberSubmit={value => {
+            setCurrentPage(value)
+            setSubmittedPage(value)
+          }}
+        />
+        <div data-testid="probe-current-page">{currentPage}</div>
+        <div data-testid="probe-submitted-page">{submittedPage}</div>
+        <div data-testid="probe-zoom-in-count">{zoomInCount}</div>
+        <div data-testid="probe-zoom-out-count">{zoomOutCount}</div>
+        <div data-testid="probe-zoom-reset-count">{zoomResetCount}</div>
+      </div>
+    </MantineProvider>
+  )
+}
+
 async function bootLegacy() {
   fileManager.clear()
 
@@ -211,6 +243,11 @@ async function boot() {
 
   if (scenario === "doc-switch-remount") {
     createRoot(rootEl).render(<RemountProbe />)
+    return
+  }
+
+  if (scenario === "zoom-controls") {
+    createRoot(rootEl).render(<ZoomControlsProbe />)
     return
   }
 

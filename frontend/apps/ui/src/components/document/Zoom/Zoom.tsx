@@ -1,5 +1,6 @@
 import PanelContext from "@/contexts/PanelContext"
 import {
+  viewerCurrentPageUpdated,
   zoomFactorDecremented,
   zoomFactorIncremented,
   zoomFactorReseted
@@ -29,6 +30,15 @@ export default function ZoomContainer({pageNumber, pageTotal}: Args) {
     dispatch(zoomFactorReseted(mode))
   }
 
+  const updatePageNumber = (pageNumber: number) => {
+    dispatch(
+      viewerCurrentPageUpdated({
+        panel: mode,
+        pageNumber
+      })
+    )
+  }
+
   return (
     <Zoom
       pageNumber={pageNumber}
@@ -36,6 +46,7 @@ export default function ZoomContainer({pageNumber, pageTotal}: Args) {
       onFitClick={fitZoom}
       onZoomInClick={incZoom}
       onZoomOutClick={decZoom}
+      onPageNumberSubmit={updatePageNumber}
     />
   )
 }

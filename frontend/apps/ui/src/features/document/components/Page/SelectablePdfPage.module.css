@@ -2,11 +2,15 @@
 .pageWrap {
   display: block;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
 .root {
   display: block;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
 /*

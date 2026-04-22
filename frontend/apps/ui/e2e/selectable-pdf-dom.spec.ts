@@ -131,6 +131,31 @@ async function expectTextLayerHitTest(page: Page): Promise<void> {
 }
 
 test.describe("SelectablePdfPage DOM (probe app)", () => {
+  test("zoom-controls: page number input clamps and submits on Enter", async ({
+    page
+  }) => {
+    await page.goto("/?scenario=zoom-controls")
+    const input = page.getByLabel("page-number-input")
+    await expect(input).toBeVisible()
+
+    await input.fill("14")
+    await page.getByLabel("go-to-page").click()
+    await expect(page.getByTestId("probe-current-page")).toHaveText("9")
+    await expect(page.getByTestId("probe-submitted-page")).toHaveText("9")
+
+    await input.fill("0")
+    await input.press("Enter")
+    await expect(page.getByTestId("probe-current-page")).toHaveText("1")
+    await expect(page.getByTestId("probe-submitted-page")).toHaveText("1")
+
+    await page.getByLabel("zoom-in").click()
+    await page.getByLabel("zoom-out").click()
+    await page.getByLabel("zoom-reset").click()
+    await expect(page.getByTestId("probe-zoom-in-count")).toHaveText("1")
+    await expect(page.getByTestId("probe-zoom-out-count")).toHaveText("1")
+    await expect(page.getByTestId("probe-zoom-reset-count")).toHaveText("1")
+  })
+
   test("fallback-img branch: zoom on <img>, no .root stack", async ({page}) => {
     await page.goto("/?mode=fallback-img")
     const img = page.locator("div.page img")

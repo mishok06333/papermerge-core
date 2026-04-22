@@ -16,11 +16,11 @@ export const applyPageChangesThunk = createAsyncThunk<
   {docID: string; pages: ClientPage[]; mode: PanelMode}, // argument type
   {state: RootState} // thunkAPI config
 >("document/applyPageChanges", async ({docID, pages, mode}, {dispatch}) => {
-  const pageData = pages.map(p => {
+  const pageData = pages.map((p, idx) => {
     const result = {
       angle: p.angle,
       page: {
-        number: p.number,
+        number: idx + 1,
         id: p.id
       }
     }

@@ -9,6 +9,10 @@ import {
 import {DocumentVersion} from "./types"
 
 export function clientDVFromDV(v: DocumentVersion): ClientDocumentVersion {
+  const serverPages = v.pages.map(p => {
+    return {id: p.id, number: p.number, angle: 0, text: p.text}
+  })
+
   let ver: ClientDocumentVersion = {
     id: v.id,
     lang: v.lang,
@@ -17,14 +21,8 @@ export function clientDVFromDV(v: DocumentVersion): ClientDocumentVersion {
     size: v.size,
     short_description: v.short_description,
     file_name: v.file_name,
-    pages: v.pages.map(p => {
-      return {id: p.id, number: p.number, angle: 0, text: p.text}
-    }),
-    initial_pages: [...v.pages]
-      .sort((a, b) => a.number - b.number)
-      .map(p => {
-        return {id: p.id, number: p.number, angle: 0, text: p.text}
-      }),
+    pages: serverPages.map(p => ({...p})),
+    initial_pages: serverPages.map(p => ({...p})),
     pagination: {
       page_number: 1,
       per_page: DOC_VER_PAGINATION_PAGE_BATCH_SIZE

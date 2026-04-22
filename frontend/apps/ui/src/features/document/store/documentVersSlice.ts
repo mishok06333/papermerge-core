@@ -26,6 +26,22 @@ import {apiSliceWithDocuments} from "./apiSlice"
 
 const EMPTY_ARRAY: any[] = []
 
+function pagesDiffer(a: ClientPage[], b: ClientPage[]): boolean {
+  if (a.length !== b.length) return true
+
+  for (let i = 0; i < a.length; i++) {
+    if (
+      a[i].id !== b[i].id ||
+      a[i].number !== b[i].number ||
+      a[i].angle !== b[i].angle
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
 interface PaginationUpdated {
   pageNumber: number
   pageSize: number
@@ -108,7 +124,7 @@ const docVersSlice = createSlice({
     pagesReseted(state, action: PayloadAction<string>) {
       const docVer = state.entities[action.payload]
       if (!docVer) return
-      docVer.pages = docVer.initial_pages
+      docVer.pages = docVer.initial_pages.map(page => ({...page}))
     },
     pagesDeleted(state, action: PayloadAction<PageDeletedArgs>) {
       const {sources, targetDocVerID} = action.payload
@@ -144,6 +160,16 @@ const docVersSlice = createSlice({
       (state, action: PayloadAction<DocumentVersion>) => {
         const v: DocumentVersion = action.payload
         const ver = clientDVFromDV(v)
+        const current = state.entities[ver.id]
+
+        if (current && pagesDiffer(current.initial_pages, current.pages)) {
+          docVerAdapter.upsertOne(state, {
+            ...ver,
+            pages: current.pages,
+            initial_pages: current.initial_pages
+          })
+          return
+        }
 
         docVerAdapter.upsertOne(state, ver)
       }
@@ -154,6 +180,9 @@ const docVersSlice = createSlice({
         let all_vers: Array<ClientDocumentVersion> = []
 
         action.payload.versions.forEach(v => {
+          const serverPages = v.pages.map(p => {
+            return {id: p.id, number: p.number, angle: 0, text: p.text}
+          })
           let ver: ClientDocumentVersion = {
             id: v.id,
             lang: v.lang,
@@ -162,14 +191,8 @@ const docVersSlice = createSlice({
             document_id: v.document_id,
             size: v.size,
             short_description: v.short_description,
-            pages: v.pages.map(p => {
-              return {id: p.id, number: p.number, angle: 0, text: p.text}
-            }),
-            initial_pages: [...v.pages]
-              .sort((a, b) => a.number - b.number)
-              .map(p => {
-                return {id: p.id, number: p.number, angle: 0, text: p.text}
-              }),
+            pages: serverPages.map(p => ({...p})),
+            initial_pages: serverPages.map(p => ({...p})),
             pagination: {
               page_number: 1,
               per_page: DOC_VER_PAGINATION_PAGE_BATCH_SIZE
@@ -246,7 +269,7 @@ export const selectInitialPages = createSelector(
     const pages = entities[docVerID]?.initial_pages
     if (!pages || pages.length === 0) return EMPTY_ARRAY
 
-    return [...pages].sort((a, b) => a.number - b.number)
+    return pages
   }
 )
 

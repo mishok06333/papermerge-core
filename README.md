@@ -74,12 +74,24 @@ state and skips.
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_EMAIL` | First-boot superuser. |
 | `OCR_LANGS` | Comma-separated tesseract language codes shown in the UI. |
 | `OCR_DEFAULT_LANG` | Default language picked in the upload dialog. |
+| `OCR_MULTI_LANGS` | `+`-joined OCR language set used for automatic OCR (e.g. `eng+rus`). |
 | `OCR_AUTOMATIC` | `true` = OCR runs on upload, `false` = on demand. |
 | `OCR_WORKER_CONCURRENCY` | Number of celery workers per OCR container. |
 
 Add more OCR languages by extending `tesseract-ocr-*` packages in
 [`docker/ocrworker/Dockerfile`](docker/ocrworker/Dockerfile) and
 listing them in `OCR_LANGS`.
+
+The worker image is built locally from [`docker/ocrworker/Dockerfile`](docker/ocrworker/Dockerfile),
+so OCR customizations are versioned in this repository. To rebuild:
+
+```bash
+docker compose build ocr_worker
+docker compose up -d ocr_worker
+```
+
+To rollback to upstream behavior, set the Dockerfile base image back to
+the upstream tag and rebuild the worker.
 
 ## Demo
 

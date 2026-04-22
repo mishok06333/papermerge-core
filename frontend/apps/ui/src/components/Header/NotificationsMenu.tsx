@@ -19,16 +19,27 @@ import {
 } from "@mantine/core"
 import {notifications} from "@mantine/notifications"
 import {IconBell} from "@tabler/icons-react"
+import Cookies from "js-cookie"
 import * as React from "react"
 import {useTranslation} from "react-i18next"
+import {useNavigate} from "react-router-dom"
+import {getWSURL} from "@/utils"
+
+type NotificationPayload = {
+  document_id?: string
+  document_version_id?: string
+  title?: string
+  finished_at?: string
+}
 
 const NotificationsMenu: React.FC = () => {
   const {t} = useTranslation()
+  const navigate = useNavigate()
   const user = useAppSelector(selectCurrentUser) as User | null
   const scopes = user?.scopes ?? []
 
   const hasScope = scopes.includes(USER_ME)
-  const {data, isLoading} = useGetLibraryNotificationsQuery(50, {
+  const {data, isLoading, refetch} = useGetLibraryNotificationsQuery(50, {
     skip: !hasScope,
     pollingInterval: 60_000
   })
@@ -41,6 +52,62 @@ const NotificationsMenu: React.FC = () => {
 
   const unreadCount = data?.filter(n => !n.read_at).length ?? 0
   const rows = data ?? []
+
+  React.useEffect(() => {
+    if (!hasScope) {
+      return
+    }
+    const baseWs = getWSURL()
+    if (!baseWs) {
+      return
+    }
+    const token = Cookies.get("access_token")
+    const wsUrl = (() => {
+      if (!token) {
+        return baseWs
+      }
+      const sep = baseWs.includes("?") ? "&" : "?"
+      return `${baseWs}${sep}token=${encodeURIComponent(token)}`
+    })()
+    const ws = new WebSocket(wsUrl)
+    const onMessage = () => {
+      // Refresh notifications immediately on server event.
+      refetch()
+    }
+    ws.addEventListener("message", onMessage)
+    return () => {
+      ws.removeEventListener("message", onMessage)
+      ws.close()
+    }
+  }, [hasScope, refetch])
+
+  const parsePayload = (payload: string | null): NotificationPayload | null => {
+    if (!payload) {
+      return null
+    }
+    try {
+      return JSON.parse(payload) as NotificationPayload
+    } catch {
+      return null
+    }
+  }
+
+  const formatNotification = (kind: string, payload: string | null) => {
+    const parsed = parsePayload(payload)
+    if (kind === "ocr_completed" && parsed) {
+      const docTitle = parsed.title || "документ"
+      return {
+        title: "OCR завершен",
+        message: `Документ "${docTitle}" успешно распознан и готов к работе.`,
+        documentId: parsed.document_id
+      }
+    }
+
+    return {
+      title: kind,
+      message: payload || ""
+    }
+  }
 
   return (
     <Popover withArrow position="bottom-end" width={380}>
@@ -64,18 +131,31 @@ const NotificationsMenu: React.FC = () => {
             <Loader size="sm" />
           ) : (
             <>
-              {rows.map(n => (
+              {rows.map(n => {
+                const item = formatNotification(n.kind, n.payload)
+                return (
                 <Paper key={n.id} withBorder p="sm">
                   <Group justify="space-between">
                     <Stack gap={4}>
                       <Text size="sm" fw={600}>
-                        {n.kind}
+                        {item.title}
                       </Text>
                       <Text size="xs" c="dimmed">
                         {new Date(n.created_at).toLocaleString()}
                       </Text>
-                      {n.payload !== null ? (
-                        <Text size="sm">{n.payload}</Text>
+                      {item.message ? (
+                        <Text size="sm">{item.message}</Text>
+                      ) : null}
+                      {item.documentId ? (
+                        <Button
+                          size="xs"
+                          variant="subtle"
+                          p={0}
+                          justify="flex-start"
+                          onClick={() => navigate(`/document/${item.documentId}`)}
+                        >
+                          Открыть документ
+                        </Button>
                       ) : null}
                     </Stack>
                     {!n.read_at ? (
@@ -108,7 +188,7 @@ const NotificationsMenu: React.FC = () => {
                     )}
                   </Group>
                 </Paper>
-              ))}
+              )})}
               {rows.length === 0 ? (
                 <Text c="dimmed">{t("library.empty_notifications")}</Text>
               ) : null}

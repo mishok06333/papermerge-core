@@ -50,6 +50,7 @@ services:
       PAPERMERGE__REDIS__URL: redis://redis:6379/0
       PAPERMERGE__OCR__LANG_CODES: ${OCR_LANGS:-deu,eng,rus}
       PAPERMERGE__OCR__DEFAULT_LANG_CODE: ${OCR_DEFAULT_LANG:-rus}
+      PAPERMERGE__OCR__MULTI_LANG_CODES: ${OCR_MULTI_LANGS:-eng+rus}
       PAPERMERGE__OCR__AUTOMATIC: ${OCR_AUTOMATIC:-false}
       PAPERMERGE__AUTH__USERNAME: ${ADMIN_USERNAME}
       PAPERMERGE__AUTH__EMAIL: ${ADMIN_EMAIL}
@@ -72,6 +73,7 @@ services:
       PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       PAPERMERGE__REDIS__URL: redis://redis:6379/0
       PAPERMERGE__MAIN__MEDIA_ROOT: /var/media/pmg
+      PAPERMERGE__OCR__MULTI_LANG_CODES: ${OCR_MULTI_LANGS:-eng+rus}
       OCR_WORKER_ARGS: -Q ocr -c ${OCR_WORKER_CONCURRENCY:-2}
     volumes:
       - ./media:/var/media/pmg

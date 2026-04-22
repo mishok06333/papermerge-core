@@ -377,6 +377,7 @@ async def list_my_notifications(
     db_session: AsyncSession = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
 ):
+    await lib_api.ensure_ocr_complete_notifications(db_session, user_id=user.id)
     rows = await lib_api.list_notifications(db_session, user.id, limit=limit)
     await db_session.commit()
     return [

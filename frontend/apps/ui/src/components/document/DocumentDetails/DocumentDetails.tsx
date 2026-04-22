@@ -11,10 +11,8 @@ import {useDisclosure} from "@mantine/hooks"
 import {useContext} from "react"
 import {useTranslation} from "react-i18next"
 
-import {shouldHideOcrLanguageInDetails} from "@/features/document/documentPreview"
 import PanelContext from "@/contexts/PanelContext"
 import {useGetDocumentQuery} from "@/features/document/store/apiSlice"
-import {selectDocumentVersionOCRLang} from "@/features/document/store/documentVersSlice"
 import {skipToken} from "@reduxjs/toolkit/query"
 import {IconEdit} from "@tabler/icons-react"
 import classes from "./DocumentDetails.module.css"
@@ -46,7 +44,6 @@ export default function DocumentDetails({doc, docVer, docID, isLoading}: Args) {
   const documentDetailsIsOpen = useAppSelector(s =>
     selectDocumentDetailsPanelOpen(s, mode)
   )
-  const ocrLang = useAppSelector(s => selectDocumentVersionOCRLang(s, mode))
 
   if (!docID || isLoading) {
     return (
@@ -90,14 +87,6 @@ export default function DocumentDetails({doc, docVer, docID, isLoading}: Args) {
           <Group>
             <CustomFields docID={docID} doc={doc} isLoading={isLoading} />
           </Group>
-          {!shouldHideOcrLanguageInDetails(docVer?.file_name) && (
-            <TextInput
-              label={t("common.ocr_language")}
-              readOnly
-              value={ocrLang}
-              mt="md"
-            />
-          )}
           {docID ? <DocumentLibraryPanel documentId={docID} /> : null}
         </Stack>
       </Group>

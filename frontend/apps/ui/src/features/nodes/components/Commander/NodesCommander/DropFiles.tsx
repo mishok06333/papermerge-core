@@ -16,17 +16,15 @@ import {apiSlice} from "@/features/api/slice"
 import {uploadFile} from "@/features/files/filesSlice"
 
 import Error from "@/components/Error"
-import ScheduleOCRProcessCheckbox from "@/components/ScheduleOCRProcessCheckbox/ScheduleOCRProcessCheckbox"
 import {generateThumbnail} from "@/features/nodes/thumbnailObjectsSlice"
 import type {UploadFileOutput} from "@/features/nodes/types"
-import {useRuntimeConfig} from "@/hooks/runtime_config"
 import {
   buildFileNameWithOriginalExtension,
   isAcceptableUploadStem,
   isOcrCandidateFile,
   splitStemAndExtension
 } from "@/features/document/documentPreview"
-import type {FolderType, OCRCode} from "@/types"
+import type {FolderType} from "@/types"
 import {useTranslation} from "react-i18next"
 
 type Args = {
@@ -61,11 +59,8 @@ export const DropFilesModal = ({
   opened
 }: Args) => {
   const {t} = useTranslation()
-  const runtimeConfig = useRuntimeConfig()
   const dispatch = useAppDispatch()
   const [error, setError] = useState("")
-  const [scheduleOCR, setScheduleOCR] = useState<boolean>(false)
-  const [lang, setLang] = useState<OCRCode>("deu")
   const [fileStems, setFileStems] = useState<string[]>([])
   const filesArray = [...source_files]
   const target_title = target.title
@@ -95,14 +90,6 @@ export const DropFilesModal = ({
       )
     )
 
-  const onLangChange = (newLang: OCRCode) => {
-    setLang(newLang)
-  }
-
-  const onCheckboxChange = (newValue: boolean) => {
-    setScheduleOCR(newValue)
-  }
-
   const localSubmit = async () => {
     if (!namesValid) {
       return
@@ -116,8 +103,7 @@ export const DropFilesModal = ({
         uploadFile({
           file,
           refreshTarget: true,
-          ocr: scheduleOCR,
-          lang: lang,
+          ocr: isOcrCandidateFile(file.name),
           target
         })
       )
@@ -184,14 +170,11 @@ export const DropFilesModal = ({
             )
           })}
         </Stack>
-        {!runtimeConfig.ocr__automatic && showOcrOption && (
-          <ScheduleOCRProcessCheckbox
-            initialCheckboxValue={false}
-            defaultLang={runtimeConfig.ocr__default_lang_code}
-            onCheckboxChange={onCheckboxChange}
-            onLangChange={onLangChange}
-          />
-        )}
+        {showOcrOption ? (
+          <Text size="sm" c="dimmed" mb="md">
+            OCR будет запущен автоматически после загрузки.
+          </Text>
+        ) : null}
         {error && <Error message={error} />}
         <Group gap="lg" justify="space-between">
           <Button variant="default" onClick={localCancel}>

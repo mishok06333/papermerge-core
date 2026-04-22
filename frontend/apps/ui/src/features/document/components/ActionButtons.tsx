@@ -4,7 +4,6 @@ import PanelContext from "@/contexts/PanelContext"
 import DeletePagesButton from "@/features/document/components/DeletePagesButton"
 import EditTitleButton from "@/features/document/components/EditTitleButton"
 import {updateActionPanel} from "@/features/ui/uiSlice"
-import {useRuntimeConfig} from "@/hooks/runtime_config"
 import {Group} from "@mantine/core"
 import {useViewportSize} from "@mantine/hooks"
 import {useContext, useEffect, useRef} from "react"
@@ -14,7 +13,6 @@ import LibraryFavoriteToggle from "@/features/library/components/LibraryFavorite
 import DownloadButton from "@/features/document/components/DownloadButton"
 import RotateButton from "@/features/document/components/RotateButton"
 import RotateCCButton from "@/features/document/components/RotateCCButton"
-import RunOCRButton from "@/features/document/components/RunOCRButton"
 import ViewOCRTextButton from "@/features/document/components/ViewOCRTextButton"
 import {isBuiltinTextDocument} from "@/features/document/documentPreview"
 import {
@@ -43,7 +41,6 @@ export default function ActionButtons({
   const {doc} = useCurrentDoc()
   const {docVer} = useCurrentDocVer()
   const selectedPages = useSelectedPages({mode, docVerID: docVer?.id})
-  const runtimeConfig = useRuntimeConfig()
 
   useEffect(() => {
     if (ref?.current) {
@@ -63,8 +60,6 @@ export default function ActionButtons({
       <Group>
         <EditTitleButton onClick={onEditNodeTitleClicked} />
         {doc?.id ? <LibraryFavoriteToggle nodeId={doc.id} /> : null}
-        {!runtimeConfig.ocr__automatic &&
-          !isBuiltinTextDocument(docVer?.file_name) && <RunOCRButton />}
         {!isBuiltinTextDocument(docVer?.file_name) && <ViewOCRTextButton />}
         <DownloadButton />
         {selectedPages.length > 0 && (

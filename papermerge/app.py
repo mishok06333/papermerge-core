@@ -38,6 +38,7 @@ from papermerge.core.features.shared_nodes.router_documents import (
 from papermerge.core.routers.version import (
     router as version_router,
 )
+from papermerge.core.routers.ws import router as ws_router
 from papermerge.core.version import __version__
 from papermerge.core.config import get_settings
 from papermerge.core.features.library_ts.router import router as library_ts_router
@@ -84,6 +85,7 @@ app.include_router(probe_router, prefix=prefix)
 app.include_router(tasks_router, prefix=prefix)
 app.include_router(version_router, prefix=prefix)
 app.include_router(library_ts_router, prefix=prefix)
+app.include_router(ws_router)
 
 if settings.papermerge__search__url:
     app.include_router(search_router, prefix=prefix)

@@ -4,15 +4,19 @@ import uuid
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import and_, delete, exists, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core import orm
+from papermerge.core.db import common as db_common
+from papermerge.core.features.auth import scopes
 from papermerge.core.features.library_ts.db import orm as lib_orm
+from papermerge.core.pathlib import abs_page_txt_path
 
 logger = logging.getLogger(__name__)
 
 RECENT_LIMIT = 50
+OCR_COMPLETED_KIND = "ocr_completed"
 
 
 async def add_audit(
@@ -374,6 +378,129 @@ async def list_notifications(
         .limit(limit)
     )
     return list((await db_session.scalars(stmt)).all())
+
+
+async def ensure_ocr_complete_notifications(
+    db_session: AsyncSession,
+    *,
+    user_id: UUID,
+) -> None:
+    existing_rows = (
+        await db_session.execute(
+            select(lib_orm.UserNotification.payload).where(
+                lib_orm.UserNotification.user_id == user_id,
+                lib_orm.UserNotification.kind == OCR_COMPLETED_KIND,
+            )
+        )
+    ).all()
+    existing_doc_ver_ids: set[str] = set()
+    for row in existing_rows:
+        if not row.payload:
+            continue
+        try:
+            payload = json.loads(row.payload)
+        except json.JSONDecodeError:
+            continue
+        doc_ver_id = payload.get("document_version_id")
+        if doc_ver_id:
+            existing_doc_ver_ids.add(str(doc_ver_id))
+
+    latest_ver_num = (
+        select(
+            orm.DocumentVersion.document_id.label("document_id"),
+            func.max(orm.DocumentVersion.number).label("max_number"),
+        )
+        .group_by(orm.DocumentVersion.document_id)
+        .subquery()
+    )
+
+    page_text_exists = exists(
+        select(orm.Page.id).where(
+            and_(
+                orm.Page.document_version_id == orm.DocumentVersion.id,
+                orm.Page.text.is_not(None),
+                orm.Page.text != "",
+            )
+        )
+    )
+
+    stmt = (
+        select(
+            orm.Document.id,
+            orm.Document.title,
+            orm.DocumentVersion.id,
+        )
+        .join(
+            latest_ver_num,
+            latest_ver_num.c.document_id == orm.Document.id,
+        )
+        .join(
+            orm.DocumentVersion,
+            (orm.DocumentVersion.document_id == orm.Document.id)
+            & (orm.DocumentVersion.number == latest_ver_num.c.max_number),
+        )
+        .where(
+            or_(
+                and_(
+                    orm.DocumentVersion.text.is_not(None),
+                    orm.DocumentVersion.text != "",
+                ),
+                page_text_exists,
+            ),
+            orm.Document.deleted_at.is_(None),
+        )
+        .order_by(orm.Document.updated_at.desc())
+        .limit(200)
+    )
+    rows = (await db_session.execute(stmt)).all()
+
+    for document_id, title, doc_ver_id in rows:
+        if str(doc_ver_id) in existing_doc_ver_ids:
+            continue
+        # Notify only for real OCR runs (worker artifacts exist). PDFs with
+        # embedded selectable text should not create OCR-complete notifications.
+        if not await has_ocr_artifacts_for_doc_ver(db_session, doc_ver_id):
+            continue
+        has_access = await db_common.has_node_perm(
+            db_session,
+            node_id=document_id,
+            codename=scopes.NODE_VIEW,
+            user_id=user_id,
+        )
+        if not has_access:
+            continue
+        payload = json.dumps(
+            {
+                "document_id": str(document_id),
+                "document_version_id": str(doc_ver_id),
+                "title": title,
+                "finished_at": datetime.utcnow().isoformat(),
+            }
+        )
+        db_session.add(
+            lib_orm.UserNotification(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                kind=OCR_COMPLETED_KIND,
+                payload=payload,
+            )
+        )
+        existing_doc_ver_ids.add(str(doc_ver_id))
+
+
+async def has_ocr_artifacts_for_doc_ver(
+    db_session: AsyncSession,
+    doc_ver_id: UUID,
+) -> bool:
+    page_ids = (
+        await db_session.execute(
+            select(orm.Page.id).where(orm.Page.document_version_id == doc_ver_id)
+        )
+    ).scalars().all()
+    for page_id in page_ids:
+        if abs_page_txt_path(page_id).is_file():
+            return True
+    return False
 
 
 async def mark_notification_read(

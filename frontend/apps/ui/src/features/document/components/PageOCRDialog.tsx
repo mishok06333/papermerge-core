@@ -74,7 +74,8 @@ export const PageOCRDialog = ({onClose, opened}: Args) => {
         </Box>
       ) : (
         <Text c="dimmed">
-          No OCR text available. Run OCR on this document first.
+          OCR поставлен в очередь или еще обрабатывается. Текст появится
+          автоматически, как только распознавание завершится.
         </Text>
       )}
       <Group justify="space-between" mt={combinedOcrText ? 0 : "md"}>

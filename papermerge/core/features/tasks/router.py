@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Security
 
 from papermerge.core import constants, schema, utils
+from papermerge.core import config
 from papermerge.core.features.auth import get_current_user, scopes
 from papermerge.core import tasks
 
@@ -12,6 +13,7 @@ router = APIRouter(
     prefix="/tasks",
     tags=["tasks"],
 )
+settings = config.get_settings()
 
 
 @router.post("/ocr")
@@ -29,7 +31,9 @@ def start_ocr(
         constants.WORKER_OCR_DOCUMENT,
         kwargs={
             "document_id": str(ocr_task.document_id),
-            "lang": ocr_task.lang,
+            # Legacy clients may still send `lang`, but OCR now runs with
+            # system multilingual codes by default.
+            "lang": ocr_task.lang or settings.papermerge__ocr__multi_lang_codes,
         },
         route_name="ocr",
     )

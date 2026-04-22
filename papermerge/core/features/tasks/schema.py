@@ -33,4 +33,4 @@ LangCode = Literal[
 
 class OCRTaskIn(BaseModel):
     document_id: UUID  # document model ID
-    lang: LangCode
+    lang: LangCode | None = None

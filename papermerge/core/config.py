@@ -48,6 +48,10 @@ class Settings(BaseSettings):
         description="Comma-separated OCR language codes shown in the UI. "
                     "Must match languages available in the OCR worker (tesseract).",
     )
+    papermerge__ocr__multi_lang_codes: str = Field(
+        default="eng+rus",
+        description="OCR language set used for automatic multilingual OCR runs.",
+    )
     papermerge__preview__page_size_sm: int = 200  # pixels
     # When is OCR triggered ?
     # `ocr__automatic` = True means that OCR will be performed without
@@ -76,6 +80,8 @@ class Settings(BaseSettings):
                 f"'{self.papermerge__ocr__default_lang_code}' must be present in "
                 f"papermerge__ocr__lang_codes '{self.papermerge__ocr__lang_codes}'"
             )
+        if not self.papermerge__ocr__multi_lang_codes.strip():
+            raise ValueError("papermerge__ocr__multi_lang_codes must not be empty")
         return self
 
     def cors_origins_list(self) -> list[str]:

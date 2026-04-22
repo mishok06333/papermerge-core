@@ -7,6 +7,7 @@ import uuid
 from typing import Tuple, Sequence
 
 import img2pdf
+import fitz
 from pikepdf import Pdf
 from sqlalchemy import delete, func, insert, select, update, distinct, Select
 from sqlalchemy.exc import IntegrityError
@@ -22,6 +23,7 @@ from papermerge.core.types import (
     OrderEnum,
     CFVValueColumn,
     ImagePreviewStatus,
+    OCRStatusEnum,
 )
 from papermerge.core.db.common import get_ancestors, get_node_owner
 from papermerge.core.utils.misc import str2date, str2float, float2str
@@ -665,7 +667,8 @@ async def upload(
         pdf_ver = await create_next_version(
             db_session, doc=doc, file_name=safe_file_name, file_size=size
         )
-        await copy_file(src=content, dst=abs_docver_path(pdf_ver.id, pdf_ver.file_name))
+        pdf_dst = abs_docver_path(pdf_ver.id, pdf_ver.file_name)
+        await copy_file(src=content, dst=pdf_dst)
 
         page_count = get_pdf_page_count(content)
 
@@ -678,6 +681,13 @@ async def upload(
                 document_version_id=pdf_ver.id,
             )
             db_session.add(db_page_pdf)
+        await populate_embedded_pdf_text(
+            db_session=db_session,
+            doc=doc,
+            doc_ver=pdf_ver,
+            pdf_path=str(pdf_dst),
+            page_count=page_count,
+        )
         db_session.add(pdf_ver)
 
     elif ct in IMAGE_MIMES_IMG2PDF:
@@ -778,18 +788,111 @@ async def upload(
             route_name="s3",
         )
 
-    if not settings.papermerge__ocr__automatic:
-        if doc.ocr is True and blob_ver is None:
-            tasks.send_task(
-                constants.WORKER_OCR_DOCUMENT,
-                kwargs={
-                    "document_id": str(doc.id),
-                    "lang": doc.lang,
-                },
-                route_name="ocr",
-            )
+    if await should_schedule_ocr(
+        db_session=db_session,
+        doc=doc,
+        pdf_ver=pdf_ver,
+        blob_ver=blob_ver,
+    ):
+        tasks.send_task(
+            constants.WORKER_OCR_DOCUMENT,
+            kwargs={
+                "document_id": str(doc.id),
+                "lang": settings.papermerge__ocr__multi_lang_codes,
+            },
+            route_name="ocr",
+        )
 
     return validated_model, None
+
+
+async def should_schedule_ocr(
+    *,
+    db_session: AsyncSession,
+    doc: orm.Document,
+    pdf_ver: orm.DocumentVersion | None,
+    blob_ver: orm.DocumentVersion | None,
+) -> bool:
+    if doc.ocr is not True:
+        return False
+    if blob_ver is not None:
+        return False
+    if pdf_ver is None:
+        return False
+
+    latest_ver_stmt = (
+        select(orm.DocumentVersion.id, orm.DocumentVersion.text)
+        .where(orm.DocumentVersion.document_id == doc.id)
+        .order_by(orm.DocumentVersion.number.desc())
+        .limit(1)
+    )
+    latest_ver = (await db_session.execute(latest_ver_stmt)).one_or_none()
+    if latest_ver is None:
+        return True
+
+    doc_ver_id, doc_ver_text = latest_ver
+    if doc_ver_text and doc_ver_text.strip():
+        return False
+
+    pages_stmt = select(func.count()).select_from(orm.Page).where(
+        orm.Page.document_version_id == doc_ver_id,
+        orm.Page.text.is_(None),
+    )
+    missing_page_text_count = (await db_session.execute(pages_stmt)).scalar_one()
+    if missing_page_text_count == 0:
+        return False
+
+    return True
+
+
+async def populate_embedded_pdf_text(
+    *,
+    db_session: AsyncSession,
+    doc: orm.Document,
+    doc_ver: orm.DocumentVersion,
+    pdf_path: str,
+    page_count: int,
+) -> None:
+    extracted_pages: list[str] = []
+    with fitz.open(pdf_path) as pdf_doc:
+        for idx in range(page_count):
+            page_text = (pdf_doc[idx].get_text("text") or "").strip()
+            extracted_pages.append(page_text)
+
+    if not any(extracted_pages):
+        return
+
+    page_rows = (
+        await db_session.execute(
+            select(orm.Page.id, orm.Page.number).where(
+                orm.Page.document_version_id == doc_ver.id
+            )
+        )
+    ).all()
+    page_id_by_number = {row.number: row.id for row in page_rows}
+
+    for page_number, page_text in enumerate(extracted_pages, start=1):
+        if not page_text:
+            continue
+        page_id = page_id_by_number.get(page_number)
+        if page_id is None:
+            continue
+        await db_session.execute(
+            update(orm.Page).where(orm.Page.id == page_id).values(text=page_text)
+        )
+
+    joined_text = " ".join([txt for txt in extracted_pages if txt]).strip()
+    if joined_text:
+        await db_session.execute(
+            update(orm.DocumentVersion)
+            .where(orm.DocumentVersion.id == doc_ver.id)
+            .values(text=joined_text)
+        )
+        await db_session.execute(
+            update(orm.Document)
+            .where(orm.Document.id == doc.id)
+            .values(ocr_status=OCRStatusEnum.success)
+        )
 
 
 async def get_doc(

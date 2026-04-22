@@ -279,7 +279,7 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
         <Stack gap="xs">
           <div
             className={classes.root}
-            style={{width: `${zoomFactor}%`, maxWidth: "100%"}}
+            style={{width: `${zoomFactor}%`, maxWidth: "100%", margin: "0 auto"}}
           >
             <div className={classes.scaled}>
               <div className={classes.inner} ref={innerRef}>

@@ -217,7 +217,7 @@ export default function Viewer() {
         onRotateCCClicked={onRotateCCItemClicked}
         onDeletePagesClicked={onDeletePagesItemClicked}
       />
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="nowrap">
         <Breadcrumbs breadcrumb={doc?.breadcrumb} onClick={onClick} />
         <DocumentDetailsToggle />
       </Group>

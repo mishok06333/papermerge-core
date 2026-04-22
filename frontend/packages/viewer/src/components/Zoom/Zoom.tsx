@@ -47,31 +47,6 @@ export default function Zoom({
 
   return (
     <Group justify={"center"} className={classes.zoom}>
-      <Input
-        type="number"
-        className={classes.pageInput}
-        aria-label="page-number-input"
-        value={inputPageNumber}
-        min={1}
-        max={pageTotal || 1}
-        onChange={event => setInputPageNumber(event.currentTarget.value)}
-        onBlur={submitPageNumber}
-        onKeyDownCapture={event => {
-          if (event.key === "Enter") {
-            submitPageNumber()
-          }
-        }}
-      />
-      <ActionIcon
-        variant="subtle"
-        className={classes.zoomControl}
-        size="lg"
-        onClick={submitPageNumber}
-        aria-label="go-to-page"
-      >
-        <IconArrowRight />
-      </ActionIcon>
-      <span className={classes.pageTotal}>/ {pageTotal}</span>
       <ActionIcon
         variant="subtle"
         className={classes.zoomControl}
@@ -99,6 +74,31 @@ export default function Zoom({
       >
         <IconMaximize />
       </ActionIcon>
+      <Input
+        type="number"
+        className={classes.pageInput}
+        aria-label="page-number-input"
+        value={inputPageNumber}
+        min={1}
+        max={pageTotal || 1}
+        onChange={event => setInputPageNumber(event.currentTarget.value)}
+        onBlur={submitPageNumber}
+        onKeyDownCapture={event => {
+          if (event.key === "Enter") {
+            submitPageNumber()
+          }
+        }}
+      />
+      <ActionIcon
+        variant="subtle"
+        className={classes.zoomControl}
+        size="lg"
+        onClick={submitPageNumber}
+        aria-label="go-to-page"
+      >
+        <IconArrowRight />
+      </ActionIcon>
+      <span className={classes.pageTotal}>/ {pageTotal}</span>
     </Group>
   )
 }

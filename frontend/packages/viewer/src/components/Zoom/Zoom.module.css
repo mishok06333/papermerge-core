@@ -3,13 +3,10 @@
   color: #2f2f2f;
   width: fit-content;
   max-width: calc(100% - 2rem);
-  position: sticky;
-  bottom: 0.75rem;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
   z-index: 20;
   padding: 0.4rem 0.55rem;
-  margin: auto;
+  margin: 0 auto;
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px rgb(0 0 0 / 30%);
   pointer-events: auto;

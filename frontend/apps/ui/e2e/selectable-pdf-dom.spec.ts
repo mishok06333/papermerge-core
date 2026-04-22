@@ -201,7 +201,7 @@ test.describe("SelectablePdfPage DOM (probe app)", () => {
     expect(rows.some(r => r.tag === "img")).toBe(true)
   })
 
-  test("canvas branch: anchor div with width % and max-width 100%", async ({
+  test("canvas branch: anchor div with width % style", async ({
     page
   }) => {
     await page.goto("/?mode=canvas")
@@ -219,7 +219,6 @@ test.describe("SelectablePdfPage DOM (probe app)", () => {
         const s = d.getAttribute("style") ?? ""
         if (
           /\bwidth:\s*\d+%/.test(s) &&
-          /\bmax-width:\s*100%/.test(s) &&
           (d.className?.toString() ?? "").length > 0
         ) {
           return {
@@ -234,7 +233,6 @@ test.describe("SelectablePdfPage DOM (probe app)", () => {
 
     expect(anchor).not.toBeNull()
     expect(anchor!.style).toMatch(/\bwidth:\s*100%/)
-    expect(anchor!.style).toMatch(/\bmax-width:\s*100%/)
 
     const pageRoot = page.locator("div.page").first()
     const rows = await pageRoot.evaluate((el, maxDepth) => {

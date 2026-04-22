@@ -48,6 +48,7 @@ export const HOME_FOLDER_TREE_WIDTH_MAX = 640
 export const HOME_FOLDER_TREE_WIDTH_DEFAULT = 240
 
 const SMALL_BOTTOM_MARGIN = 13 /* pixles */
+const EFFECTIVE_VIEWER_MAX_ZOOM_FACTOR = ZOOM_FACTOR_INIT
 
 function clampHomeFolderTreeWidth(width: number): number {
   return Math.min(
@@ -783,30 +784,34 @@ const uiSlice = createSlice({
       const mode = action.payload
       if (mode == "main") {
         const zoom = state.mainViewerZoomFactor || ZOOM_FACTOR_INIT
-        if (zoom + ZOOM_FACTOR_STEP < MAX_ZOOM_FACTOR) {
-          state.mainViewerZoomFactor = zoom + ZOOM_FACTOR_STEP
-        }
+        state.mainViewerZoomFactor = Math.min(
+          EFFECTIVE_VIEWER_MAX_ZOOM_FACTOR,
+          zoom + ZOOM_FACTOR_STEP
+        )
       }
       if (mode == "secondary") {
         const zoom = state.secondaryViewerZoomFactor || ZOOM_FACTOR_INIT
-        if (zoom + ZOOM_FACTOR_STEP < MAX_ZOOM_FACTOR) {
-          state.secondaryViewerZoomFactor = zoom + ZOOM_FACTOR_STEP
-        }
+        state.secondaryViewerZoomFactor = Math.min(
+          EFFECTIVE_VIEWER_MAX_ZOOM_FACTOR,
+          zoom + ZOOM_FACTOR_STEP
+        )
       }
     },
     zoomFactorDecremented(state, action: PayloadAction<PanelMode>) {
       const mode = action.payload
       if (mode == "main") {
-        let zoom = state.mainViewerZoomFactor || ZOOM_FACTOR_INIT
-        if (zoom - ZOOM_FACTOR_STEP > MIN_ZOOM_FACTOR) {
-          state.mainViewerZoomFactor = zoom - ZOOM_FACTOR_STEP
-        }
+        const zoom = state.mainViewerZoomFactor || ZOOM_FACTOR_INIT
+        state.mainViewerZoomFactor = Math.max(
+          MIN_ZOOM_FACTOR,
+          zoom - ZOOM_FACTOR_STEP
+        )
       }
       if (mode == "secondary") {
-        let zoom = state.secondaryViewerZoomFactor || ZOOM_FACTOR_INIT
-        if (zoom && zoom - ZOOM_FACTOR_STEP > MIN_ZOOM_FACTOR) {
-          state.secondaryViewerZoomFactor = zoom - ZOOM_FACTOR_STEP
-        }
+        const zoom = state.secondaryViewerZoomFactor || ZOOM_FACTOR_INIT
+        state.secondaryViewerZoomFactor = Math.max(
+          MIN_ZOOM_FACTOR,
+          zoom - ZOOM_FACTOR_STEP
+        )
       }
     },
     zoomFactorReseted(state, action: PayloadAction<PanelMode>) {
@@ -1273,11 +1278,17 @@ export const selectCommanderDocumentTypeID = (
 }
 
 export const selectZoomFactor = (state: RootState, mode: PanelMode) => {
+  const clampZoom = (value: number) =>
+    Math.max(
+      MIN_ZOOM_FACTOR,
+      Math.min(EFFECTIVE_VIEWER_MAX_ZOOM_FACTOR, value)
+    )
+
   if (mode == "main") {
-    return state.ui.mainViewerZoomFactor || ZOOM_FACTOR_INIT
+    return clampZoom(state.ui.mainViewerZoomFactor || ZOOM_FACTOR_INIT)
   }
 
-  return state.ui.secondaryViewerZoomFactor || ZOOM_FACTOR_INIT
+  return clampZoom(state.ui.secondaryViewerZoomFactor || ZOOM_FACTOR_INIT)
 }
 
 export const selectCurrentDocVerID = (state: RootState, mode: PanelMode) => {

@@ -8,10 +8,10 @@
 
 
 # env vars
-
-.envok.yaml
+# NOTE: .env.dev is the committed reference; .env is the per-developer file
+# (produced via `cp .env.dev .env`) and must never be committed.
 .env
-.env.dev
+.envok.yaml
 
 
 *.pid

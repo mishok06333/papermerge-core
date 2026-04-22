@@ -1,13 +1,12 @@
-import asyncio
 from typing import Sequence
 
-from prompt_toolkit import prompt
 from typing_extensions import Annotated
 import typer
 from rich.console import Console
 from rich.table import Table
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import selectinload
 
 from papermerge.core import orm, schema
 from papermerge.core.db.engine import AsyncSessionLocal
@@ -106,6 +105,45 @@ async def update_user_cmd(username: str, superuser: bool = False):
         raise typer.Exit(1)
 
     console.print(f"User [bold]{username}[/bold] successfully updated", style="green")
+
+
+@app.command(name="assign-role")
+@async_command
+async def assign_role_cmd(username: str, role: str):
+    """Attach <role> to <username>. No-op if the user already has the role."""
+    async with AsyncSessionLocal() as db_session:
+        user_stmt = (
+            select(orm.User)
+            .options(selectinload(orm.User.roles))
+            .where(orm.User.username == username)
+        )
+        user = (await db_session.execute(user_stmt)).scalar_one_or_none()
+        if user is None:
+            console.print(f"User [bold]{username}[/bold] not found", style="red")
+            raise typer.Exit(1)
+
+        role_obj = (
+            await db_session.execute(select(orm.Role).where(orm.Role.name == role))
+        ).scalar_one_or_none()
+        if role_obj is None:
+            console.print(f"Role [bold]{role}[/bold] not found", style="red")
+            raise typer.Exit(1)
+
+        if any(r.id == role_obj.id for r in user.roles):
+            console.print(
+                f"User [bold]{username}[/bold] already has role "
+                f"[bold]{role}[/bold]; nothing to do.",
+                style="yellow",
+            )
+            return
+
+        user.roles.append(role_obj)
+        await db_session.commit()
+
+    console.print(
+        f"Role [bold]{role}[/bold] assigned to [bold]{username}[/bold]",
+        style="green",
+    )
 
 
 def print_users(users: Sequence[schema.User]):

@@ -1,30 +1,25 @@
+# ---------------------------------------------------------------------------
+# Stage 1: frontend bundle
+# ---------------------------------------------------------------------------
 FROM node:20.19 AS frontend_build
-# Ensure all packages are up-to-date.
-# Use retries for transient mirror/network issues during image builds.
+
+# Apply latest security updates. Retry to tolerate transient mirror failures.
 RUN set -eux; \
-    attempts=0; \
-    max_attempts=5; \
+    attempts=0; max_attempts=5; \
     until [ "$attempts" -ge "$max_attempts" ]; do \
-        if apt-get update && apt-get upgrade -y; then \
-            break; \
-        fi; \
+        if apt-get update && apt-get upgrade -y; then break; fi; \
         attempts=$((attempts + 1)); \
         echo "apt-get failed (attempt ${attempts}/${max_attempts}), retrying..."; \
         sleep $((attempts * 5)); \
     done; \
-    if [ "$attempts" -ge "$max_attempts" ]; then \
-        echo "apt-get update/upgrade failed after ${max_attempts} attempts"; \
-        exit 1; \
-    fi; \
+    [ "$attempts" -lt "$max_attempts" ] || (echo "apt-get failed"; exit 1); \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build_frontend_app
 COPY frontend/ .
 
-# Use corepack to manage Yarn version and install dependencies
 RUN set -eux; \
-    attempts=0; \
-    max_attempts=5; \
+    attempts=0; max_attempts=5; \
     until [ "$attempts" -ge "$max_attempts" ]; do \
       if corepack enable && \
          yarn set version 4.9.2 && \
@@ -35,18 +30,17 @@ RUN set -eux; \
            name="$(basename "$d")"; \
            ln -sfn "/build_frontend_app/$d" "node_modules/$name"; \
          done && \
-         yarn workspace ui build; then \
-        break; \
+         yarn workspace ui build; then break; \
       fi; \
       attempts=$((attempts + 1)); \
       echo "yarn build failed (attempt ${attempts}/${max_attempts}), retrying..."; \
       sleep $((attempts * 5)); \
     done; \
-    if [ "$attempts" -ge "$max_attempts" ]; then \
-      echo "yarn build failed after ${max_attempts} attempts"; \
-      exit 1; \
-    fi
+    [ "$attempts" -lt "$max_attempts" ] || (echo "yarn build failed"; exit 1)
 
+# ---------------------------------------------------------------------------
+# Stage 2: runtime (nginx + core API + auth-server under supervisord)
+# ---------------------------------------------------------------------------
 FROM papermerge/auth-server:1.1.5 AS auth_server
 FROM python:3.13-alpine AS papermerge_core
 
@@ -59,11 +53,8 @@ ENV PAPERMERGE__OCR__LANG_CODES="deu,eng,rus"
 ENV PAPERMERGE__OCR__DEFAULT_LANG_CODE="rus"
 ENV PAPERMERGE__OCR__AUTOMATIC="false"
 
-# Install dependencies and ensure all packages are up-to-date.
-# Retry package operations to handle transient DNS/TLS failures from apk mirrors.
 RUN set -eux; \
-    attempts=0; \
-    max_attempts=5; \
+    attempts=0; max_attempts=5; \
     until [ "$attempts" -ge "$max_attempts" ]; do \
         if apk update && apk add --no-cache linux-headers python3-dev \
             gcc \
@@ -74,17 +65,13 @@ RUN set -eux; \
             nginx \
             libpq-dev \
             poppler-utils && \
-            apk upgrade --no-cache; then \
-            break; \
+            apk upgrade --no-cache; then break; \
         fi; \
         attempts=$((attempts + 1)); \
         echo "apk failed (attempt ${attempts}/${max_attempts}), retrying..."; \
         sleep $((attempts * 5)); \
     done; \
-    if [ "$attempts" -ge "$max_attempts" ]; then \
-        echo "apk install/upgrade failed after ${max_attempts} attempts"; \
-        exit 1; \
-    fi; \
+    [ "$attempts" -lt "$max_attempts" ] || (echo "apk install failed"; exit 1); \
     rm -rf /var/cache/apk/*
 
 RUN pip install --upgrade poetry==2.0.1 roco==0.4.2 && \
@@ -96,26 +83,26 @@ COPY poetry.lock pyproject.toml README.md LICENSE ${CORE_APP}/
 WORKDIR ${CORE_APP}
 RUN poetry install --no-root -E pg -vvv
 
-COPY docker/standard/entrypoint.sh /entrypoint.sh
-COPY docker/standard/bundles/supervisor/* docker/standard/logging.yaml /etc/papermerge/
-COPY docker/standard/bundles/nginx/* /etc/nginx/
-COPY docker/standard/core.js.tmpl alembic.ini ${CORE_APP}/
+COPY docker/app/entrypoint.sh /entrypoint.sh
+COPY docker/app/bundles/supervisor/* docker/app/logging.yaml /etc/papermerge/
+COPY docker/app/bundles/nginx/* /etc/nginx/
+COPY docker/app/core.js.tmpl alembic.ini ${CORE_APP}/
 COPY ./papermerge ${CORE_APP}/papermerge/
 
-COPY docker/standard/scripts/ /usr/bin/
-# Set execute permissions
-RUN sed -i 's/\r$//' /entrypoint.sh /usr/bin/*.sh && \
-    chmod +x /usr/bin/*.sh && \
-    chmod +x /entrypoint.sh
+COPY docker/app/scripts/ /usr/bin/
+RUN for f in /entrypoint.sh /usr/bin/*.sh; do \
+        sed -i '1s/^\xEF\xBB\xBF//' "$f"; \
+        sed -i 's/\r$//' "$f"; \
+        chmod +x "$f"; \
+    done
 
-# Copy auth server artifacts
+# Auth-server artefacts (same Python process, separate Poetry env).
 COPY --from=auth_server /app/ /auth_server_app/
 COPY --from=auth_server /usr/share/nginx/html/ /usr/share/nginx/html/auth_server/
 
-# Copy frontend build artifacts
+# Frontend bundle (served directly by nginx).
 COPY --from=frontend_build /build_frontend_app/apps/ui/dist/ /usr/share/nginx/html/ui
 
-# Install dependencies for auth server and core app
 RUN cd /auth_server_app/ && poetry install -E pg
 RUN cd /core_app/ && poetry install -E pg -E cloud
 

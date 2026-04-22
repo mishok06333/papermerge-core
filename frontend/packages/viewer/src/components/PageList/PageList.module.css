@@ -26,17 +26,25 @@
 
 .pageItems {
   min-height: max-content;
-  padding-bottom: 1rem;
+  padding-bottom: 0.5rem;
 }
 
 .zoomDock {
-  position: relative;
-  flex: 0 0 auto;
-  display: flex;
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
   justify-content: center;
   align-items: center;
-  padding: 0.25rem 0;
+  padding: 0;
+  background: transparent;
   z-index: 11;
+  pointer-events: none;
+}
+
+.zoomDock > * {
+  pointer-events: auto;
 }
 
 .pageListLoader {

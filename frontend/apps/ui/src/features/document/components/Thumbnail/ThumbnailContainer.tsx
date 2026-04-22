@@ -1,8 +1,10 @@
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
 
+import {ensurePreviewForPage} from "@/features/document/actions"
 import {
   APP_THUMBNAIL_KEY,
-  APP_THUMBNAIL_VALUE
+  APP_THUMBNAIL_VALUE,
+  VIEWER_FILE_EDITING_ENABLED
 } from "@/features/document/constants"
 import {getBlobViewerCategory} from "@/features/document/documentPreview"
 import {
@@ -85,6 +87,13 @@ function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
 
   const onClick = () => {
     dispatch(
+      ensurePreviewForPage({
+        docVer,
+        targetPageNumber: pageNumber,
+        size: "md"
+      })
+    )
+    dispatch(
       viewerCurrentPageUpdated({
         pageNumber: pageNumber,
         panel: mode
@@ -93,10 +102,16 @@ function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
   }
 
   const onLocalDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
+    if (!VIEWER_FILE_EDITING_ENABLED) {
+      return
+    }
     event.preventDefault()
   }
 
   const onDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!VIEWER_FILE_EDITING_ENABLED) {
+      return
+    }
     let pages
 
     if (page) {
@@ -118,6 +133,9 @@ function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
   }
 
   const onLocalDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    if (!VIEWER_FILE_EDITING_ENABLED) {
+      return
+    }
     let position: DroppedThumbnailPosition = "before"
     const y = event.clientY
 
@@ -177,6 +195,7 @@ function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
   }
 
   const thumbCategory = getBlobViewerCategory(docVer?.file_name)
+  const showCheckboxes = VIEWER_FILE_EDITING_ENABLED
 
   return (
     <>
@@ -184,25 +203,29 @@ function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
         <MediaThumbnail
           ref={ref as React.RefObject<HTMLDivElement>}
           category={thumbCategory}
-          onChange={onCheck}
-          checked={checked}
+          showCheckbox={showCheckboxes}
+          onChange={showCheckboxes ? onCheck : undefined}
+          checked={showCheckboxes ? checked : undefined}
           pageNumber={pageNumber}
           withBorderBottom={withBorderBottom}
           withBorderTop={withBorderTop}
           isDragged={isDragged}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-          onDragEnter={onLocalDragEnter}
-          onDrop={onLocalDrop}
+          onDragStart={VIEWER_FILE_EDITING_ENABLED ? onDragStart : undefined}
+          onDragEnd={VIEWER_FILE_EDITING_ENABLED ? onDragEnd : undefined}
+          onDragOver={VIEWER_FILE_EDITING_ENABLED ? onDragOver : undefined}
+          onDragLeave={VIEWER_FILE_EDITING_ENABLED ? onDragLeave : undefined}
+          onDragEnter={
+            VIEWER_FILE_EDITING_ENABLED ? onLocalDragEnter : undefined
+          }
+          onDrop={VIEWER_FILE_EDITING_ENABLED ? onLocalDrop : undefined}
           onClick={onClick}
         />
       ) : (
         <Thumbnail
           ref={ref as React.RefObject<HTMLImageElement>}
-          onChange={onCheck}
-          checked={checked}
+          showCheckbox={showCheckboxes}
+          onChange={showCheckboxes ? onCheck : undefined}
+          checked={showCheckboxes ? checked : undefined}
           pageNumber={pageNumber}
           angle={angle}
           imageURL={imageURL}
@@ -210,17 +233,20 @@ function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
           withBorderBottom={withBorderBottom}
           withBorderTop={withBorderTop}
           isDragged={isDragged}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-          onDragEnter={onLocalDragEnter}
-          onDrop={onLocalDrop}
+          onDragStart={VIEWER_FILE_EDITING_ENABLED ? onDragStart : undefined}
+          onDragEnd={VIEWER_FILE_EDITING_ENABLED ? onDragEnd : undefined}
+          onDragOver={VIEWER_FILE_EDITING_ENABLED ? onDragOver : undefined}
+          onDragLeave={VIEWER_FILE_EDITING_ENABLED ? onDragLeave : undefined}
+          onDragEnter={
+            VIEWER_FILE_EDITING_ENABLED ? onLocalDragEnter : undefined
+          }
+          onDrop={VIEWER_FILE_EDITING_ENABLED ? onLocalDrop : undefined}
           onClick={onClick}
         />
       )}
 
-      {draggedPagesDocParentID &&
+      {VIEWER_FILE_EDITING_ENABLED &&
+        draggedPagesDocParentID &&
         draggedPagesDocID &&
         draggedPagesIDs &&
         doc && (

@@ -46,10 +46,6 @@ const NotificationsMenu: React.FC = () => {
   const [markRead] = useMarkLibraryNotificationReadMutation()
   const [markingId, setMarkingId] = React.useState<string | null>(null)
 
-  if (!hasScope) {
-    return null
-  }
-
   const unreadCount = data?.filter(n => !n.read_at).length ?? 0
   const rows = data ?? []
 
@@ -109,7 +105,7 @@ const NotificationsMenu: React.FC = () => {
     }
   }
 
-  return (
+  return hasScope ? (
     <Popover withArrow position="bottom-end" width={380}>
       <Popover.Target>
         <Indicator
@@ -197,7 +193,8 @@ const NotificationsMenu: React.FC = () => {
         </Stack>
       </Popover.Dropdown>
     </Popover>
-  )
+  ) : null
+  
 }
 
 export default NotificationsMenu

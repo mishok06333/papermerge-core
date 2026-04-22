@@ -6,12 +6,23 @@ interface PageArgs {
   pageNumber: number
   angle?: number
   zoomFactor?: number
+  fitToViewport?: boolean
   imageURL: string | null | undefined
   isLoading: boolean
 }
 
 export const Page = forwardRef<HTMLImageElement, PageArgs>(
-  ({pageNumber, imageURL, isLoading, angle = 0, zoomFactor = 100}, ref) => {
+  (
+    {
+      pageNumber,
+      imageURL,
+      isLoading,
+      angle = 0,
+      zoomFactor = 100,
+      fitToViewport = false
+    },
+    ref
+  ) => {
     if (isLoading) {
       return (
         <Stack className={classes.page}>
@@ -30,7 +41,11 @@ export const Page = forwardRef<HTMLImageElement, PageArgs>(
         <img
           style={{
             transform: `rotate(${angle}deg)`,
-            width: `${zoomFactor}%`
+            width: fitToViewport ? "auto" : `${zoomFactor}%`,
+            maxWidth: "100%",
+            height: "auto",
+            maxHeight: fitToViewport ? "calc(100vh - 220px)" : undefined,
+            margin: "0 auto"
           }}
           ref={ref}
           src={imageURL}

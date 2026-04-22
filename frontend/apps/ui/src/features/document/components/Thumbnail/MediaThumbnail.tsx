@@ -15,6 +15,7 @@ import classes from "./MediaThumbnail.module.css"
 interface MediaThumbnailArgs {
   pageNumber: number
   category: BlobViewerCategory
+  showCheckbox?: boolean
   checked?: boolean
   isDragged?: boolean
   withBorderTop?: boolean
@@ -54,6 +55,7 @@ export const MediaThumbnail = forwardRef<HTMLDivElement, MediaThumbnailArgs>(
     {
       pageNumber,
       category,
+      showCheckbox = true,
       checked = false,
       isDragged = false,
       withBorderBottom = false,
@@ -93,12 +95,14 @@ export const MediaThumbnail = forwardRef<HTMLDivElement, MediaThumbnailArgs>(
         className={`thumbnail ${className}`}
         style={{minHeight: height}}
       >
-        <Checkbox
-          onChange={onChange}
-          checked={checked}
-          className={classes.checkbox}
-          onClick={event => event.stopPropagation()}
-        />
+        {showCheckbox && (
+          <Checkbox
+            onChange={onChange}
+            checked={checked}
+            className={classes.checkbox}
+            onClick={event => event.stopPropagation()}
+          />
+        )}
         <div style={{cursor: "pointer", textAlign: "center"}}>
           <ThemeIcon variant="light" size="xl" radius="md">
             <Icon size={28} />

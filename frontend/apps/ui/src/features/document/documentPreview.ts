@@ -12,12 +12,7 @@ export type BlobViewerCategory =
   | "binary"
 
 const PDF_PAGE_EXTENSIONS = new Set([
-  ".pdf",
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".tif",
-  ".tiff"
+  ".pdf"
 ])
 
 const VIDEO_EXTENSIONS = new Set([
@@ -41,7 +36,18 @@ const AUDIO_EXTENSIONS = new Set([
   ".flac"
 ])
 
-const IMAGE_EXTENSIONS = new Set([".gif", ".webp", ".bmp", ".svg", ".avif"])
+const IMAGE_EXTENSIONS = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".tif",
+  ".tiff",
+  ".gif",
+  ".webp",
+  ".bmp",
+  ".svg",
+  ".avif"
+])
 
 const TEXT_EXTENSIONS = new Set([
   ".txt",

@@ -4,6 +4,7 @@ import {selectDocVerPaginationPageNumber} from "@/features/document/store/docume
 import {selectIsGeneratingPreviews} from "@/features/document/store/imageObjectsSlice"
 
 import Zoom from "@/components/document/Zoom"
+import {getFileExtension} from "@/features/document/documentPreview"
 import {generateNextPreviews} from "@/features/document/actions"
 import {DOC_VER_PAGINATION_PAGE_BATCH_SIZE} from "@/features/document/constants"
 import useAreAllPreviewsAvailable from "@/features/document/hooks/useAreAllPreviewsAvailable"
@@ -34,6 +35,8 @@ export default function PageListContainer() {
     containerRef: containerRef
   })
   const nextPageNumber = pageNumber + 1
+  const isPdfDocument = getFileExtension(docVer?.file_name) === ".pdf"
+  const effectiveZoomFactor = isPdfDocument ? zoomFactor : 100
   const allPreviewsAreAvailable = useAreAllPreviewsAvailable({
     docVer,
     pageSize: DOC_VER_PAGINATION_PAGE_BATCH_SIZE,
@@ -45,7 +48,7 @@ export default function PageListContainer() {
     <Page
       key={p.id}
       pageID={p.id}
-      zoomFactor={zoomFactor}
+      zoomFactor={effectiveZoomFactor}
       angle={p.angle}
       pageNumber={p.number}
     />
@@ -72,10 +75,12 @@ export default function PageListContainer() {
       pageItems={pageComponents}
       paginationInProgress={isGenerating}
       zoom={
+        isPdfDocument ? (
         <Zoom
           pageNumber={currentPageNumber}
           pageTotal={docVer?.pages.length || 1}
         />
+        ) : undefined
       }
     />
   )

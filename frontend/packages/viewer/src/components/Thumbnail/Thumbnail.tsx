@@ -6,6 +6,7 @@ import classes from "./Thumbnail.module.css"
 interface ThumbnailArgs {
   pageNumber: number
   imageURL: string | null | undefined
+  showCheckbox?: boolean
   checked?: boolean
   isLoading?: boolean
   isDragged?: boolean
@@ -28,6 +29,7 @@ export const Thumbnail = forwardRef<HTMLImageElement, ThumbnailArgs>(
     {
       pageNumber,
       imageURL,
+      showCheckbox = true,
       isLoading = false,
       checked = false,
       isDragged = false,
@@ -79,12 +81,14 @@ export const Thumbnail = forwardRef<HTMLImageElement, ThumbnailArgs>(
         onDrop={onDrop}
         className={`thumbnail ${className}`}
       >
-        <Checkbox
-          onChange={onChange}
-          checked={checked}
-          className={classes.checkbox}
-          onClick={event => event.stopPropagation()}
-        />
+        {showCheckbox && (
+          <Checkbox
+            onChange={onChange}
+            checked={checked}
+            className={classes.checkbox}
+            onClick={event => event.stopPropagation()}
+          />
+        )}
         <img
           ref={ref}
           style={{

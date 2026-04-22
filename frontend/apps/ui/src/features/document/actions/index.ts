@@ -1,3 +1,4 @@
 import {generateNextPreviews} from "./generateNextPreviews"
+import {ensurePreviewForPage} from "./ensurePreviewForPage"
 
-export {generateNextPreviews}
+export {generateNextPreviews, ensurePreviewForPage}

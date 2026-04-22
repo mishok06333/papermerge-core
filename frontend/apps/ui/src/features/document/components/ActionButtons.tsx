@@ -14,6 +14,7 @@ import DownloadButton from "@/features/document/components/DownloadButton"
 import RotateButton from "@/features/document/components/RotateButton"
 import RotateCCButton from "@/features/document/components/RotateCCButton"
 import ViewOCRTextButton from "@/features/document/components/ViewOCRTextButton"
+import {VIEWER_FILE_EDITING_ENABLED} from "@/features/document/constants"
 import {isBuiltinTextDocument} from "@/features/document/documentPreview"
 import {
   useCurrentDoc,
@@ -58,17 +59,19 @@ export default function ActionButtons({
   return (
     <Group ref={ref} justify="space-between">
       <Group>
-        <EditTitleButton onClick={onEditNodeTitleClicked} />
+        {VIEWER_FILE_EDITING_ENABLED && (
+          <EditTitleButton onClick={onEditNodeTitleClicked} />
+        )}
         {doc?.id ? <LibraryFavoriteToggle nodeId={doc.id} /> : null}
         {!isBuiltinTextDocument(docVer?.file_name) && <ViewOCRTextButton />}
         <DownloadButton />
-        {selectedPages.length > 0 && (
+        {VIEWER_FILE_EDITING_ENABLED && selectedPages.length > 0 && (
           <RotateButton onClick={onRotateCWClicked} />
         )}
-        {selectedPages.length > 0 && (
+        {VIEWER_FILE_EDITING_ENABLED && selectedPages.length > 0 && (
           <RotateCCButton onClick={onRotateCCClicked} />
         )}
-        {selectedPages.length > 0 && (
+        {VIEWER_FILE_EDITING_ENABLED && selectedPages.length > 0 && (
           <DeletePagesButton onClick={onDeletePagesClicked} />
         )}
       </Group>

@@ -1,4 +1,7 @@
+import {useAppDispatch} from "@/app/hooks"
 import PanelContext from "@/contexts/PanelContext"
+import {ensurePreviewForPage} from "@/features/document/actions"
+import {useCurrentDocVer} from "@/features/document/hooks"
 import {
   viewerCurrentPageUpdated,
   zoomFactorDecremented,
@@ -7,7 +10,6 @@ import {
 } from "@/features/ui/uiSlice"
 import type {PanelMode} from "@/types"
 import {useContext} from "react"
-import {useDispatch} from "react-redux"
 import {Zoom} from "viewer"
 
 interface Args {
@@ -17,7 +19,8 @@ interface Args {
 
 export default function ZoomContainer({pageNumber, pageTotal}: Args) {
   const mode: PanelMode = useContext(PanelContext)
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
+  const {docVer} = useCurrentDocVer()
 
   const incZoom = () => {
     dispatch(zoomFactorIncremented(mode))
@@ -30,11 +33,18 @@ export default function ZoomContainer({pageNumber, pageTotal}: Args) {
     dispatch(zoomFactorReseted(mode))
   }
 
-  const updatePageNumber = (pageNumber: number) => {
+  const updatePageNumber = (nextPageNumber: number) => {
+    dispatch(
+      ensurePreviewForPage({
+        docVer,
+        targetPageNumber: nextPageNumber,
+        size: "md"
+      })
+    )
     dispatch(
       viewerCurrentPageUpdated({
         panel: mode,
-        pageNumber
+        pageNumber: nextPageNumber
       })
     )
   }

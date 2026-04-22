@@ -1,4 +1,5 @@
 import {useAppSelector} from "@/app/hooks"
+import {VIEWER_FILE_EDITING_ENABLED} from "@/features/document/constants"
 import {useCurrentDocVer, useSelectedPages} from "@/features/document/hooks"
 import {
   selectOtherPanelComponent,
@@ -52,7 +53,8 @@ export default function ContextMenuContainer({
   const visibility = useAppSelector(
     selectViewerPagesHaveChangedDialogVisibility
   )
-  const showPagesHaveChangedRelatedItems = visibility == "opened"
+  const showPagesHaveChangedRelatedItems =
+    VIEWER_FILE_EDITING_ENABLED && visibility == "opened"
 
   const hasSelectedPages = selectedPages && selectedPages.length > 0
 
@@ -83,21 +85,29 @@ export default function ContextMenuContainer({
       txt={txt}
       opened={opened}
       position={position}
-      showExtractPagesItem={showExtractPagesItem}
-      showMoveDocumentItem={showMoveDocumentItem}
-      showDeletePagesItem={hasSelectedPages}
-      showRotateCCItem={hasSelectedPages}
-      showRotateCWItem={hasSelectedPages}
+      showExtractPagesItem={
+        VIEWER_FILE_EDITING_ENABLED ? showExtractPagesItem : undefined
+      }
+      showMoveDocumentItem={
+        VIEWER_FILE_EDITING_ENABLED ? showMoveDocumentItem : undefined
+      }
+      showDeletePagesItem={VIEWER_FILE_EDITING_ENABLED && hasSelectedPages}
+      showRotateCCItem={VIEWER_FILE_EDITING_ENABLED && hasSelectedPages}
+      showRotateCWItem={VIEWER_FILE_EDITING_ENABLED && hasSelectedPages}
       showResetChangesItem={showPagesHaveChangedRelatedItems}
       showSaveChangesItem={showPagesHaveChangedRelatedItems}
       showViewOCRedTextItem={false}
-      onChangeTitleItemClicked={onEditNodeTitleItemClicked}
+      onChangeTitleItemClicked={
+        VIEWER_FILE_EDITING_ENABLED ? onEditNodeTitleItemClicked : undefined
+      }
       onRotateCCItemClicked={onRotateCCItemClicked}
       onRotateCWItemClicked={onRotateCWItemClicked}
       onResetChangesItemClicked={onResetChangesItemClicked}
       onSaveChangesItemClicked={onSaveChangesItemClicked}
       onDeletePagesItemClicked={onDeletePagesItemClicked}
-      onDeleteDocumentItemClicked={onDeleteDocumentItemClicked}
+      onDeleteDocumentItemClicked={
+        VIEWER_FILE_EDITING_ENABLED ? onDeleteDocumentItemClicked : undefined
+      }
     />
   )
 }

@@ -25,6 +25,7 @@ function PageContainer({
   const {docVer} = useCurrentDocVer()
   const {ref, isLoading, imageURL} = usePage({pageNumber, pageID})
   const category = getBlobViewerCategory(docVer?.file_name)
+  const isPdfDocument = getFileExtension(docVer?.file_name) === ".pdf"
 
   if (category !== "pdf-pages") {
     return (
@@ -37,7 +38,7 @@ function PageContainer({
     )
   }
 
-  if (getFileExtension(docVer?.file_name) === ".pdf" && docVer) {
+  if (isPdfDocument && docVer) {
     return (
       <SelectablePdfPage
         ref={ref}
@@ -55,7 +56,8 @@ function PageContainer({
     <Page
       ref={ref}
       angle={angle}
-      zoomFactor={zoomFactor}
+      zoomFactor={isPdfDocument ? zoomFactor : 100}
+      fitToViewport={!isPdfDocument}
       isLoading={isLoading}
       pageNumber={pageNumber}
       imageURL={imageURL}

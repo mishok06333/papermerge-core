@@ -38,10 +38,9 @@ async def add_favorite(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     db_session: AsyncSession = Depends(get_db),
 ):
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=node_id, codename=scopes.NODE_VIEW, user_id=user.id
-    ):
-        raise exc.HTTP403Forbidden()
+    )
     await lib_api.add_favorite(db_session, user.id, node_id)
     await lib_api.add_audit(
         db_session,
@@ -131,10 +130,9 @@ async def get_my_note(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     db_session: AsyncSession = Depends(get_db),
 ):
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
-    ):
-        raise exc.HTTP403Forbidden()
+    )
     row = await lib_api.get_note(db_session, user.id, document_id)
     await db_session.commit()
     if row is None:
@@ -158,10 +156,9 @@ async def put_my_note(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     db_session: AsyncSession = Depends(get_db),
 ):
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
-    ):
-        raise exc.HTTP403Forbidden()
+    )
     row = await lib_api.upsert_note(db_session, user.id, document_id, payload.body)
     await lib_api.add_audit(
         db_session,
@@ -189,10 +186,9 @@ async def list_doc_comments(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     db_session: AsyncSession = Depends(get_db),
 ):
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
-    ):
-        raise exc.HTTP403Forbidden()
+    )
     rows = await lib_api.list_comments(db_session, document_id)
     await db_session.commit()
     return [
@@ -224,10 +220,9 @@ async def add_doc_comment(
     ],
     db_session: AsyncSession = Depends(get_db),
 ):
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
-    ):
-        raise exc.HTTP403Forbidden()
+    )
     row = await lib_api.add_comment(db_session, user.id, document_id, payload.body)
     await lib_api.add_audit(
         db_session,
@@ -260,10 +255,9 @@ async def update_doc_comment(
     ],
     db_session: AsyncSession = Depends(get_db),
 ):
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
-    ):
-        raise exc.HTTP403Forbidden()
+    )
     row = await lib_api.get_comment(db_session, comment_id)
     if row is None or row.document_id != document_id:
         raise HTTPException(status_code=404, detail="Comment not found")
@@ -301,10 +295,9 @@ async def delete_doc_comment(
     ],
     db_session: AsyncSession = Depends(get_db),
 ):
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
-    ):
-        raise exc.HTTP403Forbidden()
+    )
     row = await lib_api.get_comment(db_session, comment_id)
     if row is None or row.document_id != document_id:
         raise HTTPException(status_code=404, detail="Comment not found")
@@ -328,10 +321,9 @@ async def get_rating(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     db_session: AsyncSession = Depends(get_db),
 ):
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
-    ):
-        raise exc.HTTP403Forbidden()
+    )
     avg, n = await lib_api.rating_aggregate(db_session, document_id)
     row = await lib_api.get_user_rating(db_session, user.id, document_id)
     await db_session.commit()
@@ -354,10 +346,9 @@ async def put_rating(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     db_session: AsyncSession = Depends(get_db),
 ):
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
-    ):
-        raise exc.HTTP403Forbidden()
+    )
     await lib_api.set_rating(db_session, user.id, document_id, payload.score)
     avg, n = await lib_api.rating_aggregate(db_session, document_id)
     row = await lib_api.get_user_rating(db_session, user.id, document_id)

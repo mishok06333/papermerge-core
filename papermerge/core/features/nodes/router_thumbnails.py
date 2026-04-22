@@ -17,7 +17,7 @@ from papermerge.core.features.auth import scopes
 from papermerge.core.features.document.db import api as dbapi
 from papermerge.core.pathlib import rel2abs, thumbnail_path
 from papermerge.core.utils import image
-from papermerge.core.db.common import has_node_perm
+from papermerge.core.db.common import require_node_perm
 from papermerge.core.exceptions import HTTP403Forbidden, HTTP404NotFound
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
 from papermerge.core.db.engine import get_db
@@ -68,11 +68,9 @@ async def get_document_thumbnail(
     Required scope: `{scope}`
     """
 
-    ok = await has_node_perm(
+    await require_node_perm(
         db_session, user_id=user.id, codename=scopes.NODE_VIEW, node_id=document_id
     )
-    if not ok:
-        raise HTTP403Forbidden()
 
     try:
         doc_ver = await dbapi.get_last_doc_ver(db_session, doc_id=document_id)

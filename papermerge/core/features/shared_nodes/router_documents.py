@@ -31,14 +31,12 @@ async def get_shared_document_details(
     Required scope: `{scope}`
     """
     try:
-        ok = await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=document_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
         )
-        if not ok:
-            raise HTTP403Forbidden
 
         doc = await dbapi.get_shared_doc(
             db_session,

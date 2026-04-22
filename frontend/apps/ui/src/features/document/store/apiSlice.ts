@@ -10,7 +10,7 @@ import type {
   ServerNotifType
 } from "@/types"
 import {CFV, ExtractStrategyType, MovePagesType, OrderType} from "@/types"
-import {getRemoteUserID, getWSURL} from "@/utils"
+import {getWSURL} from "@/utils"
 
 import type {DocVersList, PagesType} from "@/features/document/types"
 import {DocumentType, DocumentVersion} from "@/features/document/types"
@@ -76,15 +76,12 @@ export const apiSliceWithDocuments = apiSlice.injectEndpoints({
       query: nodeID => `/documents/${nodeID}`,
       providesTags: (_result, _error, arg) => [{type: "Document", id: arg}],
       async onCacheEntryAdded(_arg, lifecycleApi) {
-        let url = getWSURL()
+        const url = getWSURL()
 
         if (!url) {
           return
         }
 
-        if (getRemoteUserID()) {
-          url = `${url}?remote-user-id=${getRemoteUserID()}`
-        }
         const ws = new WebSocket(url)
         try {
           // wait for the initial query to resolve before proceeding

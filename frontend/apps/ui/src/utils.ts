@@ -23,28 +23,6 @@ export function getBaseURL(trimBackslash?: boolean): string {
   return ""
 }
 
-export function getRemoteUser(): string | null {
-  const COOKIE_REMOTE_USER = "remote_user"
-  const remote_user =
-    import.meta.env.VITE_REMOTE_USER || Cookies.get(COOKIE_REMOTE_USER)
-
-  if (remote_user) {
-    return remote_user
-  }
-
-  return null
-}
-
-export function getRemoteUserID(): string | null {
-  const remote_user = import.meta.env.VITE_REMOTE_USER_ID
-
-  if (remote_user) {
-    return remote_user
-  }
-
-  return null
-}
-
 export function getWSURL(): string | null {
   const ws_url = import.meta.env.VITE_WS_URL
 
@@ -60,80 +38,17 @@ export function getWSURL(): string | null {
   return null
 }
 
-export function getRemoteGroups(): string | null {
-  const COOKIE_REMOTE_GROUPS = "remote_groups"
-  const remote_groups =
-    import.meta.env.VITE_REMOTE_GROUPS || Cookies.get(COOKIE_REMOTE_GROUPS)
-
-  if (remote_groups) {
-    return remote_groups
-  }
-
-  return null
-}
-
-export function getRemoteRoles(): string | null {
-  const COOKIE_REMOTE_ROLES = "remote_roles"
-  const remote_roles =
-    import.meta.env.VITE_REMOTE_ROLES || Cookies.get(COOKIE_REMOTE_ROLES)
-
-  if (remote_roles) {
-    return remote_roles
-  }
-
-  return null
-}
-
-export function getRemoteEmail(): string | null {
-  const COOKIE_REMOTE_EMAIL = "remote_email"
-  const remote_email =
-    import.meta.env.VITE_REMOTE_EMAIL || Cookies.get(COOKIE_REMOTE_EMAIL)
-
-  if (remote_email) {
-    return remote_email
-  }
-
-  return null
-}
-
-export function getRemoteName(): string | null {
-  const COOKIE_REMOTE_NAME = "remote_name"
-  const remote_name =
-    import.meta.env.VITE_REMOTE_NAME || Cookies.get(COOKIE_REMOTE_NAME)
-
-  if (remote_name) {
-    return remote_name
-  }
-
-  return null
-}
-
 export function getDefaultHeaders(): Record<string, string> {
   const COOKIE_NAME = "access_token"
-  const remote_user = getRemoteUser()
-  const remote_groups = getRemoteGroups()
-  const remote_roles = getRemoteRoles()
-  const remote_email = getRemoteEmail()
-  const remote_name = getRemoteName()
   const token = Cookies.get(COOKIE_NAME)
 
-  let headers: Record<string, string> = {}
-
-  if (remote_user) {
-    headers = {
-      "Remote-User": remote_user,
-      "Remote-Groups": remote_groups || "",
-      "Remote-Roles": remote_roles || "",
-      "Remote-Email": remote_email || "",
-      "Remote-Name": remote_name || ""
-    }
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
   }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`
   }
-
-  headers["Content-Type"] = "application/json"
 
   return headers
 }

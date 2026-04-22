@@ -6,7 +6,14 @@ import {
 import {Skeleton, Stack} from "@mantine/core"
 import {TextLayer} from "pdfjs-dist"
 import type {PDFPageProxy, RenderTask} from "pdfjs-dist/types/src/display/api"
-import {forwardRef, useEffect, useLayoutEffect, useRef, useState} from "react"
+import {
+  forwardRef,
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react"
 
 import classes from "./SelectablePdfPage.module.css"
 
@@ -299,4 +306,4 @@ const SelectablePdfPage = forwardRef<HTMLDivElement, Props>(
 
 SelectablePdfPage.displayName = "SelectablePdfPage"
 
-export default SelectablePdfPage
+export default memo(SelectablePdfPage)

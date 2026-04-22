@@ -1,4 +1,3 @@
-import os
 import logging
 from typing import Annotated
 from uuid import UUID
@@ -10,7 +9,6 @@ from papermerge.core import schema, dbapi
 from papermerge.core import utils
 from papermerge.core.features import auth
 from papermerge.core.features.auth import scopes
-from papermerge.core.tasks import delete_user_data
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
 from papermerge.core.routers.params import CommonQueryParams
 from papermerge.core.db.engine import get_db
@@ -205,10 +203,7 @@ async def delete_user(
         )
 
     try:
-        if os.environ.get("PAPERMERGE__REDIS__URL"):
-            delete_user_data.apply_async(kwargs={"user_id": str(user_id)})
-        else:
-            await dbapi.delete_user(db_session, user_id=user_id)
+        await dbapi.delete_user(db_session, user_id=user_id)
     except Exception:
         logger.exception("Failed to delete user %s", user_id)
         raise HTTPException(

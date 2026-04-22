@@ -31,11 +31,9 @@ async def get_node(
 
     Required scope: `{scope}`
     """
-    ok = await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session, node_id=folder_id, codename=scopes.NODE_VIEW, user_id=user.id
     )
-    if not ok:
-        raise HTTP403Forbidden()
 
     db_folder, error = await dbapi.get_folder(db_session, folder_id=folder_id)
 

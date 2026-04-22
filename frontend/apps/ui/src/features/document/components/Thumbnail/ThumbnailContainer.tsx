@@ -36,6 +36,7 @@ import type {DroppedThumbnailPosition} from "@/types"
 
 import TransferPagesModal from "@/features/document/components/TransferPagesModal"
 import {contains_every} from "@/utils"
+import {memo} from "react"
 import MediaThumbnail from "./MediaThumbnail"
 import useThumbnail from "./useThumbnail"
 
@@ -45,7 +46,7 @@ interface Args {
   pageID: UUID
 }
 
-export default function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
+function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
   const dispatch = useAppDispatch()
   const mode = usePanelMode()
 
@@ -237,3 +238,11 @@ export default function ThumbnailContainer({pageNumber, angle, pageID}: Args) {
     </>
   )
 }
+
+/**
+ * Thumbnails are rendered in long virtualized lists where parent re-renders
+ * (scroll, selection, drag state) are frequent. Props are primitive, so
+ * `memo` avoids re-running each thumbnail's work unless its own inputs
+ * actually changed.
+ */
+export default memo(ThumbnailContainer)

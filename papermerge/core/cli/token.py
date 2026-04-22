@@ -16,23 +16,22 @@ app = typer.Typer(help="JWT tokens management")
 async def encode_cmd(username: str, scopes: str = None):
     """Encodes JWT token payload for given username"""
     try:
-        with AsyncSessionLocal() as db_session:
+        async with AsyncSessionLocal() as db_session:
             user: usr_schema.User = await usr_dbapi.get_user(db_session, username)
     except Exception as e:
         print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
 
-    if scopes is None:
-        scopes = []
-    else:
-        scopes = scopes.split(',')
+    scope_list: list[str] = scopes.split(",") if scopes else []
 
-    data64 = utils.base64.encode({
-        "sub": str(user.id),
-        "preferred_username": user.username,
-        "email": user.email,
-        "scopes": scopes,
-    })
+    data64 = utils.base64.encode(
+        {
+            "sub": str(user.id),
+            "preferred_username": user.username,
+            "email": user.email,
+            "scopes": scope_list,
+        }
+    )
     print(f"Token payload=[green]{data64}[/green]")
     print(
         "Whole token will look something like "
@@ -41,15 +40,16 @@ async def encode_cmd(username: str, scopes: str = None):
 
 
 @app.command(name="decode")
-@async_command
 def decode_cmd(token_payload: str):
-    """Decode JWT token payload
+    """Decode JWT token payload.
 
     Note that JWT token has three parts, delimited by dot character.
-    For this command you need to provider only the middle part (i.e. payload).
+    For this command you need to provide only the middle part (i.e. payload).
     """
-    if '.' in token_payload:
-        print("[red]Doesn't look like JWT token payload because it contains dots[/red]")
+    if "." in token_payload:
+        print(
+            "[red]Doesn't look like JWT token payload because it contains dots[/red]"
+        )
         print(
             "JWT tokens have three parts delimited by dots. "
             "Payload is the middle part - [bold]without[/bold] dots"

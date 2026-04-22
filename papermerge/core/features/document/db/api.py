@@ -10,7 +10,7 @@ import img2pdf
 from pikepdf import Pdf
 from sqlalchemy import delete, func, insert, select, update, distinct, Select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core.features.document import s3
@@ -870,16 +870,6 @@ async def get_doc_version_download_url(
     return schema.DownloadURL(downloadURL=url)
 
 
-async def get_document_last_version(
-    db_session: AsyncSession,
-    doc_id: uuid.UUID,
-) -> schema.DocumentVersion:
-    ...
-
-
-
-
-
 async def get_page_document_id(
     db_session: AsyncSession, page_id: uuid.UUID
 ) -> uuid.UUID:
@@ -994,17 +984,14 @@ async def get_doc_ver(
     identified by doc_id
     """
 
+    # selectinload is more efficient than joinedload for the one-to-many
+    # DocumentVersion -> Page relationship (avoids cartesian row multiplication).
     stmt = (
         select(orm.DocumentVersion)
-        .join(orm.Document)
-        .options(joinedload(orm.DocumentVersion.pages))
-        .where(
-            orm.DocumentVersion.id == document_version_id,
-        )
+        .options(selectinload(orm.DocumentVersion.pages))
+        .where(orm.DocumentVersion.id == document_version_id)
     )
-    db_doc_ver = (await db_session.scalars(stmt)).unique().one()
-
-    return db_doc_ver
+    return (await db_session.scalars(stmt)).one()
 
 
 def select_last_doc_ver(document_id: uuid.UUID, user_id: uuid.UUID) -> Select:

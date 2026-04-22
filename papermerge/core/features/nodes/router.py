@@ -53,13 +53,12 @@ async def get_node(
     if params.order_by:
         order_by = [item.strip() for item in params.order_by.split(",")]
 
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session,
         node_id=parent_id,
         codename=scopes.NODE_VIEW,
         user_id=user.id,
-    ):
-        raise exc.HTTP403Forbidden()
+    )
 
     nodes = await nodes_dbapi.get_paginated_nodes(
         db_session=db_session,
@@ -137,13 +136,12 @@ async def create_node(
 
         new_document = schema.NewDocument(**attrs)
 
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=pynode.parent_id,
             codename=scopes.NODE_CREATE,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         created_node, error = await doc_dbapi.create_document(db_session, new_document)
 
@@ -180,13 +178,12 @@ async def update_node(
     should be not empty string (UUID).
     """
 
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session,
         node_id=node_id,
         codename=scopes.NODE_UPDATE,
         user_id=user.id,
-    ):
-        raise exc.HTTP403Forbidden()
+    )
 
     updated_node = await nodes_dbapi.update_node(
         db_session, node_id=node_id, user_id=user.id, attrs=node
@@ -224,13 +221,12 @@ async def delete_nodes(
     were found) - will return an empty list.
     """
     for node_id in list_of_uuids:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=node_id,
             codename=scopes.NODE_DELETE,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
     error = await nodes_dbapi.delete_nodes(
         db_session, node_ids=list_of_uuids, user_id=user.id
@@ -297,21 +293,19 @@ async def move_nodes(
     """
     try:
         for source_id in params.source_ids:
-            if not await dbapi_common.has_node_perm(
+            await dbapi_common.require_node_perm(
                 db_session,
                 node_id=source_id,
                 codename=scopes.NODE_MOVE,
                 user_id=user.id,
-            ):
-                raise exc.HTTP403Forbidden()
+            )
 
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=params.target_id,
             codename=scopes.NODE_UPDATE,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         affected_row_count = await nodes_dbapi.move_nodes(
             db_session,
@@ -381,13 +375,12 @@ async def assign_node_tags(
     existing node tags** with the one from input list.
     """
     try:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=node_id,
             codename=scopes.NODE_UPDATE,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         node, error = await nodes_dbapi.assign_node_tags(
             db_session, node_id=node_id, tags=tags, user_id=user.id
@@ -434,13 +427,12 @@ async def get_nodes_details(
         return []
 
     for node_id in node_ids:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=node_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
     nodes = await nodes_dbapi.get_nodes(db_session, node_ids=node_ids, user_id=user.id)
 
@@ -489,13 +481,12 @@ async def update_node_tags(
         are still assigned to N1.
     """
     try:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=node_id,
             codename=scopes.NODE_UPDATE,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         node, error = await nodes_dbapi.update_node_tags(
             db_session, node_id=node_id, tags=tags, user_id=user.id
@@ -532,13 +523,12 @@ async def get_node_tags(
     Required scope: `{scope}`
     """
     try:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=node_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         tags, error = await nodes_dbapi.get_node_tags(
             db_session, node_id=node_id, user_id=user.id
@@ -578,13 +568,12 @@ async def remove_node_tags(
     Tags models are not deleted - just dissociated from the node.
     """
     try:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=node_id,
             codename=scopes.NODE_UPDATE,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         node, error = await nodes_dbapi.remove_node_tags(
             db_session, node_id=node_id, tags=tags, user_id=user.id

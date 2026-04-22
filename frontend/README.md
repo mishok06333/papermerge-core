@@ -1,21 +1,15 @@
 # Frontend
 
-Server's REST API base url is read from `.env.development.local` file:
+Server's REST API base URL is read from `.env.development.local`:
 
 ```
 VITE_BASE_URL=http://localhost:8000/
 ```
 
-In order to start in dev mode as user `admin` (without authentication)
-use `VITE_REMOTE_USER` and `VITE_REMOTE_GROUPS` variables in .env.development.local` file:
+Authentication is handled by the regular `auth-server` login flow; the legacy
+`VITE_REMOTE_USER` / `Remote-*` header mode has been removed.
 
-```
-VITE_REMOTE_USER=admin
-VITE_REMOTE_GROUPS=admin
-VITE_BASE_URL=http://localhost:8000/
-```
-
-Start in dev mode (on port 5173):
+Start the dev server (port 5173):
 
 ```
 yarn dev
@@ -27,15 +21,10 @@ yarn dev
 yarn workspaces list
 ```
 
-To start dev server for specific workspace:
+Run dev server for a specific workspace:
 
 ```
 yarn workspace hooks.dev dev
-```
-
-or
-
-```
 yarn workspace ui dev
 yarn workspace @papermerge/viewer dev
 ```

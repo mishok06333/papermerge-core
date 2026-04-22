@@ -70,13 +70,12 @@ async def update_document_custom_field_values(
             continue
         custom_fields[cf.key] = cf.value
 
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session,
         node_id=document_id,
         codename=scopes.NODE_UPDATE,
         user_id=user.id,
-    ):
-        raise exc.HTTP403Forbidden()
+    )
 
     try:
         updated_entries = await dbapi.update_doc_cfv(
@@ -116,13 +115,12 @@ async def get_document_custom_field_values(
 
     Required scope: `{scope}`
     """
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session,
         node_id=document_id,
         codename=scopes.NODE_VIEW,
         user_id=user.id,
-    ):
-        raise exc.HTTP403Forbidden()
+    )
 
     try:
         doc = await dbapi.get_doc_cfv(
@@ -180,13 +178,12 @@ async def upload_file(
     """
     content = file.file.read()
 
-    if not await dbapi_common.has_node_perm(
+    await dbapi_common.require_node_perm(
         db_session,
         node_id=document_id,
         codename=scopes.DOCUMENT_UPLOAD,
         user_id=user.id,
-    ):
-        raise exc.HTTP403Forbidden()
+    )
 
     doc, error = await dbapi.upload(
         db_session,
@@ -224,13 +221,12 @@ async def get_document_last_version(
     Required scope: `{scope}`
     """
     try:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=doc_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         result = await dbapi.get_last_doc_ver(
             db_session,
@@ -265,13 +261,12 @@ async def get_doc_versions_list(
     Required scope: `{scope}`
     """
     try:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=doc_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         result = await dbapi.get_doc_versions_list(
             db_session,
@@ -304,13 +299,12 @@ async def get_document_details(
     Required scope: `{scope}`
     """
     try:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=document_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         doc = await dbapi.get_doc(db_session, id=document_id)
         await lib_ts_api.increment_view(db_session, document_id)
@@ -350,13 +344,12 @@ async def update_document_type(
     Required scope: `{scope}`
     """
     try:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=document_id,
             codename=scopes.NODE_UPDATE,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         await dbapi.update_doc_type(
             db_session,
@@ -440,13 +433,12 @@ async def get_document_doc_thumbnail_status(
     """
 
     for doc_id in doc_ids:
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=doc_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
     response, doc_ids_not_yet_considered = await dbapi.get_docs_thumbnail_img_status(
         db_session, doc_ids=doc_ids

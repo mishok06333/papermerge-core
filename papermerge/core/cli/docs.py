@@ -4,13 +4,15 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from papermerge.core import schemas
 from papermerge.core.db.engine import AsyncSessionLocal
-from papermerge.core.features.document.db.api import get_docs_by_type, get_doc_cfv
+from papermerge.core.features.document import schema as doc_schema
+from papermerge.core.features.document.db.api import get_doc_cfv, get_docs_by_type
+from papermerge.core.features.document_types import schema as doc_type_schema
 from papermerge.core.features.document_types.db.api import get_document_types
 from papermerge.core.utils.cli import async_command
 
 app = typer.Typer(help="List various entities")
+console = Console()
 
 
 @app.command()
@@ -28,7 +30,9 @@ async def document_types():
 async def list_documents_by_type(type_id: uuid.UUID):
     """List all documents by specific document type"""
     async with AsyncSessionLocal() as db_session:
-        docs = await get_docs_by_type(db_session, type_id=type_id, user_id=uuid.uuid4())
+        docs = await get_docs_by_type(
+            db_session, type_id=type_id, user_id=uuid.uuid4()
+        )
     print_docs(docs)
 
 
@@ -37,7 +41,9 @@ async def list_documents_by_type(type_id: uuid.UUID):
 async def get_cfv(doc_id: uuid.UUID):
     """Print custom field values for specific document"""
     async with AsyncSessionLocal() as db_session:
-        items: list[schemas.CFV] = await get_doc_cfv(db_session, document_id=doc_id)
+        items: list[doc_schema.CFV] = await get_doc_cfv(
+            db_session, document_id=doc_id
+        )
 
     table = Table(title="Document's Custom Field Values")
 
@@ -48,9 +54,7 @@ async def get_cfv(doc_id: uuid.UUID):
     table.add_column("CF Value")
 
     for item in items:
-        value = "-"
-        if item.value:
-            value = str(item.value)
+        value = str(item.value) if item.value else "-"
 
         table.add_row(
             str(item.document_id),
@@ -60,37 +64,33 @@ async def get_cfv(doc_id: uuid.UUID):
             value,
         )
 
-    console = Console()
     console.print(table)
 
 
-def print_docs(docs: list[schemas.DocumentCFV]):
-    if len(docs) == 0:
-        print("No entries")
+def print_docs(docs: list[doc_schema.DocumentCFV]):
+    if not docs:
+        console.print("No entries")
         return
 
     table = Table(title="Documents (with custom fields)")
     table.add_column("ID", style="cyan", no_wrap=True)
     table.add_column("Title", style="magenta")
-    first_item = list(docs)[0]
+    first_item = docs[0]
 
     for cf in first_item.custom_fields:
         table.add_column(cf[0])
 
     for doc in docs:
-        cf_list = []
-        for label, value in doc.custom_fields:
-            if value is not None:
-                cf_list.append(str(value))
-            else:
-                cf_list.append("-")
+        cf_list = [
+            str(value) if value is not None else "-"
+            for _, value in doc.custom_fields
+        ]
         table.add_row(str(doc.id), doc.title, *cf_list)
 
-    console = Console()
     console.print(table)
 
 
-def print_doc_types(doc_types: list[schemas.DocumentType]):
+def print_doc_types(doc_types: list[doc_type_schema.DocumentType]):
     table = Table(title="Document Types")
 
     table.add_column("Name", style="cyan", no_wrap=True)
@@ -102,5 +102,4 @@ def print_doc_types(doc_types: list[schemas.DocumentType]):
             str(doc_type.id),
         )
 
-    console = Console()
     console.print(table)

@@ -19,16 +19,6 @@ def user_display_name(first_name: str | None, last_name: str | None, username: s
     return full if full else username
 
 
-class RemoteUser(BaseModel):
-    """User model extracted from PAPERMERGE__AUTH__REMOTE_xyz headers"""
-
-    username: str
-    email: str = ""
-    name: str = ""
-    groups: list[str] | None = None
-    roles: list[str] | None = None
-
-
 class User(BaseModel):
     id: UUID | str
     username: str

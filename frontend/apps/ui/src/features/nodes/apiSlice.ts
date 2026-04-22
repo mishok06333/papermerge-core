@@ -11,7 +11,7 @@ import type {
   SortMenuColumn,
   SortMenuDirection
 } from "@/types"
-import {getRemoteUserID, getWSURL} from "@/utils"
+import {getWSURL} from "@/utils"
 import {
   documentMovedNotifReceived,
   documentsMovedNotifReceived
@@ -89,15 +89,12 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
       },
       providesTags: (_result, _error, arg) => [{type: "Folder", id: arg}],
       async onCacheEntryAdded(arg, lifecycleApi) {
-        let url = getWSURL()
+        const url = getWSURL()
 
         if (!url) {
           return
         }
 
-        if (getRemoteUserID()) {
-          url = `${url}?remote-user-id=${getRemoteUserID()}`
-        }
         const ws = new WebSocket(url)
         try {
           // wait for the initial query to resolve before proceeding

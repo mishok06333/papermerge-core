@@ -89,6 +89,27 @@ async def get_descendants(
     return [(row.id, row.title) for row in result]
 
 
+async def require_node_perm(
+    db_session: AsyncSession,
+    node_id: UUID,
+    codename: str,
+    user_id: UUID,
+) -> None:
+    """Raise HTTP 403 if `user_id` lacks `codename` permission on `node_id`.
+
+    Thin wrapper over `has_node_perm` used by routers to keep the per-endpoint
+    permission guard a single line instead of a repetitive 6-line if-block.
+    """
+    # Imported here to avoid a circular import at module load time
+    # (core.exceptions pulls in features, features pull in db.common).
+    from papermerge.core import exceptions as exc
+
+    if not await has_node_perm(
+        db_session, node_id=node_id, codename=codename, user_id=user_id
+    ):
+        raise exc.HTTP403Forbidden()
+
+
 async def has_node_perm(
     db_session: AsyncSession,
     node_id: UUID,

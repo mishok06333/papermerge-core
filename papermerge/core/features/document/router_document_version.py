@@ -58,13 +58,12 @@ async def download_document_version(
         doc_id = await dbapi.get_doc_id_from_doc_ver_id(
             db_session, doc_ver_id=document_version_id
         )
-        if not await dbapi_common.has_node_perm(
-                db_session,
-                node_id=doc_id,
-                codename=scopes.NODE_VIEW,
-                user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        await dbapi_common.require_node_perm(
+            db_session,
+            node_id=doc_id,
+            codename=scopes.NODE_VIEW,
+            user_id=user.id,
+        )
 
         await lib_ts_api.increment_download(db_session, doc_id)
         await lib_ts_api.add_audit(
@@ -118,13 +117,12 @@ async def get_doc_ver_download_url(
         doc_id = await dbapi.get_doc_id_from_doc_ver_id(
             db_session, doc_ver_id=doc_ver_id
         )
-        if not await dbapi_common.has_node_perm(
+        await dbapi_common.require_node_perm(
             db_session,
             node_id=doc_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        )
 
         result = await dbapi.get_doc_version_download_url(
             db_session,
@@ -155,13 +153,12 @@ async def document_version_details(
         doc_id = await dbapi.get_doc_id_from_doc_ver_id(
             db_session, doc_ver_id=document_version_id
         )
-        if not await dbapi_common.has_node_perm(
-                db_session,
-                node_id=doc_id,
-                codename=scopes.NODE_VIEW,
-                user_id=user.id,
-        ):
-            raise exc.HTTP403Forbidden()
+        await dbapi_common.require_node_perm(
+            db_session,
+            node_id=doc_id,
+            codename=scopes.NODE_VIEW,
+            user_id=user.id,
+        )
         doc_ver: orm.DocumentVersion = await dbapi.get_doc_ver(
             db_session, document_version_id=document_version_id
         )

@@ -25,7 +25,6 @@ from .features.document.db.api import (
     get_doc_cfv,
     get_doc_ver_pages,
     get_docs_thumbnail_img_status,
-    get_document_last_version,
     get_doc_versions_list,
     get_doc_version_download_url,
     get_doc_id_from_doc_ver_id,
@@ -124,5 +123,4 @@ __all__ = [
     "create_shared_nodes",
     "get_shared_node_access_details",
     "update_shared_node_access",
-    "get_document_last_version"
 ]

@@ -9,7 +9,6 @@ from papermerge.core import exceptions as exc
 from papermerge.core import types
 from papermerge.core.features.users.db import api as usr_dbapi
 from papermerge.core.features.users import schema as users_schema
-from papermerge.core.features.auth.remote_scheme import RemoteUserScheme
 from papermerge.core.features.auth import scopes
 from papermerge.core.db import exceptions as db_exc
 from papermerge.core.utils import base64
@@ -21,128 +20,82 @@ oauth2_scheme = OAuth2PasswordBearer(
     scopes=scopes.SCOPES,
 )
 
-remote_user_scheme = RemoteUserScheme()
-
 logger = logging.getLogger(__name__)
 
 BASELINE_AUTHENTICATED_SCOPES = [scopes.NODE_VIEW]
 
 
 def extract_token_data(token: str = Depends(oauth2_scheme)) -> types.TokenData | None:
-    if "." in token:
-        _, payload, _ = token.split(".")
-        data = base64.decode(payload)
-        user_id: str = data.get("sub")
-        if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token is missing `sub` field",
-            )
-        token_scopes = data.get("scopes", [])
-        groups = data.get("groups", [])
-        roles = data.get("roles", [])
-        username = data.get("preferred_username", None)
-        email = data.get("email", None)
-
-        return types.TokenData(
-            scopes=token_scopes,
-            user_id=user_id,
-            username=username,
-            email=email,
-            groups=groups,
-            roles=roles,
+    if not token or "." not in token:
+        return None
+    _, payload, _ = token.split(".")
+    data = base64.decode(payload)
+    user_id: str = data.get("sub")
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token is missing `sub` field",
         )
+    return types.TokenData(
+        scopes=data.get("scopes", []),
+        user_id=user_id,
+        username=data.get("preferred_username"),
+        email=data.get("email"),
+        groups=data.get("groups", []),
+        roles=data.get("roles", []),
+    )
 
 
 async def get_current_user(
     security_scopes: SecurityScopes,
-    remote_user: users_schema.RemoteUser | None = Depends(remote_user_scheme),
     token: str | None = Depends(oauth2_scheme),
     db_session: AsyncSession = Depends(get_db),
 ) -> users_schema.User:
-    user = None
-    total_scopes = []
-    if token:  # token found
-        token_data: types.TokenData = extract_token_data(token)
-
-        if token_data is not None:
-            try:
-                user = await usr_dbapi.get_user(db_session, token_data.username)
-            except db_exc.UserNotFound:
-                # create normal user
-                user = await usr_dbapi.create_user(
-                    db_session,
-                    username=token_data.username,
-                    email=token_data.email,
-                    user_id=UUID(token_data.user_id),
-                    password="-",
-                )
-        total_scopes = token_data.scopes
-        # Baseline read access for authenticated users so they can load Home.
-        total_scopes.extend(BASELINE_AUTHENTICATED_SCOPES)
-        # superusers have all privileges
-        if user.is_superuser:
-            total_scopes.extend(scopes.SCOPES.keys())
-        # augment user scopes with permissions associated to local groups
-        if len(token_data.groups) > 0:
-            s = await usr_dbapi.get_user_scopes_from_groups(
-                db_session,
-                user_id=user.id,
-                groups=token_data.groups,
-            )
-            total_scopes.extend(s)
-        if len(token_data.roles) > 0:
-            s = await usr_dbapi.get_user_scopes_from_roles(
-                db_session, user_id=user.id, roles=token_data.roles
-            )
-            total_scopes.extend(s)
-            # Persist role links so recipient_role-based sharing checks can match.
-            await usr_dbapi.attach_user_roles_by_names(
-                db_session, user_id=user.id, roles=token_data.roles
-            )
-
-    elif remote_user:  # get user from headers
-        # Using here external identity provider i.e.
-        # user management is done in external application
-        # If remote_user is not present in our DB then just create it
-        # (with its home folder ID, inbox folder ID etc)
-        try:
-            user = await usr_dbapi.get_user(db_session, remote_user.username)
-        except db_exc.UserNotFound:
-            # create normal user
-            user = usr_dbapi.create_user(
-                db_session,
-                username=remote_user.username,
-                email=remote_user.email,
-                password="-",
-            )
-        # superusers have all privileges
-        total_scopes.extend(BASELINE_AUTHENTICATED_SCOPES)
-        if user.is_superuser:
-            total_scopes.extend(scopes.SCOPES.keys())
-        # augment user scopes with permissions associated to local roles
-        if len(remote_user.roles) > 0:
-            s = await usr_dbapi.get_user_scopes_from_roles(
-                db_session, user_id=user.id, roles=remote_user.roles
-            )
-            total_scopes.extend(s)
-            # Persist role links so recipient_role-based sharing checks can match.
-            await usr_dbapi.attach_user_roles_by_names(
-                db_session, user_id=user.id, roles=remote_user.roles
-            )
-
-        if user is None:
-            raise HTTPException(status_code=401, detail="No credentials provided")
-
-    if user is None:
+    if not token:
         raise exc.HTTP401Unauthorized()
 
-    # User is authenticated.
-    # But does he/she has enough permissions?
+    token_data = extract_token_data(token)
+    if token_data is None:
+        raise exc.HTTP401Unauthorized()
+
+    try:
+        user = await usr_dbapi.get_user(db_session, token_data.username)
+    except db_exc.UserNotFound:
+        # JIT-provision users that authenticated successfully but haven't been
+        # seen locally yet (e.g. OIDC first login).
+        user = await usr_dbapi.create_user(
+            db_session,
+            username=token_data.username,
+            email=token_data.email,
+            user_id=UUID(token_data.user_id),
+            password="-",
+        )
+
+    total_scopes = list(token_data.scopes)
+    # Baseline read access for authenticated users so they can load Home.
+    total_scopes.extend(BASELINE_AUTHENTICATED_SCOPES)
+    if user.is_superuser:
+        total_scopes.extend(scopes.SCOPES.keys())
+    if token_data.groups:
+        total_scopes.extend(
+            await usr_dbapi.get_user_scopes_from_groups(
+                db_session, user_id=user.id, groups=token_data.groups
+            )
+        )
+    if token_data.roles:
+        total_scopes.extend(
+            await usr_dbapi.get_user_scopes_from_roles(
+                db_session, user_id=user.id, roles=token_data.roles
+            )
+        )
+        # Persist role links so recipient_role-based sharing checks can match.
+        await usr_dbapi.attach_user_roles_by_names(
+            db_session, user_id=user.id, roles=token_data.roles
+        )
+
     for scope in security_scopes.scopes:
         if scope not in total_scopes:
             raise exc.HTTP403Forbidden()
 
-    user.scopes = total_scopes  # is this required?
-
+    user.scopes = total_scopes
     return user

@@ -3,6 +3,7 @@ import {
   getBlobViewerCategory,
   getFileExtension
 } from "@/features/document/documentPreview"
+import {memo} from "react"
 import {Page} from "viewer"
 import BlobMediaPage from "./BlobMediaPage"
 import SelectablePdfPage from "./SelectablePdfPage"
@@ -15,7 +16,7 @@ interface Args {
   pageID: string
 }
 
-export default function PageContainer({
+function PageContainer({
   pageNumber,
   angle,
   pageID,
@@ -61,3 +62,12 @@ export default function PageContainer({
     />
   )
 }
+
+/**
+ * `PageContainer` mounts once per `pageID` inside a virtualized list, but the
+ * parent re-renders frequently (scroll position, selection changes, etc.).
+ * The props it receives (`pageID`, `pageNumber`, `angle`, `zoomFactor`) are
+ * primitives, so `memo` safely cuts re-renders that originate only from a
+ * parent state update unrelated to this page.
+ */
+export default memo(PageContainer)

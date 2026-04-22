@@ -70,6 +70,7 @@ export const Thumbnail = forwardRef<HTMLImageElement, ThumbnailArgs>(
         align="center"
         gap={"xs"}
         draggable
+        onClick={onClick}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         onDragOver={onDragOver}
@@ -82,10 +83,10 @@ export const Thumbnail = forwardRef<HTMLImageElement, ThumbnailArgs>(
           onChange={onChange}
           checked={checked}
           className={classes.checkbox}
+          onClick={event => event.stopPropagation()}
         />
         <img
           ref={ref}
-          onClick={onClick}
           style={{
             transform: `rotate(${angle}deg)`
           }}

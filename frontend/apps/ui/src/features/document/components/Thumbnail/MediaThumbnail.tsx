@@ -83,6 +83,7 @@ export const MediaThumbnail = forwardRef<HTMLDivElement, MediaThumbnailArgs>(
         align="center"
         gap="xs"
         draggable
+        onClick={onClick}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         onDragOver={onDragOver}
@@ -96,8 +97,9 @@ export const MediaThumbnail = forwardRef<HTMLDivElement, MediaThumbnailArgs>(
           onChange={onChange}
           checked={checked}
           className={classes.checkbox}
+          onClick={event => event.stopPropagation()}
         />
-        <div onClick={onClick} style={{cursor: "pointer", textAlign: "center"}}>
+        <div style={{cursor: "pointer", textAlign: "center"}}>
           <ThemeIcon variant="light" size="xl" radius="md">
             <Icon size={28} />
           </ThemeIcon>

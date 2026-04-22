@@ -139,7 +139,7 @@ test.describe("SelectablePdfPage DOM (probe app)", () => {
     await expect(input).toBeVisible()
 
     await input.fill("14")
-    await page.getByLabel("go-to-page").click()
+    await input.press("Enter")
     await expect(page.getByTestId("probe-current-page")).toHaveText("9")
     await expect(page.getByTestId("probe-submitted-page")).toHaveText("9")
 

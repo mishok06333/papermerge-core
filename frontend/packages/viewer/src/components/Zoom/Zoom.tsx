@@ -1,6 +1,5 @@
 import {ActionIcon, Group, Input} from "@mantine/core"
 import {
-  IconArrowRight,
   IconMaximize,
   IconZoomIn,
   IconZoomOut
@@ -46,7 +45,7 @@ export default function Zoom({
   }
 
   return (
-    <Group justify={"center"} className={classes.zoom}>
+    <Group justify={"center"} wrap="nowrap" className={classes.zoom}>
       <ActionIcon
         variant="subtle"
         className={classes.zoomControl}
@@ -82,22 +81,12 @@ export default function Zoom({
         min={1}
         max={pageTotal || 1}
         onChange={event => setInputPageNumber(event.currentTarget.value)}
-        onBlur={submitPageNumber}
         onKeyDownCapture={event => {
           if (event.key === "Enter") {
             submitPageNumber()
           }
         }}
       />
-      <ActionIcon
-        variant="subtle"
-        className={classes.zoomControl}
-        size="lg"
-        onClick={submitPageNumber}
-        aria-label="go-to-page"
-      >
-        <IconArrowRight />
-      </ActionIcon>
       <span className={classes.pageTotal}>/ {pageTotal}</span>
     </Group>
   )

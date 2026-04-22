@@ -24,7 +24,6 @@ import ThumbnailsToggle from "@/components/document/ThumbnailsToggle"
 import classes from "@/components/document/Viewer.module.css"
 import BlobDocumentViewer from "@/features/document/components/BlobDocumentViewer/BlobDocumentViewer"
 import DocxPageColumn from "@/features/document/components/DocxViewer/DocxPageColumn"
-import DocxThumbnailList from "@/features/document/components/DocxViewer/DocxThumbnailList"
 import {DocxScrollProvider} from "@/features/document/components/DocxViewer/DocxScrollContext"
 import {DOC_VER_PAGINATION_PAGE_BATCH_SIZE} from "@/features/document/constants"
 import {getViewerChromeKind} from "@/features/document/documentPreview"
@@ -125,8 +124,6 @@ export default function SharedViewer() {
         {chrome === "pdf" && <PageList />}
         {chrome === "docx" && (
           <DocxScrollProvider>
-            {thumbnailsIsOpen && <DocxThumbnailList />}
-            <ThumbnailsToggle />
             <DocxPageColumn />
           </DocxScrollProvider>
         )}

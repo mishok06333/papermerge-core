@@ -18,8 +18,12 @@ interface Props {
   pageNumber: number
   zoomFactor: number
   fileName: string | undefined
+  /** Optional direct file object URL fallback (used when page preview URL is unavailable). */
+  objectURLOverride?: string
   /** pageList: inside PDF-style canvas (gray background, zoom). standalone: full preview pane. */
   layout?: BlobMediaPageLayout
+  /** Available viewer height in px for standalone fit-to-viewport media. */
+  availableHeight?: number
 }
 
 function PageChrome({
@@ -45,10 +49,13 @@ export default function BlobMediaPage({
   pageNumber,
   zoomFactor,
   fileName,
-  layout = "pageList"
+  objectURLOverride,
+  layout = "pageList",
+  availableHeight
 }: Props) {
   const {t} = useTranslation()
-  const objectURL = useAppSelector(s => selectBestImageByPageId(s, pageID))
+  const previewObjectURL = useAppSelector(s => selectBestImageByPageId(s, pageID))
+  const objectURL = objectURLOverride ?? previewObjectURL
   const category = getBlobViewerCategory(fileName)
   const [textContent, setTextContent] = useState<string | null>(null)
   const [htmlContent, setHtmlContent] = useState<string | null>(null)
@@ -134,6 +141,7 @@ export default function BlobMediaPage({
         htmlContent={htmlContent}
         fileName={fileName}
         layout={layout}
+        availableHeight={availableHeight}
       />
     </PageChrome>
   )
@@ -146,7 +154,8 @@ function BlobInner({
   textContent,
   htmlContent,
   fileName,
-  layout
+  layout,
+  availableHeight
 }: {
   category: BlobViewerCategory
   objectURL: string
@@ -155,6 +164,7 @@ function BlobInner({
   htmlContent: string | null
   fileName: string | undefined
   layout: BlobMediaPageLayout
+  availableHeight?: number
 }) {
   const {t} = useTranslation()
   const embedScroll = layout === "pageList"
@@ -196,7 +206,21 @@ function BlobInner({
   }
 
   if (category === "image") {
-    return <img alt="" src={objectURL} style={widthStyle} />
+    const imageStyle =
+      layout === "standalone"
+        ? {
+            display: "block",
+            width: "auto",
+            height: "auto",
+            maxWidth: "100%",
+            maxHeight:
+              availableHeight && availableHeight > 120
+                ? `${availableHeight - 80}px`
+                : "70vh",
+            margin: "0 auto"
+          }
+        : widthStyle
+    return <img alt="" src={objectURL} style={imageStyle} />
   }
 
   if (category === "text" && textContent !== null) {

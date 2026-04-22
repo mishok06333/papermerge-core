@@ -37,7 +37,6 @@ import type {NType, PanelMode} from "@/types"
 import {getViewerChromeKind} from "@/features/document/documentPreview"
 import DocxPageColumn from "@/features/document/components/DocxViewer/DocxPageColumn"
 import {DocxScrollProvider} from "@/features/document/components/DocxViewer/DocxScrollContext"
-import DocxThumbnailList from "@/features/document/components/DocxViewer/DocxThumbnailList"
 import {DOC_VER_PAGINATION_PAGE_BATCH_SIZE} from "../constants"
 import BlobDocumentViewer from "./BlobDocumentViewer/BlobDocumentViewer"
 import ContextMenu from "./ContextMenu"
@@ -202,7 +201,7 @@ export default function Viewer() {
    *   `.pdf` → `SelectablePdfPage` (internal loading / canvas+text / raster `<img>` without unmounting);
    *   other `pdf-pages` extensions → viewer `Page` (raster); `PageContainer`’s `BlobMediaPage` branch
    *   is defensive (normally unreachable while chrome is `pdf`).
-   * - docx: `DocxScrollProvider` → `DocxThumbnailList`? + `DocxPageColumn` (`DocxPreviewCore`), not `PageContainer`.
+   * - docx: `DocxScrollProvider` → `DocxPageColumn` (`DocxPreviewCore`), not `PageContainer`.
    * - blob: `BlobDocumentViewer` → `BlobMediaPage` (`layout="standalone"`).
    *
    * While `!allPreviewsAreAvailable`, the early `<Loader />` return unmounts all chrome until previews exist.
@@ -227,8 +226,6 @@ export default function Viewer() {
         {chrome === "pdf" && <PageList />}
         {chrome === "docx" && (
           <DocxScrollProvider>
-            {thumbnailsIsOpen && <DocxThumbnailList />}
-            <ThumbnailsToggle />
             <DocxPageColumn />
           </DocxScrollProvider>
         )}

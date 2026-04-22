@@ -55,8 +55,11 @@ export default function BlobMediaPage({
 }: Props) {
   const {t} = useTranslation()
   const previewObjectURL = useAppSelector(s => selectBestImageByPageId(s, pageID))
-  const objectURL = objectURLOverride ?? previewObjectURL
   const category = getBlobViewerCategory(fileName)
+  const objectURL =
+    category === "pdf-pages"
+      ? previewObjectURL ?? objectURLOverride
+      : objectURLOverride ?? previewObjectURL
   const [textContent, setTextContent] = useState<string | null>(null)
   const [htmlContent, setHtmlContent] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -206,6 +209,24 @@ function BlobInner({
   }
 
   if (category === "image") {
+    const imageStyle =
+      layout === "standalone"
+        ? {
+            display: "block",
+            width: "auto",
+            height: "auto",
+            maxWidth: "100%",
+            maxHeight:
+              availableHeight && availableHeight > 120
+                ? `${availableHeight - 80}px`
+                : "70vh",
+            margin: "0 auto"
+          }
+        : widthStyle
+    return <img alt="" src={objectURL} style={imageStyle} />
+  }
+
+  if (category === "pdf-pages") {
     const imageStyle =
       layout === "standalone"
         ? {

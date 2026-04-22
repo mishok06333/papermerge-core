@@ -97,6 +97,23 @@ export function getFileExtension(fileName: string | null | undefined): string {
   return dot >= 0 ? lower.slice(dot) : ""
 }
 
+function isImageWrappedPdf(fileName: string | null | undefined): boolean {
+  if (!fileName) {
+    return false
+  }
+  const lower = fileName.toLowerCase()
+  if (!lower.endsWith(".pdf")) {
+    return false
+  }
+  const stem = lower.slice(0, -4)
+  const stemDot = stem.lastIndexOf(".")
+  if (stemDot < 0) {
+    return false
+  }
+  const innerExt = stem.slice(stemDot)
+  return IMAGE_EXTENSIONS.has(innerExt)
+}
+
 /**
  * Split on the last dot (same rule as {@link getFileExtension}).
  * `ext` includes the leading dot. For dotfiles like `.gitignore`, stem is empty
@@ -156,6 +173,9 @@ export function getViewerChromeKind(
 ): ViewerChromeKind {
   const cat = getBlobViewerCategory(fileName)
   if (cat === "pdf-pages") {
+    if (isImageWrappedPdf(fileName)) {
+      return "blob"
+    }
     return "pdf"
   }
   if (cat === "docx") {

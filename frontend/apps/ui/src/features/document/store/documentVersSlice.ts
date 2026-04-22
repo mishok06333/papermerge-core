@@ -64,17 +64,8 @@ const docVersSlice = createSlice({
     docVerPaginationUpdated(state, action: PayloadAction<PaginationUpdated>) {
       const {pageNumber, pageSize, docVerID} = action.payload
       const docVer = state.entities[docVerID]
-      if (docVer) {
-        if (docVer.pagination) {
-          docVer.pagination.page_number = pageNumber
-          docVer.pagination.per_page = pageSize
-        } else {
-          docVer.pagination = {
-            page_number: pageNumber,
-            per_page: pageSize
-          }
-        }
-      }
+      if (!docVer) return
+      docVer.pagination = {page_number: pageNumber, per_page: pageSize}
     },
     docVerThumbnailsPaginationUpdated(
       state,
@@ -82,76 +73,49 @@ const docVersSlice = createSlice({
     ) {
       const {pageNumber, pageSize, docVerID} = action.payload
       const docVer = state.entities[docVerID]
-      if (docVer) {
-        if (docVer.thumbnailsPagination) {
-          docVer.thumbnailsPagination.page_number = pageNumber
-          docVer.thumbnailsPagination.per_page = pageSize
-        } else {
-          docVer.thumbnailsPagination = {
-            page_number: pageNumber,
-            per_page: pageSize
-          }
-        }
+      if (!docVer) return
+      docVer.thumbnailsPagination = {
+        page_number: pageNumber,
+        per_page: pageSize
       }
     },
     pagesDroppedInDoc(state, action: PayloadAction<PageDroppedArgs>) {
+      /* Handles reordering of pages WITHIN the same document version.
+         Cross-docver transfers are handled in the transferPages action. */
       const {targetDocVerID, sources, target, position} = action.payload
       const docVer = state.entities[targetDocVerID]
-      const pages = docVer.pages
-      const page_ids = pages.map(p => p.id)
+      if (!docVer) return
+      const page_ids = docVer.pages.map(p => p.id)
       const source_ids = sources.map(p => p.id)
-      if (contains_every({container: page_ids, items: source_ids})) {
-        /* Here we deal with page transfer is within the same document
-        i.e we are just reordering. It is so because all source pages (their IDs)
-        were found in the target document version.
-        */
-        const newPages = reorder<ClientPage, string>({
-          arr: pages,
-          source_ids: source_ids,
-          target_id: target.id,
-          position: position,
-          idf: (val: ClientPage) => val.id
-        })
-        state.entities[targetDocVerID].pages = newPages
-      }
+      if (!contains_every({container: page_ids, items: source_ids})) return
+      docVer.pages = reorder<ClientPage, string>({
+        arr: docVer.pages,
+        source_ids,
+        target_id: target.id,
+        position,
+        idf: (val: ClientPage) => val.id
+      })
     },
     pagesRotated(state, action: PayloadAction<PageRotatedArgs>) {
       const {targetDocVerID, sources, angle} = action.payload
       const docVer = state.entities[targetDocVerID]
-      const pages = docVer.pages
-      const newPages = pages.map(p => {
-        for (let i = 0; i < sources.length; i++) {
-          if (sources[i].id == p.id) {
-            return {
-              id: p.id,
-              angle: p.angle + angle,
-              number: p.number,
-              text: p.text
-            }
-          }
-        }
-        return p
-      })
-      state.entities[targetDocVerID].pages = newPages
+      if (!docVer) return
+      const rotatedIDs = new Set(sources.map(s => s.id))
+      docVer.pages = docVer.pages.map(p =>
+        rotatedIDs.has(p.id) ? {...p, angle: p.angle + angle} : p
+      )
     },
     pagesReseted(state, action: PayloadAction<string>) {
-      const docVerID = action.payload
-      const docVer = state.entities[docVerID]
-      state.entities[docVerID].pages = docVer.initial_pages
+      const docVer = state.entities[action.payload]
+      if (!docVer) return
+      docVer.pages = docVer.initial_pages
     },
     pagesDeleted(state, action: PayloadAction<PageDeletedArgs>) {
       const {sources, targetDocVerID} = action.payload
       const docVer = state.entities[targetDocVerID]
-      const pages = docVer.pages
-      const pageIDsToBeDeleted = sources.map(i => i.id)
-      const newPages = pages.filter(p => {
-        for (let i = 0; i < sources.length; i++) {
-          if (!pageIDsToBeDeleted.includes(p.id)) {
-            return p
-          }
-        }
-      })
-      state.entities[targetDocVerID].pages = newPages
+      if (!docVer) return
+      const pageIDsToBeDeleted = new Set(sources.map(s => s.id))
+      docVer.pages = docVer.pages.filter(p => !pageIDsToBeDeleted.has(p.id))
     },
     documentMovedNotifReceived(
       _state,
@@ -367,65 +331,24 @@ export const selectDocVerPaginationPageNumber = (
   state: RootState,
   docVerID?: UUID
 ) => {
-  if (!docVerID) {
-    return 1
-  }
-
-  const docVer = state.docVers.entities[docVerID]
-
-  if (!docVer) {
-    return 1
-  }
-
-  const pagination = state.docVers.entities[docVerID].pagination
-
-  if (!pagination) {
-    return 1
-  }
-
-  return state.docVers.entities[docVerID].pagination.page_number
+  if (!docVerID) return 1
+  return state.docVers.entities[docVerID]?.pagination?.page_number ?? 1
 }
 
 export const selectDocVerPaginationThumnailPageNumber = (
   state: RootState,
   docVerID?: UUID
 ) => {
-  if (!docVerID) {
-    return 1
-  }
-
-  const docVer = state.docVers.entities[docVerID]
-
-  if (!docVer) {
-    return 1
-  }
-
-  const pagination = state.docVers.entities[docVerID].thumbnailsPagination
-
-  if (!pagination) {
-    return 1
-  }
-
-  return state.docVers.entities[docVerID].thumbnailsPagination.page_number
+  if (!docVerID) return 1
+  return state.docVers.entities[docVerID]?.thumbnailsPagination?.page_number ?? 1
 }
 
 export const selectDocVerClientPage = (
   state: RootState,
   {docVerID, pageID}: {docVerID?: string; pageID?: string}
 ) => {
-  if (!docVerID) {
-    return null
-  }
-
-  if (!pageID) {
-    return null
-  }
-
-  const docVer = state.docVers.entities[docVerID]
-
-  if (!docVer) {
-    return null
-  }
-
-  return state.docVers.entities[docVerID].pages.find(p => p.id == pageID)
+  if (!docVerID || !pageID) return null
+  return (
+    state.docVers.entities[docVerID]?.pages.find(p => p.id === pageID) ?? null
+  )
 }

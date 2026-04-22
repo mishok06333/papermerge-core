@@ -164,6 +164,19 @@ export const uploadFile = createAsyncThunk<UploadFileOutput, UploadFileInput>(
     }
 
     if (response2.status == 200 || response2.status == 201) {
+      // Attach the freshly-created docVerID to the in-memory buffer so the
+      // text layer works the first time the user opens the document (without
+      // this, `fileManager.getByDocVerID` misses and the viewer has to
+      // re-download the PDF before rendering the selectable layer).
+      const uploadedDoc = response2.data as {
+        versions?: Array<{id: string; number: number}>
+      } | null
+      if (uploadedDoc?.versions && uploadedDoc.versions.length > 0) {
+        const latestVersion = [...uploadedDoc.versions].sort(
+          (a, b) => b.number - a.number
+        )[0]
+        fileManager.update(createdNode.id, {docVerID: latestVersion.id})
+      }
       thunkApi.dispatch(
         uploaderFileItemUpdated({
           item: {

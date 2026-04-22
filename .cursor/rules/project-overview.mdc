@@ -102,6 +102,13 @@ put it inside an `exec_*` function in the entrypoint, invoke it from
     `useGeneratePreviews` and the `generatePreviews` thunk both reuse
     `ensureDocVerBuffer` — do not add another `getDocLastVersion` call
     path next to it.
+  - Upload flow ([frontend/apps/ui/src/features/files/filesSlice.ts](mdc:frontend/apps/ui/src/features/files/filesSlice.ts))
+    stores the uploaded `ArrayBuffer` first by `nodeID`, then patches in
+    the newest `docVerID` from the `/upload` response via
+    `fileManager.update(nodeID, {docVerID})`. This means a freshly
+    uploaded document already has a selectable text layer on first open
+    (no extra download round-trip). Preserve this two-step pattern when
+    editing the upload flow.
 - PDF worker asset: [frontend/apps/ui/src/utils/pdf.ts](mdc:frontend/apps/ui/src/utils/pdf.ts)
   serves `pdf.worker.min.mjs` in dev and a stable `/pdf.worker.min.js`
   path in prod (the nginx bundled in the `app` image exposes both).
@@ -159,12 +166,21 @@ the uniform `orm.Foo` path.
   `Set-Content -Encoding utf8` writes a BOM and triggers `exec format error`
   at container start; use `utf8NoBOM` or the .NET `UTF8Encoding $false`
   constructor when rewriting these scripts. New scripts belong in
-  `docker/app/scripts/`.
-- **`roco` needs `click<8.2`**: the pinned `roco==0.4.2` + `typer==0.9.4`
-  combo fails with `TypeError: Secondary flag is not valid for
-  non-boolean flag` under `click>=8.2`. The app Dockerfile installs
-  `roco` together with `'click<8.2'`. Do not drop that pin unless you
-  also bump `roco`/`typer` or replace the tool with `env2js`.
+  `docker/app/scripts/`. The repo-level [.gitattributes](mdc:.gitattributes)
+  also enforces `eol=lf` for `*.sh`, `Dockerfile`, `*.yml`, `*.conf`, and
+  `.env*` so Git itself doesn't reintroduce CRLF on Windows clones.
+- **Runtime configs (auth-server + UI)**: `roco` has been removed entirely.
+  The auth-server's `papermerge-runtime-config.js` is now emitted inline by
+  a shell heredoc in `docker/app/entrypoint.sh::render_runtime_configs`
+  (defaults mirror the old `roco` behaviour, e.g. `login_provider: "db"`).
+  The UI's runtime config is still rendered by `env2js` from
+  `docker/app/core.js.tmpl` — note that the shipped `env2js` binary only
+  substitutes a hardcoded whitelist (`PAPERMERGE__OCR__LANG_CODES`,
+  `PAPERMERGE__OCR__DEFAULT_LANG_CODE`, `PAPERMERGE__OCR__AUTOMATIC`),
+  so any new UI config vars must either be added to a different renderer
+  or to the inline heredoc path. The script-tag injection into each SPA's
+  `index.html` matches on `</title>` (NOT on the literal word
+  "Papermerge") so that branded/customised titles still work.
 - **`PAPERMERGE__AUTH__PASSWORD` / `USERNAME` / `EMAIL`** are the env
   names the auth-server CLI reads for the `--superuser` flag. The
   compose file maps `ADMIN_*` from `.env` onto these. Don't rename one

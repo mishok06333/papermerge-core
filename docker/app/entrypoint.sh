@@ -1,10 +1,10 @@
 #!/bin/sh
 # Entry point for the monolithic Papermerge image.
 # Commands:
-#   server   вЂ” default. Run init (migrations + bootstrap admin/roles) then supervisord.
-#   init     вЂ” just the init steps (useful for one-shot jobs).
-#   migrate  вЂ” only alembic migrations.
-#   *        вЂ” exec the given command (debug/shell).
+#   server   Р Р†Р вЂљРІР‚Сњ default. Run init (migrations + bootstrap admin/roles) then supervisord.
+#   init     Р Р†Р вЂљРІР‚Сњ just the init steps (useful for one-shot jobs).
+#   migrate  Р Р†Р вЂљРІР‚Сњ only alembic migrations.
+#   *        Р Р†Р вЂљРІР‚Сњ exec the given command (debug/shell).
 
 set -u
 
@@ -75,15 +75,41 @@ ln -s /etc/nginx/nginx.default.conf      /etc/nginx/nginx.conf
 ln -s /etc/papermerge/supervisord.default.conf /etc/papermerge/supervisord.conf
 
 render_runtime_configs() {
-    # Auth-server runtime config (expects roco-compatible env prefix).
-    roco > /usr/share/nginx/html/auth_server/papermerge-runtime-config.js
-    # Core UI runtime config (PAPERMERGE__MAIN__* etc.).
-    /bin/env2js -f /core_app/core.js.tmpl > /usr/share/nginx/html/ui/papermerge-runtime-config.js
-    # Inject the config <script> tag into the built UI once per image instance.
-    if ! grep -q '/papermerge-runtime-config.js' /usr/share/nginx/html/ui/index.html; then
-        sed -i '/Papermerge/a  <script type="module" src="/papermerge-runtime-config.js"></script>' \
-            /usr/share/nginx/html/ui/index.html
-    fi
+    # Auth-server runtime config. We render it inline here so we don't depend
+    # on any additional tool (historical setup used `roco` which broke under
+    # click>=8.2, and the upstream `env2js` binary only supports a hardcoded
+    # whitelist of OCR-related vars). Defaults mirror the retired `roco`
+    # behaviour so existing deployments don't need to set new env vars.
+    LOGIN_PROVIDER="${PAPERMERGE__AUTH__LOGIN_PROVIDER:-db}"
+    cat > /usr/share/nginx/html/auth_server/papermerge-runtime-config.js <<EOF
+window.__PAPERMERGE_RUNTIME_CONFIG__ = {
+  login_provider: "${LOGIN_PROVIDER}",
+  oidc_client_id: "${PAPERMERGE__AUTH__OIDC_CLIENT_ID:-}",
+  oidc_authorize_url: "${PAPERMERGE__AUTH__OIDC_AUTHORIZE_URL:-}",
+  oidc_redirect_url: "${PAPERMERGE__AUTH__OIDC_REDIRECT_URL:-}",
+  oidc_logout_url: "${PAPERMERGE__AUTH__OIDC_LOGOUT_URL:-}",
+  oidc_scope: "${PAPERMERGE__AUTH__OIDC_SCOPE:-}",
+  remote_logout_endpoint: "${PAPERMERGE__AUTH__REMOTE_LOGOUT_ENDPOINT:-}"
+};
+EOF
+
+    # Core UI runtime config (PAPERMERGE__OCR__*). env2js is a Papermerge-
+    # specific renderer that knows how to substitute OCR vars in this template.
+    /bin/env2js -f /etc/papermerge/core.js.tmpl \
+        > /usr/share/nginx/html/ui/papermerge-runtime-config.js
+
+    # Inject the <script> tag that loads the runtime config into each SPA's
+    # index.html. We match on `</title>` because UI/auth-server titles can be
+    # customised (previous rule used "Papermerge" which silently broke for
+    # branded builds).
+    for html_dir in /usr/share/nginx/html/ui /usr/share/nginx/html/auth_server; do
+        html="${html_dir}/index.html"
+        [ -f "$html" ] || continue
+        if ! grep -q '/papermerge-runtime-config.js' "$html"; then
+            sed -i 's|</title>|</title>\n    <script type="module" src="/papermerge-runtime-config.js"></script>|' \
+                "$html"
+        fi
+    done
 }
 
 case "$CMD" in

@@ -98,6 +98,15 @@ EOF
     /bin/env2js -f /etc/papermerge/core.js.tmpl \
         > /usr/share/nginx/html/ui/papermerge-runtime-config.js
 
+    APP_TITLE="${PAPERMERGE__MAIN__APP_TITLE:-Электронная библиотека Хабаровского центра социальной поддержки населения}"
+    AUTH_BRAND_TITLE="${PAPERMERGE__AUTH__BRAND_TITLE:-${APP_TITLE}}"
+    AUTH_LOGIN_SUBTITLE="${PAPERMERGE__AUTH__LOGIN_SUBTITLE:-Электронная библиотека}"
+
+    # Escape replacement strings once so we can use them safely in sed.
+    APP_TITLE_SED=$(printf '%s' "${APP_TITLE}" | sed 's/[&|]/\\&/g')
+    AUTH_BRAND_TITLE_SED=$(printf '%s' "${AUTH_BRAND_TITLE}" | sed 's/[&|]/\\&/g')
+    AUTH_LOGIN_SUBTITLE_SED=$(printf '%s' "${AUTH_LOGIN_SUBTITLE}" | sed 's/[&|]/\\&/g')
+
     # Inject the <script> tag that loads the runtime config into each SPA's
     # index.html. We match on `</title>` because UI/auth-server titles can be
     # customised (previous rule used "Papermerge" which silently broke for
@@ -105,11 +114,64 @@ EOF
     for html_dir in /usr/share/nginx/html/ui /usr/share/nginx/html/auth_server; do
         html="${html_dir}/index.html"
         [ -f "$html" ] || continue
+        # Keep UI and auth-server page titles branded consistently.
+        sed -i "s|<title>.*</title>|<title>${APP_TITLE_SED}</title>|" "$html"
         if ! grep -q '/papermerge-runtime-config.js' "$html"; then
             sed -i 's|</title>|</title>\n    <script type="module" src="/papermerge-runtime-config.js"></script>|' \
                 "$html"
         fi
     done
+
+    # Auth-server is shipped as prebuilt static files from upstream image.
+    # We localise visible UI labels and common error messages at runtime so
+    # branding survives image upgrades without forking auth-server.
+    find /usr/share/nginx/html/auth_server -type f \
+      \( -name '*.html' -o -name '*.js' -o -name '*.json' \) 2>/dev/null \
+      | while IFS= read -r file; do
+            sed -i "s|Papermerge DMS|${AUTH_BRAND_TITLE_SED}|g" "$file"
+            sed -i "s|Open Source Document Management System for Digital Archives|${AUTH_LOGIN_SUBTITLE_SED}|g" "$file"
+
+            # Generic auth form labels.
+            sed -i "s|Username|Имя пользователя|g" "$file"
+            sed -i "s|Password|Пароль|g" "$file"
+            sed -i "s|Your password|Введите пароль|g" "$file"
+            sed -i "s|Sign in|Войти|g" "$file"
+            sed -i "s|Login|Войти|g" "$file"
+
+            # Common auth errors.
+            sed -i "s|Invalid credentials|Неверные учетные данные|g" "$file"
+            sed -i "s|Invalid username or password|Неверное имя пользователя или пароль|g" "$file"
+            sed -i "s|User is not active|Пользователь не активирован|g" "$file"
+            sed -i "s|Account is disabled|Учетная запись отключена|g" "$file"
+            sed -i "s|Unauthorized|Не авторизован|g" "$file"
+            sed -i "s|Forbidden|Доступ запрещен|g" "$file"
+            sed -i "s|Something went wrong|Произошла ошибка|g" "$file"
+        done
+
+    # Some auth UI builds only ship de/en locales. If the browser asks for ru,
+    # nginx falls back to index.html and i18n may silently keep stale defaults.
+    # Ensure the ru locale file exists and matches our customised strings.
+    AUTH_I18N_DIR="/usr/share/nginx/html/auth_server/localization/auth-server"
+    if [ -f "${AUTH_I18N_DIR}/en.json" ]; then
+        # Always refresh ru.json from en.json so both locales stay in sync
+        # after runtime replacements (brand strings, labels, common errors).
+        cp -f "${AUTH_I18N_DIR}/en.json" "${AUTH_I18N_DIR}/ru.json"
+    fi
+
+    # Force auth form labels for all shipped locales used by the login page.
+    # This avoids fallback to old upstream labels when a locale file is absent
+    # or when browser language differs from expected.
+    mkdir -p "${AUTH_I18N_DIR}"
+    cat > "${AUTH_I18N_DIR}/en.json" <<'EOF'
+{
+  "username": "Имя пользователя",
+  "password": "Пароль",
+  "your password": "Введите пароль",
+  "signin": "Войти"
+}
+EOF
+    cp -f "${AUTH_I18N_DIR}/en.json" "${AUTH_I18N_DIR}/ru.json"
+    cp -f "${AUTH_I18N_DIR}/en.json" "${AUTH_I18N_DIR}/de.json"
 }
 
 case "$CMD" in
@@ -124,10 +186,12 @@ case "$CMD" in
         ;;
     server)
         exec_init
+        echo "[init] Rendering runtime configs..."
         render_runtime_configs
         exec /usr/bin/supervisord -c /etc/papermerge/supervisord.conf
         ;;
     server_without_init)
+        echo "[init] Rendering runtime configs..."
         render_runtime_configs
         exec /usr/bin/supervisord -c /etc/papermerge/supervisord.conf
         ;;

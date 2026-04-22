@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     papermerge__main__api_prefix: str = ''
     papermerge__main__prefix: str = ''
     papermerge__main__app_title: str = Field(
-        default="Социальная поддержка 27",
+        default="Электронная библиотека Хабаровского центра социальной поддержки населения",
         description="Display title for API docs and optional UI branding.",
     )
     papermerge__main__cors_origins: str = Field(

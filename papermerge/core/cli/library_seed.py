@@ -13,7 +13,9 @@ from papermerge.core.features.nodes import schema as nodes_schema
 from papermerge.core.features.nodes.db import api as nodes_dbapi
 from papermerge.core.utils.cli import async_command
 
-app = typer.Typer(help="Seed «Социальная поддержка 27» taxonomy (custom fields, types, folders)")
+app = typer.Typer(
+    help="Seed «Электронная библиотека Хабаровского центра социальной поддержки населения» taxonomy (custom fields, types, folders)"
+)
 
 
 FOLDER_TREE = (

@@ -11,7 +11,7 @@ import LanguageMenu from "./LanguageMenu"
 import NotificationsMenu from "./NotificationsMenu"
 
 const APP_TITLE =
-  import.meta.env.VITE_APP_TITLE?.trim() || "Социальная поддержка 27"
+  import.meta.env.VITE_APP_TITLE?.trim() || "Электронная библиотека"
 
 function Header() {
   const theme = useMantineTheme()

@@ -1,6 +1,7 @@
 import {useGetRolesQuery} from "@/features/roles/apiSlice"
 import {MultiSelect, Skeleton, Stack} from "@mantine/core"
 import {useState} from "react"
+import {useTranslation} from "react-i18next"
 
 interface Args {
   onChange: (value: string[]) => void
@@ -8,6 +9,7 @@ interface Args {
 
 /** Account roles: every user assigned one of these roles receives the share. */
 export default function SelectRecipientRoles({onChange}: Args) {
+  const {t} = useTranslation()
   const [value, setValue] = useState<string[]>([])
   const {data, isLoading} = useGetRolesQuery()
 
@@ -28,9 +30,9 @@ export default function SelectRecipientRoles({onChange}: Args) {
     <Stack my={"md"}>
       <MultiSelect
         searchable
-        label="All users with role (account role)"
-        description="Share with everyone who has this role assigned to their account"
-        placeholder="Pick value"
+        label={t("share.recipient_roles.label")}
+        description={t("share.recipient_roles.description")}
+        placeholder={t("common.pick_value")}
         value={value}
         onChange={onChangeLocal}
         data={data.map(r => r.name)}

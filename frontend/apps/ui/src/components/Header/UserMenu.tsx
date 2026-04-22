@@ -28,7 +28,7 @@ export default function UserMenu() {
     window.location.href = "/"
   }
   if (status == "loading") {
-    return <>Loading...</>
+    return <>{t("common.loading")}</>
   }
 
   if (status == "failed") {

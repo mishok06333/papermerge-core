@@ -150,14 +150,14 @@ export default function EditUserModal({
         />
         <MultiSelect
           label={t("users.form.groups")}
-          placeholder="Pick value"
+          placeholder={t("common.pick_value")}
           onChange={setGroups}
           value={groups}
           data={allGroups.map(g => g.name) || []}
         />
         <MultiSelect
           label={t("users.form.roles")}
-          placeholder="Pick value"
+          placeholder={t("common.pick_value")}
           onChange={setRoles}
           value={roles}
           data={allRoles.map(r => r.name) || []}

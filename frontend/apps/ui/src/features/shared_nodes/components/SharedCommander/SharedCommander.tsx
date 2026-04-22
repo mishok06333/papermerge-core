@@ -35,8 +35,10 @@ import NodesList from "./NodesList"
 import {SHARED_FOLDER_ROOT_ID, SHARED_NODES_ROOT_BREADCRUMB} from "@/cconstants"
 import {skipToken} from "@reduxjs/toolkit/query"
 import FolderNodeActions from "./FolderNodeActions"
+import {useTranslation} from "react-i18next"
 
 export default function SharedCommander() {
+  const {t} = useTranslation()
   const mode: PanelMode = useContext(PanelContext)
   const height = useAppSelector(s => selectContentHeight(s, mode))
   const dispatch = useAppDispatch()
@@ -69,7 +71,7 @@ export default function SharedCommander() {
   )
 
   if (isLoading && !data) {
-    return <div>Loading...</div>
+    return <div>{t("common.loading")}</div>
   }
 
   if (isError) {
@@ -152,7 +154,7 @@ export default function SharedCommander() {
       </>
     )
   } else {
-    commanderContent = <Group>Empty</Group>
+    commanderContent = <Group>{t("common.empty")}</Group>
   }
 
   return (

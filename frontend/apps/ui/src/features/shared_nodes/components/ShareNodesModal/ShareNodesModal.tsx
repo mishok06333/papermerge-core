@@ -4,6 +4,7 @@ import {useAddNewSharedNodeMutation} from "@/features/shared_nodes/store/apiSlic
 import {Button, Container, Group, Loader, Modal} from "@mantine/core"
 import {notifications} from "@mantine/notifications"
 import {useState} from "react"
+import {useTranslation} from "react-i18next"
 import SelectGroups from "./SelectGroups"
 import SelectRecipientRoles from "./SelectRecipientRoles"
 import SelectRoles from "./SelectRoles"
@@ -22,6 +23,7 @@ export const ShareNodesModal = ({
   onCancel,
   opened
 }: Args) => {
+  const {t} = useTranslation()
   const [users, setUsers] = useState<string[]>([])
   const [roles, setRoles] = useState<string[]>([])
   const [groups, setGroups] = useState<string[]>([])
@@ -63,9 +65,8 @@ export const ShareNodesModal = ({
     }
     if (role_ids.length === 0) {
       notifications.show({
-        title: "Share",
-        message:
-          "Pick at least one access role (defines what recipients can do with the item).",
+        title: t("share.notifications.title"),
+        message: t("share.notifications.pick_access_role"),
         color: "yellow"
       })
       return
@@ -76,9 +77,8 @@ export const ShareNodesModal = ({
       recipient_role_ids.length === 0
     ) {
       notifications.show({
-        title: "Share",
-        message:
-          "Pick at least one user, group, or account role (all members).",
+        title: t("share.notifications.title"),
+        message: t("share.notifications.pick_recipient"),
         color: "yellow"
       })
       return
@@ -96,8 +96,8 @@ export const ShareNodesModal = ({
         typeof err.data === "object" &&
         "detail" in err.data
           ? String((err.data as {detail: unknown}).detail)
-          : "Share failed"
-      notifications.show({title: "Share", message, color: "red"})
+          : t("share.notifications.failed")
+      notifications.show({title: t("share.notifications.title"), message, color: "red"})
     }
   }
 
@@ -115,27 +115,26 @@ export const ShareNodesModal = ({
 
   return (
     <Modal
-      title="Share Documents and Folders"
+      title={t("share.modal.title")}
       opened={opened}
       onClose={localCancel}
     >
       <Container>
-        Pick users, groups, and/or everyone with an account role. Then choose
-        access roles for the shared item.
+        {t("share.modal.description")}
         <SelectUsers onChange={onUsersChange} />
         <SelectGroups onChange={onGroupsChange} />
         <SelectRecipientRoles onChange={onRecipientRolesChange} />
         <SelectRoles onChange={onRolesChange} />
         <Group gap="lg" justify="space-between">
           <Button variant="default" onClick={localCancel}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             leftSection={isLoading ? <Loader size={"sm"} /> : undefined}
             onClick={localSubmit}
             disabled={isLoading || isSuccess}
           >
-            Share
+            {t("share.actions.share")}
           </Button>
         </Group>
       </Container>

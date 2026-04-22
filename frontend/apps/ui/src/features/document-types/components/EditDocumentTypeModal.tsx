@@ -100,7 +100,7 @@ export default function EditDocumentTypeModal({
 
   return (
     <Modal
-      title={"Edit Category"}
+      title={t("document_types.edit.title")}
       opened={opened}
       size="lg"
       onClose={onLocalCancel}
@@ -113,12 +113,12 @@ export default function EditDocumentTypeModal({
       <TextInput
         value={name}
         onChange={e => setName(e.currentTarget.value)}
-        label="Name"
-        placeholder="name"
+        label={t("document_types.form.name")}
+        placeholder={t("document_types.form.name")}
       />
       <MultiSelect
-        label="Custom Fields"
-        placeholder="Pick value"
+        label={t("document_types.form.custom_fields")}
+        placeholder={t("common.pick_value")}
         onChange={setCustomFieldIDs}
         searchable
         data={allCustomFields.map(i => {
@@ -127,7 +127,7 @@ export default function EditDocumentTypeModal({
         value={customFieldIDs}
       />
       <Textarea
-        label="Path Template"
+        label={t("document_types.form.path_template")}
         resize="vertical"
         autosize
         minRows={6}
@@ -142,7 +142,7 @@ export default function EditDocumentTypeModal({
         <Group>
           {isLoadingGroupUpdate && <Loader size="sm" />}
           <Button disabled={isLoadingGroupUpdate} onClick={onLocalSubmit}>
-            Update
+            {t("common.update")}
           </Button>
         </Group>
       </Group>

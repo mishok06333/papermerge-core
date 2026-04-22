@@ -2,6 +2,7 @@ import {useGetRolesQuery} from "@/features/roles/apiSlice"
 import type {AudienceRole, Group, User} from "@/types.d/shared_nodes"
 import {MultiSelect} from "@mantine/core"
 import {useEffect, useState} from "react"
+import {useTranslation} from "react-i18next"
 import type {IDType} from "./type"
 
 interface Args {
@@ -23,6 +24,7 @@ export default function ManageRole({
   audienceRoles,
   onChange
 }: Args) {
+  const {t} = useTranslation()
   const [roles, setRoles] = useState<string[]>()
   const {data: allRoles = []} = useGetRolesQuery()
 
@@ -56,8 +58,8 @@ export default function ManageRole({
 
   return (
     <MultiSelect
-      label="Roles"
-      placeholder="Pick value"
+      label={t("roles.name")}
+      placeholder={t("common.pick_value")}
       onChange={onLocalRoleChange}
       value={roles}
       data={allRoles.map(r => r.name) || []}

@@ -149,7 +149,7 @@ export default function Commander() {
   }, [user, groupHomes, currentFolder?.breadcrumb])
 
   if (!currentNodeID) {
-    return <div>Loading...</div>
+    return <div>{t("common.loading")}</div>
   }
 
   const homeFolderTreeContext =
@@ -161,7 +161,7 @@ export default function Commander() {
   const showHomeFolderTree = homeFolderTreeContext && homeFolderTreeOpen
 
   if (isLoading && !data) {
-    return <div>Loading...</div>
+    return <div>{t("common.loading")}</div>
   }
 
   if (isError && isHTTP422UnprocessableContent(error)) {

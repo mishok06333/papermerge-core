@@ -14,6 +14,7 @@ import {Button, Container, Group, Loader, Modal, Tabs} from "@mantine/core"
 import {IconShield, IconUsers, IconUsersGroup} from "@tabler/icons-react"
 import {produce} from "immer"
 import {useEffect, useState} from "react"
+import {useTranslation} from "react-i18next"
 import ManageAccessAudienceRoles from "./ManageAccessAudienceRoles"
 import ManageAccessGroups from "./ManageAccessGroups"
 import ManageAccessUsers from "./ManageAccessUsers"
@@ -46,6 +47,7 @@ type Args = {
 }
 
 export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
+  const {t} = useTranslation()
   const {data: initialData, isLoading} =
     useGetSharedNodeAccessDetailsQuery(node_id)
   const {data: allRoles = []} = useGetRolesQuery()
@@ -246,7 +248,7 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
       <Modal.Stack>
         <Modal
           {...stack.register("manage-access")}
-          title="Manage Access"
+          title={t("manage_access.title")}
           size={"lg"}
           onClose={localCancel}
         >
@@ -254,9 +256,9 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
             <Loader />
             <Group gap="lg" justify="space-between">
               <Button variant="default" onClick={localCancel}>
-                Cancel
+                {t("common.cancel")}
               </Button>
-              <Button disabled={true}>Save</Button>
+              <Button disabled={true}>{t("common.save")}</Button>
             </Group>
           </Container>
         </Modal>
@@ -268,7 +270,7 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
     <Modal.Stack>
       <Modal
         {...stack.register("manage-access")}
-        title="Manage Access"
+        title={t("manage_access.title")}
         size={"lg"}
       >
         <Container>
@@ -279,21 +281,21 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
                 onClick={onClickTab}
                 leftSection={<IconUsers size={18} />}
               >
-                Users
+                {t("users.name")}
               </Tabs.Tab>
               <Tabs.Tab
                 value="groups"
                 onClick={onClickTab}
                 leftSection={<IconUsersGroup size={18} />}
               >
-                Groups
+                {t("groups.name")}
               </Tabs.Tab>
               <Tabs.Tab
                 value="audience_roles"
                 onClick={onClickTab}
                 leftSection={<IconShield size={18} />}
               >
-                Role audiences
+                {t("manage_access.role_audiences")}
               </Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="users">
@@ -326,20 +328,24 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
           </Tabs>
 
           <Group gap="lg" justify="space-between">
-            <Button variant="default" onClick={localSubmit}>
-              Cancel
+            <Button variant="default" onClick={localCancel}>
+              {t("common.cancel")}
             </Button>
             <Button
               leftSection={false && <Loader size={"sm"} />}
               onClick={localSubmit}
               disabled={false}
             >
-              Save
+              {t("common.save")}
             </Button>
           </Group>
         </Container>
       </Modal>
-      <Modal {...stack.register("manage-role")} title="Manage Role" size={"lg"}>
+      <Modal
+        {...stack.register("manage-role")}
+        title={t("manage_access.manage_role")}
+        size={"lg"}
+      >
         <Container>
           <ManageRole
             selectedGroupIDs={selectedGroupIDs}
@@ -352,14 +358,14 @@ export const ManageAccessModal = ({node_id, onClose, stack}: Args) => {
           />
           <Group gap="lg" justify="space-between">
             <Button variant="default" onClick={onCancelRoleView}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               leftSection={false && <Loader size={"sm"} />}
               onClick={onSubmitRoleView}
               disabled={false}
             >
-              Save
+              {t("common.save")}
             </Button>
           </Group>
         </Container>

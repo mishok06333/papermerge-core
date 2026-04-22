@@ -11,6 +11,7 @@ import {
 } from "@/features/ui/uiSlice"
 
 import {EditNodeTagsModal} from "@/components/EditNodeTags"
+import {useTranslation} from "react-i18next"
 
 import type {NodeType, PanelMode} from "@/types"
 
@@ -18,6 +19,7 @@ import PanelContext from "@/contexts/PanelContext"
 import {selectNodesByIds} from "@/features/nodes/nodesSlice"
 
 export default function EditNodeTagsButton() {
+  const {t} = useTranslation()
   const [opened, {open, close}] = useDisclosure(false)
   const mode: PanelMode = useContext(PanelContext)
   const dispatch = useAppDispatch()
@@ -49,7 +51,7 @@ export default function EditNodeTagsButton() {
 
   return (
     <>
-      <Tooltip label="Edit tags" withArrow>
+      <Tooltip label={t("edit_tags.title")} withArrow>
         <ActionIcon size={"lg"} variant="default" onClick={onClick}>
           <IconTag stroke={1.4} />
         </ActionIcon>

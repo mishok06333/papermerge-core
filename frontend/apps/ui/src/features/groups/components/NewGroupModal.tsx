@@ -84,7 +84,7 @@ export default function NewGroupModal({onCancel, onSubmit, opened}: Args) {
       <Checkbox
         my="md"
         onChange={onCheckboxClicked}
-        label="For this group create special folders: inbox and home"
+        label={t("groups.form.special_folders")}
       />
       {isError && <Text c="red">{`${error}`}</Text>}
       <Group justify="space-between" mt="md">

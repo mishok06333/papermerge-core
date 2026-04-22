@@ -74,12 +74,12 @@ export const EditNodeTagsModal = ({node, onSubmit, onCancel, opened}: Args) => {
   }
 
   return (
-    <Modal title={"Edit Tags"} opened={opened} onClose={onLocalCancel}>
+    <Modal title={t("edit_tags.title")} opened={opened} onClose={onLocalCancel}>
       <TagsInput
         data-autofocus
         onChange={setTags}
         value={tags}
-        label="Tags"
+        label={t("tags.name")}
         data={allTagNames}
         mt="md"
       />

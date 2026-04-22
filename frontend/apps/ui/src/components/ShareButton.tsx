@@ -4,6 +4,7 @@ import {ActionIcon, Box, Tooltip} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
 import {IconUserShare} from "@tabler/icons-react"
 import {forwardRef} from "react"
+import {useTranslation} from "react-i18next"
 
 import ShareNodesModal from "@/features/shared_nodes/components/ShareNodesModal"
 
@@ -13,6 +14,7 @@ interface Args {
 }
 
 const ShareButton = forwardRef<HTMLButtonElement, Args>((props, ref) => {
+  const {t} = useTranslation()
   const dispatch = useAppDispatch()
   const {hidden, node_ids} = props
   const [opened, {open, close}] = useDisclosure(false)
@@ -24,7 +26,7 @@ const ShareButton = forwardRef<HTMLButtonElement, Args>((props, ref) => {
 
   return (
     <Box>
-      <Tooltip label="Share Documents and Folders" withArrow>
+      <Tooltip label={t("share.modal.title")} withArrow>
         <ActionIcon
           style={hidden ? {display: "None"} : {}}
           ref={ref}

@@ -77,7 +77,7 @@ function NavBarFull() {
   }
 
   if (status == "loading" || isLoading) {
-    return <>Loading...</>
+    return <>{t("common.loading")}</>
   }
 
   if (status == "failed") {
@@ -85,7 +85,7 @@ function NavBarFull() {
   }
 
   if (!user) {
-    return <>Loading...</>
+    return <>{t("common.loading")}</>
   }
 
   const scopes = user.scopes ?? []
@@ -140,7 +140,7 @@ function NavBarFull() {
         {scopes.includes(DOCUMENT_TYPE_VIEW) && (
           <NavLink to="/document-types">
             {NavLinkWithFeedback(
-              t("document_types.name.by"),
+              t("document_types.name"),
               <IconTriangleSquareCircle />
             )}
           </NavLink>
@@ -176,6 +176,7 @@ function NavBarFull() {
 }
 
 function NavBarCollapsed() {
+  const {t} = useTranslation()
   const mode = useContext(PanelContext)
   const dispatch = useAppDispatch()
   const {data, isLoading} = useGetVersionQuery()
@@ -202,7 +203,7 @@ function NavBarCollapsed() {
   }
 
   if (status == "loading" || isLoading) {
-    return <>Loading...</>
+    return <>{t("common.loading")}</>
   }
 
   if (status == "failed") {
@@ -210,7 +211,7 @@ function NavBarCollapsed() {
   }
 
   if (!user) {
-    return <>Loading...</>
+    return <>{t("common.loading")}</>
   }
 
   const scopes = user.scopes ?? []

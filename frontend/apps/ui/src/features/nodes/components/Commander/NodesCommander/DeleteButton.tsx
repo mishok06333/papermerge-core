@@ -1,5 +1,6 @@
 import {useDisclosure} from "@mantine/hooks"
 import {useContext} from "react"
+import {useTranslation} from "react-i18next"
 
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {PanelMode} from "@/types"
@@ -16,6 +17,7 @@ import PanelContext from "@/contexts/PanelContext"
 import {selectNodesByIds} from "@/features/nodes/nodesSlice"
 
 export default function DeleteButton() {
+  const {t} = useTranslation()
   const [opened, {open, close}] = useDisclosure(false)
   const mode: PanelMode = useContext(PanelContext)
   const dispatch = useAppDispatch()
@@ -36,7 +38,7 @@ export default function DeleteButton() {
 
   return (
     <>
-      <Tooltip withArrow label="Delete">
+      <Tooltip withArrow label={t("common.delete")}>
         <ActionIcon size="lg" onClick={open} color={"red"}>
           <IconTrash />
         </ActionIcon>

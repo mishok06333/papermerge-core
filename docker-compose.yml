@@ -3,9 +3,9 @@ services:
     image: postgres:16.1
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-papermerge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-papermerge}
+      POSTGRES_DB: ${POSTGRES_DB:-papermerge}
     volumes:
       - pgdata:/var/lib/postgresql/data/
     ports:
@@ -43,18 +43,21 @@ services:
     ports:
       - "${APP_PORT:-12000}:80"
     environment:
-      PAPERMERGE__SECURITY__SECRET_KEY: ${SECRET_KEY}
+      PAPERMERGE__SECURITY__SECRET_KEY: ${SECRET_KEY:-change-me-to-a-random-secret}
       PAPERMERGE__MAIN__API_PREFIX: /api
-      PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER:-papermerge}:${POSTGRES_PASSWORD:-papermerge}@db:5432/${POSTGRES_DB:-papermerge}
       PAPERMERGE__MAIN__MEDIA_ROOT: /var/media/pmg
       PAPERMERGE__REDIS__URL: redis://redis:6379/0
       PAPERMERGE__OCR__LANG_CODES: ${OCR_LANGS:-deu,eng,rus}
       PAPERMERGE__OCR__DEFAULT_LANG_CODE: ${OCR_DEFAULT_LANG:-rus}
       PAPERMERGE__OCR__MULTI_LANG_CODES: ${OCR_MULTI_LANGS:-eng+rus}
       PAPERMERGE__OCR__AUTOMATIC: ${OCR_AUTOMATIC:-false}
-      PAPERMERGE__AUTH__USERNAME: ${ADMIN_USERNAME}
-      PAPERMERGE__AUTH__EMAIL: ${ADMIN_EMAIL}
-      PAPERMERGE__AUTH__PASSWORD: ${ADMIN_PASSWORD}
+      PAPERMERGE__MAIN__APP_TITLE: ${APP_TITLE:-Хабаровский центр социальной поддержки населения}
+      PAPERMERGE__AUTH__BRAND_TITLE: ${AUTH_BRAND_TITLE:-${APP_TITLE:-Хабаровский центр социальной поддержки населения}}
+      PAPERMERGE__AUTH__LOGIN_SUBTITLE: ${AUTH_LOGIN_SUBTITLE:-Электронная библиотека}
+      PAPERMERGE__AUTH__USERNAME: ${ADMIN_USERNAME:-admin}
+      PAPERMERGE__AUTH__EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      PAPERMERGE__AUTH__PASSWORD: ${ADMIN_PASSWORD:-admin}
     volumes:
       - ./media:/var/media/pmg
     depends_on:
@@ -70,7 +73,7 @@ services:
     command: worker
     restart: unless-stopped
     environment:
-      PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER:-papermerge}:${POSTGRES_PASSWORD:-papermerge}@db:5432/${POSTGRES_DB:-papermerge}
       PAPERMERGE__REDIS__URL: redis://redis:6379/0
       PAPERMERGE__MAIN__MEDIA_ROOT: /var/media/pmg
       PAPERMERGE__OCR__MULTI_LANG_CODES: ${OCR_MULTI_LANGS:-eng+rus}

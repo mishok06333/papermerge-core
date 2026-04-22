@@ -193,7 +193,7 @@ export default function CustomFields({doc, docID, isLoading}: Args) {
           Error while fetching custom fields. Error code cf98g62m.
         </Text>
       )}
-      {showSaveButton && <Button onClick={onSave}>Save</Button>}
+      {showSaveButton && <Button onClick={onSave}>{t("common.save")}</Button>}
       {error && (
         <div>
           {/* @ts-ignore*/}

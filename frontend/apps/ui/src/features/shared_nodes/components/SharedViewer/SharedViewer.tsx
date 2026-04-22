@@ -28,6 +28,7 @@ import DocxThumbnailList from "@/features/document/components/DocxViewer/DocxThu
 import {DocxScrollProvider} from "@/features/document/components/DocxViewer/DocxScrollContext"
 import {DOC_VER_PAGINATION_PAGE_BATCH_SIZE} from "@/features/document/constants"
 import {getViewerChromeKind} from "@/features/document/documentPreview"
+import useEnsureDocVerBuffer from "@/features/document/hooks/useEnsureDocVerBuffer"
 import useGeneratePreviews from "@/features/document/hooks/useGeneratePreviews"
 import PageList from "./PageList"
 import ThumbnailList from "./ThumbnailList"
@@ -49,6 +50,10 @@ export default function SharedViewer() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const height = useAppSelector(s => selectContentHeight(s, mode))
+  /* Ensure the PDF buffer is always present in fileManager so shared-viewer
+   * pages can render a text layer; preview generation may short-circuit when
+   * raster previews are already cached. */
+  useEnsureDocVerBuffer(docVer)
   /* generate first batch of previews: for pages and for their thumbnails */
   const allPreviewsAreAvailable = useGeneratePreviews({
     docVer: docVer,

@@ -74,7 +74,11 @@ RUN set -eux; \
     [ "$attempts" -lt "$max_attempts" ] || (echo "apk install failed"; exit 1); \
     rm -rf /var/cache/apk/*
 
-RUN pip install --upgrade poetry==2.0.1 roco==0.4.2 && \
+# roco 0.4.2 ships with typer 0.9, which breaks under click >= 8.2
+# ("Secondary flag is not valid for non-boolean flag"). Pin click here
+# so the auth-server runtime-config generator keeps working until we
+# replace roco with env2js.
+RUN pip install --upgrade poetry==2.0.1 'click<8.2' roco==0.4.2 && \
     curl -L -o /bin/env2js https://github.com/papermerge/env2js/releases/download/0.2/env2js.amd64 && \
     chmod +x /bin/env2js
 

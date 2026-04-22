@@ -1,4 +1,5 @@
 import {RootState} from "@/app/types"
+import {ensureDocVerBuffer} from "@/features/document/hooks/useEnsureDocVerBuffer"
 import {fileManager} from "@/features/files/fileManager"
 import {ImageSize, UUID} from "@/types.d/common"
 import {generatePreview as util_pdf_generatePreview} from "@/utils/pdf"
@@ -13,7 +14,7 @@ import {
   guessMimeTypeFromFileName
 } from "../documentPreview"
 import type {BasicPage, GeneratePreviewInputType} from "../types"
-import {getDocLastVersion, rotateImageObjectURL} from "../utils"
+import {rotateImageObjectURL} from "../utils"
 
 export type PageIDEntitiesState = {
   [pageID: string]: {
@@ -82,22 +83,12 @@ export const generatePreviews = createAsyncThunk<
   let fileItem = fileManager.getByDocVerID(item.docVer.id)
 
   if (!fileItem) {
-    // file not found in local storage. Download it first
-    const {
-      ok,
-      data,
-      error: downloadError
-    } = await getDocLastVersion(item.docVer.document_id)
-
-    if (ok && data) {
-      const arrayBuffer = await data.blob.arrayBuffer()
-      fileItem = {
-        buffer: arrayBuffer,
-        docVerID: data.docVerID
-      }
-      fileManager.store(fileItem)
-    } else {
-      console.error(downloadError || "Unknown download error")
+    // file not found in local storage. Download it via the shared hook so
+    // concurrent consumers (Viewer shell, SelectablePdfPage, thumbnails) share
+    // a single in-flight request per docVer.
+    await ensureDocVerBuffer(item.docVer)
+    fileItem = fileManager.getByDocVerID(item.docVer.id)
+    if (!fileItem) {
       return {
         items: [],
         error: "There was an error generating thumbnail image"

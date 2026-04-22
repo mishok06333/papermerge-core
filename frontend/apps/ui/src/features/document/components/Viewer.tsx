@@ -9,6 +9,7 @@ import Breadcrumbs from "@/components/Breadcrumbs"
 import PanelContext from "@/contexts/PanelContext"
 
 import EditNodeTitleModal from "@/components/EditNodeTitleModal"
+import useEnsureDocVerBuffer from "@/features/document/hooks/useEnsureDocVerBuffer"
 import useGeneratePreviews from "@/features/document/hooks/useGeneratePreviews"
 import {useRef} from "react"
 
@@ -59,6 +60,10 @@ export default function Viewer() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const height = useAppSelector(s => selectContentHeight(s, mode))
+  /* Ensure the PDF buffer is always present in fileManager so
+   * `SelectablePdfPage` can render a text layer even when page previews are
+   * already cached in Redux from a previous visit. */
+  useEnsureDocVerBuffer(docVer)
   /* generate first batch of previews: for pages and for their thumbnails */
   const allPreviewsAreAvailable = useGeneratePreviews({
     docVer: docVer,

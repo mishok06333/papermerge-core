@@ -1,7 +1,7 @@
 import {useAppDispatch} from "@/app/hooks"
 import useAreAllPreviewsAvailable from "@/features/document/hooks/useAreAllPreviewsAvailable"
+import {ensureDocVerBuffer} from "@/features/document/hooks/useEnsureDocVerBuffer"
 import {generatePreviews} from "@/features/document/store/imageObjectsSlice"
-import {getDocLastVersion} from "@/features/document/utils"
 import {fileManager} from "@/features/files/fileManager"
 import {ClientDocumentVersion} from "@/types"
 import {ImageSize} from "@/types.d/common"
@@ -29,42 +29,38 @@ export default function useGeneratePreviews({
   })
 
   useEffect(() => {
-    const generate = async () => {
-      if (!docVer) {
+    if (!docVer || allPreviewsAreAvailable) {
+      return
+    }
+    let cancelled = false
+
+    const run = async () => {
+      if (!fileManager.getByDocVerID(docVer.id)?.buffer) {
+        await ensureDocVerBuffer(docVer)
+      }
+      if (cancelled) {
         return
       }
-
-      if (!allPreviewsAreAvailable) {
-        if (!fileManager.getByDocVerID(docVer.id)) {
-          const {
-            ok,
-            data,
-            error: downloadError
-          } = await getDocLastVersion(docVer.document_id)
-          if (ok && data) {
-            const arrayBuffer = await data.blob.arrayBuffer()
-            fileManager.store({
-              buffer: arrayBuffer,
-              docVerID: data.docVerID
-            })
-          } else {
-            console.error(downloadError || "Unknown download error")
-            return
-          }
-        }
-        dispatch(
-          generatePreviews({
-            docVer,
-            size: imageSize,
-            pageSize,
-            pageNumber,
-            pageTotal: docVer.pages.length
-          })
-        )
+      if (!fileManager.getByDocVerID(docVer.id)?.buffer) {
+        // download failed; ensureDocVerBuffer already logged the reason.
+        return
       }
+      dispatch(
+        generatePreviews({
+          docVer,
+          size: imageSize,
+          pageSize,
+          pageNumber,
+          pageTotal: docVer.pages.length
+        })
+      )
     }
 
-    generate()
+    void run()
+
+    return () => {
+      cancelled = true
+    }
   }, [dispatch, docVer, pageSize, pageNumber, allPreviewsAreAvailable])
 
   return allPreviewsAreAvailable

@@ -44,8 +44,18 @@ class FileManager {
   }
 
   store(item: FileItem): void {
-    // Remove existing item with same nodeID to avoid duplicates
-    this.files = this.files.filter(file => file.nodeID !== item.nodeID)
+    // Deduplicate by docVerID when present; otherwise by a concrete nodeID.
+    // Entries where both identifiers are undefined MUST NOT collide with each other
+    // (historical bug: opening any new document wiped the buffer of the previous one).
+    this.files = this.files.filter(file => {
+      if (item.docVerID && file.docVerID === item.docVerID) {
+        return false
+      }
+      if (item.nodeID && file.nodeID === item.nodeID) {
+        return false
+      }
+      return true
+    })
     this.files.push(item)
     this.emitDocVerBuffer(item.docVerID)
   }

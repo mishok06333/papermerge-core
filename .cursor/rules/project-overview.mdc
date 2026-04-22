@@ -81,15 +81,27 @@ put it inside an `exec_*` function in the entrypoint, invoke it from
 - PDF rendering stack (OCR text-selection lives here):
   - [frontend/apps/ui/src/features/document/components/Page/SelectablePdfPage.tsx](mdc:frontend/apps/ui/src/features/document/components/Page/SelectablePdfPage.tsx)
     renders a canvas + pdf.js `TextLayer` when the buffer for the
-    current docVer is available.
+    current docVer is available. It subscribes to
+    `fileManager.subscribeDocVerBuffer` and upgrades from the raster
+    fallback to the canvas/text layer as soon as the buffer arrives.
   - [frontend/apps/ui/src/features/document/pdf/selectablePdf.ts](mdc:frontend/apps/ui/src/features/document/pdf/selectablePdf.ts)
     caches `PDFDocumentProxy` instances keyed by `docVerId + bufferRev`.
   - [frontend/apps/ui/src/features/files/fileManager.ts](mdc:frontend/apps/ui/src/features/files/fileManager.ts)
-    is the in-memory buffer registry. **Known issue:** it is populated
-    only during upload flows, so documents opened directly (reload,
-    other account, share link) currently fall back to a raster preview
-    without selectable text. Fixing this is Phase 2 of the ongoing
-    refactor.
+    is the in-memory buffer registry. **Dedup rule:** `store()` removes
+    an existing entry only when `docVerID` (when provided) matches, or
+    when `nodeID` (when provided) matches; entries whose identifiers are
+    both `undefined` never collide with each other. Violating this
+    rule reintroduces the "opening one document wipes another's buffer"
+    regression.
+  - [frontend/apps/ui/src/features/document/hooks/useEnsureDocVerBuffer.ts](mdc:frontend/apps/ui/src/features/document/hooks/useEnsureDocVerBuffer.ts)
+    is the single race-safe loader for a docVer buffer. Both
+    [Viewer.tsx](mdc:frontend/apps/ui/src/features/document/components/Viewer.tsx)
+    and [SharedViewer.tsx](mdc:frontend/apps/ui/src/features/shared_nodes/components/SharedViewer/SharedViewer.tsx)
+    call it independently of preview generation so that direct/returning/
+    share-link opens still end up with a selectable text layer.
+    `useGeneratePreviews` and the `generatePreviews` thunk both reuse
+    `ensureDocVerBuffer` — do not add another `getDocLastVersion` call
+    path next to it.
 - PDF worker asset: [frontend/apps/ui/src/utils/pdf.ts](mdc:frontend/apps/ui/src/utils/pdf.ts)
   serves `pdf.worker.min.mjs` in dev and a stable `/pdf.worker.min.js`
   path in prod (the nginx bundled in the `app` image exposes both).
@@ -136,11 +148,11 @@ the uniform `orm.Foo` path.
 - **Roles vs permissions vs scopes**: scopes live in code, permissions
   are DB rows populated from scopes, roles bundle permissions. Users
   receive roles; the UI and API check *scopes* at enforcement time.
-- **`fileManager` is local-only**: it does not persist across reloads
-  and is not populated by plain document open. Any viewer work that
-  assumes `fileManager.getByDocVerID(...)` has data will silently
-  fall back to a static image. See Phase 2 of the refactor plan for
-  the fix.
+- **`fileManager` is local-only**: it does not persist across reloads.
+  Viewers must call `useEnsureDocVerBuffer(docVer)` to make sure the
+  buffer is present — direct opens and share-link opens otherwise fall
+  back to raster without a selectable text layer. Do not bypass this
+  hook or stop subscribing in `SelectablePdfPage`.
 - **`docker/app/entrypoint.sh` must be LF + no BOM**: the Dockerfile
   normalises both (`sed -i '1s/^\xEF\xBB\xBF//'` followed by
   `sed -i 's/\r$//'`) so Windows-edited scripts still execute. PowerShell
@@ -148,6 +160,11 @@ the uniform `orm.Foo` path.
   at container start; use `utf8NoBOM` or the .NET `UTF8Encoding $false`
   constructor when rewriting these scripts. New scripts belong in
   `docker/app/scripts/`.
+- **`roco` needs `click<8.2`**: the pinned `roco==0.4.2` + `typer==0.9.4`
+  combo fails with `TypeError: Secondary flag is not valid for
+  non-boolean flag` under `click>=8.2`. The app Dockerfile installs
+  `roco` together with `'click<8.2'`. Do not drop that pin unless you
+  also bump `roco`/`typer` or replace the tool with `env2js`.
 - **`PAPERMERGE__AUTH__PASSWORD` / `USERNAME` / `EMAIL`** are the env
   names the auth-server CLI reads for the `--superuser` flag. The
   compose file maps `ADMIN_*` from `.env` onto these. Don't rename one

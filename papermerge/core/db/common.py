@@ -110,18 +110,23 @@ async def require_node_perm(
         raise exc.HTTP403Forbidden()
 
 
-async def _user_has_portal_view_via_account_roles(
-    db_session: AsyncSession, user_id: UUID
+async def _user_has_any_portal_perm_via_account_roles(
+    db_session: AsyncSession, user_id: UUID, *portal_codenames: str
 ) -> bool:
-    """True if user has ``portal.view`` on any account role (users_roles).
+    """True if the user has any of the given ``portal.*`` perms on account roles.
 
-    Portal nodes are owned by the ``legal_portal`` group; this allows portal
-    readers without membership in that group, as long as their role grants
-    ``portal.view``.
+    Portal nodes are owned by the ``legal_portal`` group; matching ``portal.*``
+    permissions on the user's roles (``users_roles``) must grant access without
+    group membership, consistent with :func:`has_node_perm` handling of
+    ``node.view`` under the portal root.
     """
-    from papermerge.core.features.auth import scopes as auth_scopes
     from papermerge.core.features.roles.db.orm import Role
     from papermerge.core.features.users.db.orm import User
+
+    if not portal_codenames:
+        return False
+
+    wanted = frozenset(portal_codenames)
 
     u = await db_session.scalar(
         select(User)
@@ -134,7 +139,7 @@ async def _user_has_portal_view_via_account_roles(
         return True
     for role in u.roles:
         for perm in role.permissions:
-            if perm.codename == auth_scopes.PORTAL_VIEW:
+            if perm.codename in wanted:
                 return True
     return False
 
@@ -198,16 +203,62 @@ async def has_node_perm(
         return True
 
     from papermerge.core.features.auth import scopes as auth_scopes
+    from papermerge.core.features.portal.db import api as portal_dbapi
 
-    if codename == auth_scopes.NODE_VIEW:
-        from papermerge.core.features.portal.db import api as portal_dbapi
-
-        root_id = await portal_dbapi.get_portal_root_id(db_session)
-        if root_id is not None and await portal_dbapi.is_node_under_portal_root(
-            db_session, node_id, root_id
-        ):
-            if await _user_has_portal_view_via_account_roles(db_session, user_id):
+    root_id = await portal_dbapi.get_portal_root_id(db_session)
+    if root_id is not None and await portal_dbapi.is_node_under_portal_root(
+        db_session, node_id, root_id
+    ):
+        # Group-owned portal tree: infer library access from portal.* on account roles.
+        if codename == auth_scopes.NODE_VIEW:
+            if await _user_has_any_portal_perm_via_account_roles(
+                db_session, user_id, auth_scopes.PORTAL_VIEW
+            ):
                 return True
+        elif codename == auth_scopes.NODE_CREATE:
+            if await _user_has_any_portal_perm_via_account_roles(
+                db_session,
+                user_id,
+                auth_scopes.PORTAL_SECTION_CREATE,
+                auth_scopes.PORTAL_DOCUMENT_UPLOAD,
+            ):
+                return True
+        elif codename == auth_scopes.DOCUMENT_UPLOAD:
+            if await _user_has_any_portal_perm_via_account_roles(
+                db_session,
+                user_id,
+                auth_scopes.PORTAL_DOCUMENT_UPLOAD,
+                auth_scopes.PORTAL_DOCUMENT_UPDATE,
+            ):
+                return True
+        elif codename == auth_scopes.NODE_DELETE:
+            ctype = await db_session.scalar(
+                select(orm.Node.ctype).where(orm.Node.id == node_id)
+            )
+            if ctype == "folder":
+                if await _user_has_any_portal_perm_via_account_roles(
+                    db_session, user_id, auth_scopes.PORTAL_SECTION_DELETE
+                ):
+                    return True
+            elif ctype == "document":
+                if await _user_has_any_portal_perm_via_account_roles(
+                    db_session, user_id, auth_scopes.PORTAL_DOCUMENT_DELETE
+                ):
+                    return True
+        elif codename in (auth_scopes.NODE_UPDATE, auth_scopes.NODE_MOVE):
+            ctype = await db_session.scalar(
+                select(orm.Node.ctype).where(orm.Node.id == node_id)
+            )
+            if ctype == "folder":
+                if await _user_has_any_portal_perm_via_account_roles(
+                    db_session, user_id, auth_scopes.PORTAL_SECTION_UPDATE
+                ):
+                    return True
+            elif ctype == "document":
+                if await _user_has_any_portal_perm_via_account_roles(
+                    db_session, user_id, auth_scopes.PORTAL_DOCUMENT_UPDATE
+                ):
+                    return True
 
     ancestor_ids = [item[0] for item in await get_ancestors(db_session, node_id)]
     # account roles assigned to the user (users_roles)

@@ -304,13 +304,39 @@ function getPermissionTree(txt?: I18NPermissionTree) {
       ]
     },
     {
-      value: "shared_node",
-      label: txt?.shares || "Shares",
+      value: "portal",
+      label: txt?.legal_portal || "Legal portal",
       children: [
-        {value: "shared_node.view", label: txt?.view || "View"},
-        {value: "shared_node.create", label: txt?.create || "Create"},
-        {value: "shared_node.update", label: txt?.update || "Update"},
-        {value: "shared_node.delete", label: txt?.delete || "Delete"}
+        {value: "portal.view", label: txt?.view || "View catalog"},
+        {value: "portal.feed.view", label: txt?.portal_feed || "News feed"},
+        {
+          value: "portal.feed.manage",
+          label: txt?.portal_feed_manage || "Edit news feed"
+        },
+        {
+          value: "portal.section.create",
+          label: txt?.portal_section_create || "Create section"
+        },
+        {
+          value: "portal.section.update",
+          label: txt?.portal_section_update || "Edit sections"
+        },
+        {
+          value: "portal.section.delete",
+          label: txt?.portal_section_delete || "Delete sections"
+        },
+        {
+          value: "portal.document.upload",
+          label: txt?.portal_document_upload || "Upload documents"
+        },
+        {
+          value: "portal.document.update",
+          label: txt?.portal_document_update || "Edit documents"
+        },
+        {
+          value: "portal.document.delete",
+          label: txt?.portal_document_delete || "Delete documents"
+        }
       ]
     },
     {
@@ -378,9 +404,16 @@ const PERMISSION_DEPENDENCIES = {
   "comment.create": ["document.view"],
   "comment.update": ["document.view"],
   "comment.delete": ["document.view"],
-  shared_node: ["user.select", "group.select", "role.select"],
-  "shared_node.create": ["user.select", "group.select", "role.select"],
-  "shared_node.update": ["user.select", "group.select", "role.select"],
+  portal: ["node.view"],
+  "portal.view": ["node.view"],
+  "portal.feed.view": ["portal.view"],
+  "portal.feed.manage": ["portal.feed.view"],
+  "portal.section.create": ["portal.view", "node.create"],
+  "portal.section.update": ["portal.view", "node.update"],
+  "portal.section.delete": ["portal.view", "node.delete"],
+  "portal.document.upload": ["portal.view", "node.create", "document.upload"],
+  "portal.document.update": ["portal.view", "node.update", "document.upload"],
+  "portal.document.delete": ["portal.view", "node.delete"],
   "tag.select": ["document.view", "folder.view"],
   tag: ["document.view", "folder.view"]
 }

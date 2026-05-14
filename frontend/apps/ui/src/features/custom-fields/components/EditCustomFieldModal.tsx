@@ -115,11 +115,11 @@ export default function EditGroupModal({
         value={name}
         onChange={e => setName(e.currentTarget.value)}
         label={t("custom_fields.form.name")}
-        placeholder={t("custom_fields.form.type")}
+        placeholder={t("custom_fields.form.name")}
       />
       <NativeSelect
         mt="sm"
-        label="Type"
+        label={t("custom_fields.form.type")}
         value={dataType}
         data={CUSTOM_FIELD_DATA_TYPES}
         onChange={e =>
@@ -131,7 +131,7 @@ export default function EditGroupModal({
         <Select
           mt="sm"
           searchable
-          label="Currency"
+          label={t("custom_fields.form.currency")}
           value={currency}
           data={CURRENCIES}
           onChange={onCurrencyChange}
@@ -145,7 +145,7 @@ export default function EditGroupModal({
         <Group>
           {isLoadingGroupUpdate && <Loader size="sm" />}
           <Button disabled={isLoadingGroupUpdate} onClick={onLocalSubmit}>
-            Update
+            {t("common.update")}
           </Button>
         </Group>
       </Group>

@@ -27,6 +27,18 @@ import {
   ERRORS_422_UNPROCESSABLE_CONTENT
 } from "@/cconstants"
 import {isSupportedFile} from "@/features/nodes/utils"
+import {useGetPortalRootQuery} from "@/features/portal/portalApiSlice"
+import PortalFolderTree from "@/features/portal/components/PortalFolderTree"
+import {makePortalDocumentNavState} from "@/features/portal/portalNavState"
+import {
+  PORTAL_DOCUMENT_DELETE,
+  PORTAL_DOCUMENT_UPDATE,
+  PORTAL_DOCUMENT_UPLOAD,
+  PORTAL_SECTION_CREATE,
+  PORTAL_SECTION_DELETE,
+  PORTAL_SECTION_UPDATE,
+  PORTAL_VIEW
+} from "@/scopes"
 
 import Breadcrumbs from "@/components/Breadcrumbs"
 import Pagination from "@/components/Pagination"
@@ -60,12 +72,10 @@ import DraggingIcon from "./DraggingIcon"
 import {DropFilesModal} from "./DropFiles"
 import DropNodesModal from "./DropNodesDialog"
 import ExtractPagesModal from "./ExtractPagesModal"
-import {useGetUserGroupHomesQuery} from "@/features/users/apiSlice"
 import {selectCurrentUser} from "@/slices/currentUser"
 import {equalUUIDs} from "@/utils"
 
 import FolderNodeActions from "./FolderNodeActions"
-import HomeFolderTree from "./HomeFolderTree"
 import NodesList from "./NodesList"
 import SupportedFilesInfoModal from "./SupportedFilesInfoModal"
 
@@ -93,7 +103,12 @@ export default function Commander() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = useAppSelector(selectCurrentUser)
-  const {data: groupHomes} = useGetUserGroupHomesQuery()
+  const onPortalFolderPath = location.pathname.startsWith("/folder/")
+  const {data: portalRoot} = useGetPortalRootQuery(undefined, {
+    skip:
+      !onPortalFolderPath ||
+      !(user?.scopes?.includes(PORTAL_VIEW) ?? false)
+  })
   const lastPageSize = useAppSelector(s => selectLastPageSize(s, mode))
   const homeFolderTreeOpen = useAppSelector(selectHomeFolderTreeOpen)
   const currentNodeID = useAppSelector(s => selectCurrentNodeID(s, mode))
@@ -129,36 +144,44 @@ export default function Commander() {
   })
   const [uploadFiles, setUploadFiles] = useState<File[] | FileList>()
 
-  const {homeBrowseRootId, rootLabel} = useMemo(() => {
-    if (!user || !currentFolder?.breadcrumb?.length) {
-      return {homeBrowseRootId: null as string | null, rootLabel: ""}
+  const isUnderPortalRoot = useMemo(() => {
+    if (!portalRoot || !currentFolder?.breadcrumb?.length) {
+      return false
     }
     const rootId = currentFolder.breadcrumb[0][0]
-    const homeIds = [
-      user.home_folder_id,
-      ...(groupHomes?.map(h => h.home_id) ?? [])
-    ]
-    const isUnderHome = homeIds.some(id => equalUUIDs(id, rootId))
-    if (!isUnderHome) {
-      return {homeBrowseRootId: null, rootLabel: ""}
+    return equalUUIDs(rootId, portalRoot.id)
+  }, [portalRoot, currentFolder?.breadcrumb])
+
+  const portalDocumentNavState = useMemo(
+    () => (portalRoot ? makePortalDocumentNavState(portalRoot) : null),
+    [portalRoot]
+  )
+
+  const portalFolderWritesEnabled = useMemo(() => {
+    if (!isUnderPortalRoot || !onPortalFolderPath) {
+      return false
     }
-    return {
-      homeBrowseRootId: rootId,
-      rootLabel: currentFolder.breadcrumb[0][1]
-    }
-  }, [user, groupHomes, currentFolder?.breadcrumb])
+    const scopes = user?.scopes ?? []
+    return (
+      [
+        PORTAL_SECTION_CREATE,
+        PORTAL_SECTION_UPDATE,
+        PORTAL_SECTION_DELETE,
+        PORTAL_DOCUMENT_UPLOAD,
+        PORTAL_DOCUMENT_UPDATE,
+        PORTAL_DOCUMENT_DELETE
+      ] as const
+    ).some(s => scopes.includes(s))
+  }, [isUnderPortalRoot, onPortalFolderPath, user?.scopes])
 
   if (!currentNodeID) {
     return <div>{t("common.loading")}</div>
   }
 
-  const homeFolderTreeContext =
-    mode === "main" &&
-    Boolean(homeBrowseRootId) &&
-    (location.pathname.startsWith("/home/") ||
-      location.pathname.startsWith("/folder/"))
+  const portalFolderTreeContext =
+    mode === "main" && isUnderPortalRoot && onPortalFolderPath
 
-  const showHomeFolderTree = homeFolderTreeContext && homeFolderTreeOpen
+  const showPortalFolderTree = portalFolderTreeContext && homeFolderTreeOpen
 
   if (isLoading && !data) {
     return <div>{t("common.loading")}</div>
@@ -178,13 +201,13 @@ export default function Commander() {
 
   if (isError) {
     const detail = isFetchBaseQueryError(error)
-      ? `Could not load folder contents (HTTP ${String(error.status)}). Run the backend on port 8000 and/or set VITE_BASE_URL in .env (see README). The dev server proxies /api to port 8000 when no base URL is set.`
-      : String(error)
+      ? t("nodes.load_folder_error", {status: String(error.status)})
+      : t("nodes.load_folder_error_generic", {message: String(error)})
     return <div>{detail}</div>
   }
 
   if (!data) {
-    return <div>Data is null</div>
+    return <div>{t("nodes.error.data_null")}</div>
   }
 
   const onClick = (node: NType) => {
@@ -200,7 +223,11 @@ export default function Commander() {
         navigate(`/folder/${node.id}?page_size=${lastPageSize}`)
         break
       case "document":
-        navigate(`/document/${node.id}`)
+        if (portalDocumentNavState && isUnderPortalRoot) {
+          navigate(`/document/${node.id}`, {state: portalDocumentNavState})
+        } else {
+          navigate(`/document/${node.id}`)
+        }
         break
     }
   }
@@ -221,11 +248,15 @@ export default function Commander() {
   }
   const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
-    setDragOver(true)
+    if (portalFolderWritesEnabled) {
+      setDragOver(true)
+    }
   }
 
   const onDragEnter = () => {
-    setDragOver(true)
+    if (portalFolderWritesEnabled) {
+      setDragOver(true)
+    }
   }
 
   const onDragLeave = () => {
@@ -238,6 +269,10 @@ export default function Commander() {
     const payloadNodeData = event.dataTransfer.getData(APP_NODE_KEY)
 
     setDragOver(false)
+
+    if (!portalFolderWritesEnabled) {
+      return
+    }
 
     if (event.dataTransfer.files.length > 0) {
       /** (1)
@@ -344,14 +379,17 @@ export default function Commander() {
         gap="md"
         className={dragOver ? classes.accept_files : classes.commander}
       >
-        {showHomeFolderTree && homeBrowseRootId && (
-          <HomeFolderTree
-            key={homeBrowseRootId}
-            homeRootId={homeBrowseRootId}
-            rootLabel={rootLabel}
-            currentNodeID={currentNodeID}
-            lastPageSize={lastPageSize}
+        {showPortalFolderTree &&
+          portalRoot &&
+          portalDocumentNavState && (
+          <PortalFolderTree
+            portalRootId={portalRoot.id}
+            portalRootTitle={t("portal.root_folder")}
+            currentFolderId={currentNodeID}
             height={height}
+            documentNavState={portalDocumentNavState}
+            folderNav="commander"
+            commanderPageSize={lastPageSize}
           />
         )}
         <Box
@@ -361,7 +399,10 @@ export default function Commander() {
           onDragOver={onDragOver}
           onDrop={onDrop}
         >
-          <FolderNodeActions homeFolderTreeAvailable={homeFolderTreeContext} />
+          <FolderNodeActions
+            homeFolderTreeAvailable={portalFolderTreeContext}
+            portalCommanderWriteEnabled={portalFolderWritesEnabled}
+          />
           <Breadcrumbs
             breadcrumb={currentFolder?.breadcrumb}
             onClick={onClick}

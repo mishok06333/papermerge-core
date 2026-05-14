@@ -33,7 +33,7 @@ services:
   # Monolithic Papermerge container: nginx + core API + auth-server under
   # supervisord. On first boot the entrypoint runs migrations, syncs
   # permissions, creates the admin superuser, seeds default roles
-  # (admin / worker / modder) and assigns the admin role to the superuser —
+  # (admin / moderator / employee) and assigns the admin role to the superuser —
   # everything is idempotent.
   app:
     build:

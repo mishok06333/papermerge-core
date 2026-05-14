@@ -2,8 +2,6 @@ import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {
   homeFolderTreeToggled,
   selectHomeFolderTreeOpen,
-  selectOneSelectedSharedNode,
-  selectSelectedNodeIds,
   selectSelectedNodesCount,
   updateActionPanel
 } from "@/features/ui/uiSlice"
@@ -18,9 +16,7 @@ import type {PanelMode} from "@/types"
 import PanelContext from "@/contexts/PanelContext"
 
 import DuplicatePanelButton from "@/components/DualPanel/DuplicatePanelButton"
-import ManageAccessButton from "@/components/ManageAccessButton"
 import QuickFilter from "@/components/QuickFilter"
-import SharedButton from "@/components/ShareButton"
 import ViewOptionsMenu from "@/features/nodes/components/Commander/ViewOptionsMenu"
 import {filterUpdated} from "@/features/ui/uiSlice"
 import DeleteButton from "./DeleteButton"
@@ -32,10 +28,13 @@ import UploadButton from "./UploadButton"
 
 type FolderNodeActionsProps = {
   homeFolderTreeAvailable?: boolean
+  /** When false, hide upload / new folder / delete / rename actions (portal-only writes). */
+  portalCommanderWriteEnabled?: boolean
 }
 
 export default function FolderNodeActions({
-  homeFolderTreeAvailable = false
+  homeFolderTreeAvailable = false,
+  portalCommanderWriteEnabled = true
 }: FolderNodeActionsProps) {
   const {t} = useTranslation()
   const [filterText, selectFilterText] = useState<string>()
@@ -44,12 +43,6 @@ export default function FolderNodeActions({
   const ref = useRef<HTMLDivElement>(null)
   const mode: PanelMode = useContext(PanelContext)
   const selectedCount = useAppSelector(s => selectSelectedNodesCount(s, mode))
-  const selectedNodeIds = useAppSelector(s =>
-    selectSelectedNodeIds(s, mode)
-  ) as string[]
-  const oneSelectedSharedNode = useAppSelector(s =>
-    selectOneSelectedSharedNode(s, mode)
-  )
   const homeFolderTreeOpen = useAppSelector(selectHomeFolderTreeOpen)
 
   const onQuickFilterClear = () => {
@@ -78,15 +71,15 @@ export default function FolderNodeActions({
   return (
     <Group ref={ref} justify="space-between">
       <Group>
-        {selectedCount == 0 && <UploadButton />}
-        {selectedCount == 0 && <NewFolderButton />}
-        {selectedCount == 1 && <EditNodeTitleButton />}
-        {selectedCount == 1 && <EditNodeTagsButton />}
-        {selectedCount > 0 && <SharedButton node_ids={selectedNodeIds} />}
-        {oneSelectedSharedNode && (
-          <ManageAccessButton node_id={oneSelectedSharedNode.id} />
+        {portalCommanderWriteEnabled && selectedCount == 0 && <UploadButton />}
+        {portalCommanderWriteEnabled && selectedCount == 0 && <NewFolderButton />}
+        {portalCommanderWriteEnabled && selectedCount == 1 && (
+          <EditNodeTitleButton />
         )}
-        {selectedCount > 0 && <DeleteButton />}
+        {portalCommanderWriteEnabled && selectedCount == 1 && (
+          <EditNodeTagsButton />
+        )}
+        {portalCommanderWriteEnabled && selectedCount > 0 && <DeleteButton />}
       </Group>
       <Group grow preventGrowOverflow={false} wrap="nowrap">
         {homeFolderTreeAvailable && (

@@ -3,10 +3,15 @@ export const NODE_VIEW = "node.view"
 export const NODE_UPDATE = "node.update"
 export const NODE_DELETE = "node.delete"
 export const NODE_MOVE = "node.move"
-export const SHARED_NODE_VIEW = "shared_node.view"
-export const SHARED_NODE_CREATE = "shared_node.create"
-export const SHARED_NODE_UPDATE = "shared_node.update"
-export const SHARED_NODE_DELETE = "shared_node.delete"
+export const PORTAL_VIEW = "portal.view"
+export const PORTAL_FEED_VIEW = "portal.feed.view"
+export const PORTAL_FEED_MANAGE = "portal.feed.manage"
+export const PORTAL_SECTION_CREATE = "portal.section.create"
+export const PORTAL_SECTION_UPDATE = "portal.section.update"
+export const PORTAL_SECTION_DELETE = "portal.section.delete"
+export const PORTAL_DOCUMENT_UPLOAD = "portal.document.upload"
+export const PORTAL_DOCUMENT_UPDATE = "portal.document.update"
+export const PORTAL_DOCUMENT_DELETE = "portal.document.delete"
 export const COMMENT_CREATE = "comment.create"
 export const COMMENT_UPDATE = "comment.update"
 export const COMMENT_DELETE = "comment.delete"
@@ -48,6 +53,24 @@ export const DOCUMENT_TYPE_CREATE = "document_type.create"
 export const DOCUMENT_TYPE_VIEW = "document_type.view"
 export const DOCUMENT_TYPE_UPDATE = "document_type.update"
 export const DOCUMENT_TYPE_DELETE = "document_type.delete"
+
+/** Navbar / admin UI for document types (not "browse by category"). */
+export function canManageDocumentTypes(scopes: string[]): boolean {
+  return (
+    scopes.includes(DOCUMENT_TYPE_CREATE) ||
+    scopes.includes(DOCUMENT_TYPE_UPDATE) ||
+    scopes.includes(DOCUMENT_TYPE_DELETE)
+  )
+}
+
+/** Tags admin list (/tags); tag assignment on nodes uses other scopes. */
+export function canManageTags(scopes: string[]): boolean {
+  return (
+    scopes.includes(TAG_CREATE) ||
+    scopes.includes(TAG_UPDATE) ||
+    scopes.includes(TAG_DELETE)
+  )
+}
 
 export const ALL_PERMS = [
   DOCUMENT_DOWNLOAD,
@@ -91,5 +114,14 @@ export const ALL_PERMS = [
   COMMENT_UPDATE,
   COMMENT_DELETE,
   TASK_OCR,
-  OCRLANG_VIEW
+  OCRLANG_VIEW,
+  PORTAL_VIEW,
+  PORTAL_FEED_VIEW,
+  PORTAL_FEED_MANAGE,
+  PORTAL_SECTION_CREATE,
+  PORTAL_SECTION_UPDATE,
+  PORTAL_SECTION_DELETE,
+  PORTAL_DOCUMENT_UPLOAD,
+  PORTAL_DOCUMENT_UPDATE,
+  PORTAL_DOCUMENT_DELETE
 ]

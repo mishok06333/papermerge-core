@@ -1,10 +1,12 @@
+import type {TFunction} from "i18next"
+
 const SCOPE_TO_SKIP = [
   "folder",
   "document",
   "tag",
   "custom_field",
   "document_type",
-  "shared_node",
+  "portal",
   "user",
   "role",
   "group",
@@ -84,6 +86,12 @@ function server2clientPerms(scopes: string[]): string[] {
   })
 
   return result
+}
+
+export function formatBuiltinRoleName(name: string, t: TFunction): string {
+  const key = `roles.builtin.${name}`
+  const translated = t(key)
+  return translated === key ? name : translated
 }
 
 export {client2serverPerms, server2clientPerms}

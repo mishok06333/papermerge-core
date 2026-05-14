@@ -48,7 +48,9 @@ mode runs `exec_init` on every container start. The sequence is:
    `admin` role to the superuser. This command lives in
    [papermerge/core/features/users/cli/cli.py](mdc:papermerge/core/features/users/cli/cli.py)
    and is a no-op if the assignment already exists.
-6. `paper-cli index-schema apply` — only when `PAPERMERGE__SEARCH__URL`
+6. `paper-cli portal init` — ensures the legal portal exists: `legal_portal`
+   group, root folder, and `portal_settings` row (idempotent).
+7. `paper-cli index-schema apply` — only when `PAPERMERGE__SEARCH__URL`
    is set.
 
 Every step must remain idempotent. When you add new bootstrap work,
@@ -71,7 +73,8 @@ put it inside an `exec_*` function in the entrypoint, invoke it from
   `schema.py` (pydantic), `cli/` (Typer sub-app), `tests/`.
   Current features: `auth`, `custom_fields`, `document`,
   `document_types`, `groups`, `library_ts`, `liveness_probe`, `nodes`,
-  `page_mngm`, `roles`, `shared_nodes`, `tags`, `tasks`, `users`.
+  `page_mngm`, `portal`, `roles`, `shared_nodes` (legacy sharing DB/API
+  helpers; HTTP routes removed), `tags`, `tasks`, `users`.
 - [papermerge/core/features/auth/scopes.py](mdc:papermerge/core/features/auth/scopes.py) is the single source of truth for permission scope identifiers. Running `paper-cli perms sync` is required after any change here.
 - [papermerge/search/](mdc:papermerge/search/) — optional full-text search (Tantivy/Meili/etc. via URL in `PAPERMERGE__SEARCH__URL`).
 

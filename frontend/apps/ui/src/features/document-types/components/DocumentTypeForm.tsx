@@ -1,14 +1,7 @@
 import {OWNER_ME} from "@/cconstants"
 import CopyButton from "@/components/CopyButton"
-import type {CustomField} from "@/types"
-import {
-  Box,
-  Fieldset,
-  Skeleton,
-  Table,
-  TextInput,
-  Textarea
-} from "@mantine/core"
+import {Box, TextInput, Textarea} from "@mantine/core"
+import {useTranslation} from "react-i18next"
 import type {DocType} from "../types"
 
 type Args = {
@@ -16,31 +9,26 @@ type Args = {
 }
 
 export default function DocumentTypeForm({documentType}: Args) {
-  const custom_fields = documentType?.custom_fields
-  const hasCustomFields = custom_fields ? custom_fields.length > 0 : false
-
+  const {t} = useTranslation()
   return (
     <Box>
       <TextInput
         my="md"
-        label="ID"
+        label={t("common.field_id")}
         value={documentType?.id || ""}
         onChange={() => {}}
         rightSection={<CopyButton value={documentType?.id || ""} />}
       />
       <TextInput
         my="md"
-        label="Name"
+        label={t("document_types.form.name")}
         value={documentType?.name || ""}
         onChange={() => {}}
         rightSection={<CopyButton value={documentType?.name || ""} />}
       />
-      {hasCustomFields && (
-        <CustomFieldTable cfs={documentType?.custom_fields} />
-      )}
       <Textarea
         my="md"
-        label="Path Template"
+        label={t("document_types.form.path_template")}
         autosize
         minRows={6}
         resize="vertical"
@@ -50,7 +38,7 @@ export default function DocumentTypeForm({documentType}: Args) {
       />
       <TextInput
         my="md"
-        label="Owner"
+        label={t("common.owner")}
         value={documentType?.group_name || OWNER_ME}
         onChange={() => {}}
         rightSection={
@@ -58,36 +46,5 @@ export default function DocumentTypeForm({documentType}: Args) {
         }
       />
     </Box>
-  )
-}
-
-function CustomFieldTable({cfs}: {cfs?: Array<CustomField>}) {
-  if (!cfs) {
-    return <Skeleton />
-  }
-
-  const customFieldRows = cfs.map(i => <CustomFieldRow key={i.id} cf={i} />)
-
-  return (
-    <Fieldset legend="Custom Fields">
-      <Table>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Name</Table.Th>
-            <Table.Th>Data Type</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>{customFieldRows}</Table.Tbody>
-      </Table>
-    </Fieldset>
-  )
-}
-
-function CustomFieldRow({cf}: {cf: CustomField}) {
-  return (
-    <Table.Tr>
-      <Table.Td>{cf.name}</Table.Td>
-      <Table.Td>{cf.type}</Table.Td>
-    </Table.Tr>
   )
 }

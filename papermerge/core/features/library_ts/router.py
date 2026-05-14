@@ -153,11 +153,11 @@ async def get_my_note(
 async def put_my_note(
     document_id: uuid.UUID,
     payload: lib_schema.NoteCreate,
-    user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
+    user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_UPDATE])],
     db_session: AsyncSession = Depends(get_db),
 ):
     await dbapi_common.require_node_perm(
-        db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
+        db_session, node_id=document_id, codename=scopes.NODE_UPDATE, user_id=user.id
     )
     row = await lib_api.upsert_note(db_session, user.id, document_id, payload.body)
     await lib_api.add_audit(

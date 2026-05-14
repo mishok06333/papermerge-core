@@ -3,8 +3,10 @@ import {CloseButton, Input, rem} from "@mantine/core"
 import {IconSearch} from "@tabler/icons-react"
 import {useState} from "react"
 import {useDispatch} from "react-redux"
+import {useTranslation} from "react-i18next"
 
 export default function Search() {
+  const {t} = useTranslation()
   const dispatch = useDispatch()
   const [value, setValue] = useState("")
 
@@ -31,7 +33,7 @@ export default function Search() {
 
   return (
     <Input
-      placeholder="Search"
+      placeholder={t("search.placeholder")}
       value={value}
       onChange={onChange}
       onKeyDown={onKeyDown}
@@ -41,7 +43,7 @@ export default function Search() {
       rightSectionPointerEvents="all"
       rightSection={
         <CloseButton
-          aria-label="Clear input"
+          aria-label={t("search.clear_input")}
           onClick={() => setValue("")}
           style={{display: value ? undefined : "none"}}
         />

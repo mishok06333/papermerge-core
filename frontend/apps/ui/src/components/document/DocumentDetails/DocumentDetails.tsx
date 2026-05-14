@@ -17,7 +17,6 @@ import {skipToken} from "@reduxjs/toolkit/query"
 import {IconEdit} from "@tabler/icons-react"
 import classes from "./DocumentDetails.module.css"
 
-import {OWNER_ME} from "@/cconstants"
 import CopyButton from "@/components/CopyButton"
 import {EditNodeTagsModal} from "@/components/EditNodeTags"
 import type {DocumentType} from "@/features/document/types"
@@ -27,7 +26,6 @@ import {
 } from "@/features/ui/uiSlice"
 import type {ClientDocumentVersion, PanelMode} from "@/types"
 import DocumentDetailsToggle from "../DocumentDetailsToggle"
-import CustomFields from "./CustomFields"
 import DocumentLibraryPanel from "@/features/library/components/DocumentLibraryPanel"
 
 interface Args {
@@ -69,12 +67,6 @@ export default function DocumentDetails({doc, docVer, docID, isLoading}: Args) {
             rightSection={<CopyButton value={`${docVer?.number}` || ""} />}
           />
 
-          <TextInput
-            label={t("common.owner")}
-            readOnly
-            value={doc?.owner_name || t(OWNER_ME)}
-            rightSection={<CopyButton value={doc?.owner_name || t(OWNER_ME)} />}
-          />
           <Group>
             <TagsInput
               rightSection={<EditTagsButton />}
@@ -83,9 +75,6 @@ export default function DocumentDetails({doc, docVer, docID, isLoading}: Args) {
               value={doc?.tags?.map(t => t.name) || []}
               mt="md"
             />
-          </Group>
-          <Group>
-            <CustomFields docID={docID} doc={doc} isLoading={isLoading} />
           </Group>
           {docID ? <DocumentLibraryPanel documentId={docID} /> : null}
         </Stack>

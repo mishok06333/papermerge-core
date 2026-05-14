@@ -91,7 +91,7 @@ export default function EditGroupModal({
         checked={withSpecialFolders}
         onChange={e => setWithSpecialFolders(e.currentTarget.checked)}
         my="md"
-        label="Group with special folders: inbox and home"
+        label={t("groups.form.special_folders")}
       />
       <Group justify="space-between" mt="md">
         <Button variant="default" onClick={onLocalCancel}>

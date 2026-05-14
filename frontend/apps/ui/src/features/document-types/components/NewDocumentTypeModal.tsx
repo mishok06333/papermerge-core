@@ -1,6 +1,5 @@
 import {OWNER_ME} from "@/cconstants"
 import OwnerSelector from "@/components/OwnerSelect/OwnerSelect"
-import {useGetCustomFieldsQuery} from "@/features/custom-fields/apiSlice"
 import {useAddDocumentTypeMutation} from "@/features/document-types/apiSlice"
 import {
   Button,
@@ -8,7 +7,6 @@ import {
   Group,
   Loader,
   Modal,
-  MultiSelect,
   Text,
   TextInput,
   Textarea
@@ -32,10 +30,8 @@ export default function NewDocumentTypeModal({
   const [pathTemplate, setPathTemplate] = useState<string>("")
   const [error, setError] = useState<string>("")
   const [owner, setOwner] = useState<ComboboxItem>({label: OWNER_ME, value: ""})
-  const {data = []} = useGetCustomFieldsQuery(owner.value)
   const [addDocumentType, {isLoading, isError, isSuccess}] =
     useAddDocumentTypeMutation()
-  const [customFieldIDs, setCustomFieldIDs] = useState<string[]>([])
 
   useEffect(() => {
     // close dialog as soon as we have
@@ -50,16 +46,11 @@ export default function NewDocumentTypeModal({
     setName(value)
   }
 
-  const onOwnerChange = (option: ComboboxItem) => {
-    setOwner(option)
-    setCustomFieldIDs([])
-  }
-
   const onLocalSubmit = async () => {
     const newDocumentTypeData = {
       name,
       path_template: pathTemplate,
-      custom_field_ids: customFieldIDs
+      custom_field_ids: [] as string[]
     }
     let dtData
 
@@ -83,7 +74,6 @@ export default function NewDocumentTypeModal({
 
   const reset = () => {
     setName("")
-    setCustomFieldIDs([])
     setError("")
     setOwner({value: "", label: OWNER_ME})
   }
@@ -99,23 +89,13 @@ export default function NewDocumentTypeModal({
         onChange={e => onNameChange(e.currentTarget.value)}
         placeholder={t("document_types.form.name")}
       />
-      <MultiSelect
-        label={t("document_types.form.custom_fields")}
-        placeholder={t("document_types.form.custom_fields.placeholder")}
-        onChange={setCustomFieldIDs}
-        searchable
-        data={data.map(i => {
-          return {label: i.name, value: i.id}
-        })}
-        value={customFieldIDs}
-      />
       <Textarea
         label={t("document_types.form.path_template")}
         resize="vertical"
         value={pathTemplate}
         onChange={event => setPathTemplate(event.currentTarget.value)}
       />
-      <OwnerSelector value={owner} onChange={onOwnerChange} />
+      <OwnerSelector value={owner} onChange={setOwner} />
       {isError && <Text c="red">{`${error}`}</Text>}
       <Group justify="space-between" mt="md">
         <Button variant="default" onClick={onLocalCancel}>

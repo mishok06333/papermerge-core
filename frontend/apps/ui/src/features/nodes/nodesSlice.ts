@@ -130,8 +130,7 @@ export const selectDocumentThumbnailURL = (
   state: RootState,
   nodeID: string
 ): null | string => {
-  const node =
-    state.nodes.entities[nodeID] || state.sharedNodes.entities[nodeID]
+  const node = state.nodes.entities[nodeID]
 
   if (!node) {
     return null
@@ -148,8 +147,7 @@ export const selectDocumentThumbnailError = (
   state: RootState,
   nodeID: string
 ): null | string => {
-  const node =
-    state.nodes.entities[nodeID] || state.sharedNodes.entities[nodeID]
+  const node = state.nodes.entities[nodeID]
 
   if (!node) {
     return null

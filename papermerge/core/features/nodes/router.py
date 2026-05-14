@@ -1,5 +1,6 @@
 import logging
 import uuid
+import json
 from typing import Annotated, Iterable, Union
 from uuid import UUID
 
@@ -15,6 +16,9 @@ from papermerge.core.features.auth import scopes, get_current_user
 from papermerge.core.constants import INDEX_ADD_NODE
 from papermerge.core.features.document.db import api as doc_dbapi
 from papermerge.core.features.nodes.db import api as nodes_dbapi
+from papermerge.core.features.portal import policy as portal_policy
+from papermerge.core.features.portal.db import api as portal_dbapi
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
 from papermerge.core.routers.params import CommonQueryParams
 from papermerge.core.types import PaginatedResponse
@@ -53,6 +57,9 @@ async def get_node(
     if params.order_by:
         order_by = [item.strip() for item in params.order_by.split(",")]
 
+    await portal_policy.require_portal_view_if_under_portal(
+        db_session, user, parent_id
+    )
     await dbapi_common.require_node_perm(
         db_session,
         node_id=parent_id,
@@ -114,6 +121,18 @@ async def create_node(
         if pynode.id:
             attrs["id"] = pynode.id
         new_folder = schema.NewFolder(**attrs)
+        await dbapi_common.require_node_perm(
+            db_session,
+            node_id=pynode.parent_id,
+            codename=scopes.NODE_CREATE,
+            user_id=user.id,
+        )
+        await portal_policy.require_portal_on_create(
+            db_session,
+            user,
+            pynode.parent_id,
+            is_folder=True,
+        )
         created_node, error = await nodes_dbapi.create_folder(db_session, new_folder)
     else:
         # if user does not specify document's language, get that
@@ -142,11 +161,31 @@ async def create_node(
             codename=scopes.NODE_CREATE,
             user_id=user.id,
         )
+        await portal_policy.require_portal_on_create(
+            db_session,
+            user,
+            pynode.parent_id,
+            is_folder=False,
+        )
 
         created_node, error = await doc_dbapi.create_document(db_session, new_document)
 
     if error:
         raise HTTPException(status_code=400, detail=error.model_dump())
+
+    root_id = await portal_dbapi.get_portal_root_id(db_session)
+    if root_id and await portal_dbapi.is_node_under_portal_root(
+        db_session, created_node.id, root_id
+    ):
+        await lib_ts_api.add_audit(
+            db_session,
+            user_id=user.id,
+            action="portal_node_create",
+            resource_type=created_node.ctype,
+            resource_id=created_node.id,
+            detail=json.dumps({"title": created_node.title})[:2000],
+        )
+        await db_session.commit()
 
     send_task(INDEX_ADD_NODE, kwargs={"node_id": str(created_node.id)}, route_name="i3")
     return created_node
@@ -184,10 +223,32 @@ async def update_node(
         codename=scopes.NODE_UPDATE,
         user_id=user.id,
     )
+    await portal_policy.require_portal_on_update_node(db_session, user, node_id)
 
     updated_node = await nodes_dbapi.update_node(
         db_session, node_id=node_id, user_id=user.id, attrs=node
     )
+
+    root_id = await portal_dbapi.get_portal_root_id(db_session)
+    if root_id and await portal_dbapi.is_node_under_portal_root(
+        db_session, node_id, root_id
+    ):
+        await lib_ts_api.add_audit(
+            db_session,
+            user_id=user.id,
+            action="portal_node_update",
+            resource_type="node",
+            resource_id=node_id,
+            detail=json.dumps(
+                {
+                    "title": updated_node.title,
+                    "parent_id": str(updated_node.parent_id)
+                    if updated_node.parent_id
+                    else None,
+                }
+            )[:2000],
+        )
+        await db_session.commit()
 
     send_task(INDEX_ADD_NODE, kwargs={"node_id": str(updated_node.id)}, route_name="i3")
 
@@ -221,6 +282,7 @@ async def delete_nodes(
     were found) - will return an empty list.
     """
     for node_id in list_of_uuids:
+        await portal_policy.require_portal_on_delete_node(db_session, user, node_id)
         await dbapi_common.require_node_perm(
             db_session,
             node_id=node_id,
@@ -293,6 +355,9 @@ async def move_nodes(
     """
     try:
         for source_id in params.source_ids:
+            await portal_policy.require_portal_on_move_source(
+                db_session, user, source_id
+            )
             await dbapi_common.require_node_perm(
                 db_session,
                 node_id=source_id,
@@ -300,6 +365,9 @@ async def move_nodes(
                 user_id=user.id,
             )
 
+        await portal_policy.require_portal_on_move_target(
+            db_session, user, params.target_id
+        )
         await dbapi_common.require_node_perm(
             db_session,
             node_id=params.target_id,
@@ -340,6 +408,20 @@ async def move_nodes(
             ]
         )
         raise HTTPException(status_code=420, detail=error.model_dump())
+
+    root_id = await portal_dbapi.get_portal_root_id(db_session)
+    if root_id:
+        for sid in params.source_ids:
+            if await portal_dbapi.is_node_under_portal_root(db_session, sid, root_id):
+                await lib_ts_api.add_audit(
+                    db_session,
+                    user_id=user.id,
+                    action="portal_node_move",
+                    resource_type="node",
+                    resource_id=sid,
+                    detail=json.dumps({"target_id": str(params.target_id)})[:2000],
+                )
+        await db_session.commit()
 
     return params.source_ids
 

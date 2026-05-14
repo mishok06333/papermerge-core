@@ -59,18 +59,13 @@ export default function DropNodesModal({
   }
 
   return (
-    <Modal title="Move Nodes" opened={opened} size="lg" onClose={localCancel}>
+    <Modal title={t("nodes.move_nodes.title")} opened={opened} size="lg" onClose={localCancel}>
       <Container>
         <Text>
-          Move{" "}
-          <Text c="indigo" span>
-            {movedNodesTitles}
-          </Text>{" "}
-          to
-          <Text c="green" px="xs" span>
-            {targetFolder.title}
-          </Text>
-          ?
+          {t("nodes.move_nodes.body", {
+            nodesList: movedNodesTitles,
+            folderName: targetFolder.title
+          })}
         </Text>
         {errorMessage}
         <Space h="md" />
@@ -83,7 +78,7 @@ export default function DropNodesModal({
             onClick={onMoveNodes}
             disabled={isLoading}
           >
-            Yes, move
+            {t("nodes.move_nodes.confirm")}
           </Button>
         </Group>
       </Container>

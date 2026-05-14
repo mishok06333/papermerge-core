@@ -15,7 +15,12 @@ export function initializeI18n(): Promise<void> {
     .init({
       ns: ["_default"],
       defaultNS: "_default",
-      fallbackLng: ["en"],
+      lng: "ru",
+      supportedLngs: ["en", "ru"],
+      fallbackLng: {
+        ru: ["en"],
+        default: ["en"]
+      },
       fallbackNS: "_default",
 
       detection: {
@@ -43,6 +48,14 @@ export function initializeI18n(): Promise<void> {
         useSuspense: false
       }
     })
-    .then(() => console.log("i18n initialized successfully"))
+    .then(() => {
+      const allowed = new Set(["en", "ru"])
+      const raw = i18n.resolvedLanguage ?? i18n.language ?? ""
+      const base = raw.split("-")[0]?.toLowerCase() ?? ""
+      if (!allowed.has(base)) {
+        void i18n.changeLanguage("ru")
+      }
+      console.log("i18n initialized successfully")
+    })
     .catch(err => console.error("i18n initialization failed:", err))
 }

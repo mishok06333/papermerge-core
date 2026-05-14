@@ -4,19 +4,17 @@ import {
   commanderViewOptionUpdated,
   selectCommanderDocumentTypeID,
   selectCommanderViewOption,
-  selectLastHome,
-  selectLastInbox,
   selectNavBarCollapsed
 } from "@/features/ui/uiSlice"
 import {
-  CUSTOM_FIELD_VIEW,
-  DOCUMENT_TYPE_VIEW,
   GROUP_VIEW,
   NODE_VIEW,
+  PORTAL_FEED_VIEW,
+  PORTAL_VIEW,
   ROLE_VIEW,
-  SHARED_NODE_VIEW,
-  TAG_VIEW,
-  USER_VIEW
+  USER_VIEW,
+  canManageDocumentTypes,
+  canManageTags
 } from "@/scopes"
 import {
   selectCurrentUser,
@@ -25,22 +23,20 @@ import {
 } from "@/slices/currentUser.ts"
 import {Center, Group, Loader, Text} from "@mantine/core"
 import {
-  IconAlignJustified,
   IconCategory,
-  IconHome,
-  IconInbox,
   IconMasksTheater,
+  IconNews,
   IconTag,
   IconTriangleSquareCircle,
   IconUsers,
   IconUsersGroup,
-  IconUserShare,
   IconBookmark,
-  IconClipboardList
+  IconClipboardList,
+  IconBook2
 } from "@tabler/icons-react"
 import {useContext} from "react"
 import {useSelector} from "react-redux"
-import {NavLink} from "react-router-dom"
+import {Link, NavLink, useLocation} from "react-router-dom"
 
 import {useGetVersionQuery} from "@/features/version/apiSlice"
 import type {UserDetails} from "@/types.ts"
@@ -48,12 +44,13 @@ import {useTranslation} from "react-i18next"
 
 function NavBarFull() {
   const {t} = useTranslation()
+  const {pathname} = useLocation()
   const mode = useContext(PanelContext)
   const dispatch = useAppDispatch()
   const {data, isLoading} = useGetVersionQuery()
   const viewOption = useAppSelector(s => selectCommanderViewOption(s, mode))
-  const lastHome = useAppSelector(s => selectLastHome(s, "main"))
-  const lastInbox = useAppSelector(s => selectLastInbox(s, "main"))
+  const portalCatalogNavActive =
+    pathname === "/portal" || pathname.startsWith("/portal/folder/")
   const categoryID = useAppSelector(s =>
     selectCommanderDocumentTypeID(s, "main")
   )
@@ -67,7 +64,7 @@ function NavBarFull() {
     if (viewOption == "document-type") {
       /*
         Handle situation when user is in "document-type" view mode in commander
-        and he/she clicks on "home" or "inbox" folders. In such case
+        when he/she clicks category / library navigation. In such case
         it is obvious that user intends to switch to "tiles" view
 
         TODO: instead of switching to tiles, switch to last view options mode
@@ -93,30 +90,21 @@ function NavBarFull() {
   return (
     <>
       <div className="navbar">
-        {scopes.includes(NODE_VIEW) && (
-          <NavLink
-            to={`/home/${lastHome?.home_id || user.home_folder_id}`}
+        {scopes.includes(PORTAL_VIEW) && (
+          <Link
+            to="/portal"
             onClick={onClick}
+            className={portalCatalogNavActive ? "active" : undefined}
           >
-            {NavLinkWithFeedback(t("home.name"), <IconHome />)}
-          </NavLink>
+            <Group>
+              <IconBook2 />
+              {t("portal.home")}
+            </Group>
+          </Link>
         )}
-        {scopes.includes(NODE_VIEW) && (
-          <NavLink
-            to={`/inbox/${lastInbox?.inbox_id || user.inbox_folder_id}`}
-            onClick={onClick}
-          >
-            {NavLinkWithFeedback(t("inbox.name"), <IconInbox />)}
-          </NavLink>
-        )}
-        {scopes.includes(NODE_VIEW) && (
-          <NavLink to={categoryURL} onClick={onClick}>
-            {NavLinkWithFeedback(t("by_document_type.name"), <IconCategory />)}
-          </NavLink>
-        )}
-        {scopes.includes(SHARED_NODE_VIEW) && (
-          <NavLink to={"/shared"} onClick={onClick}>
-            {NavLinkWithFeedback(t("shared.name"), <IconUserShare />)}
+        {scopes.includes(PORTAL_FEED_VIEW) && (
+          <NavLink to="/portal/feed" end onClick={onClick}>
+            {NavLinkWithFeedback(t("portal.feed_nav"), <IconNews />)}
           </NavLink>
         )}
         {scopes.includes(NODE_VIEW) && (
@@ -124,20 +112,17 @@ function NavBarFull() {
             {NavLinkWithFeedback(t("library.nav"), <IconBookmark />)}
           </NavLink>
         )}
-        {scopes.includes(TAG_VIEW) && (
+        {scopes.includes(NODE_VIEW) && (
+          <NavLink to={categoryURL} onClick={onClick}>
+            {NavLinkWithFeedback(t("by_document_type.name"), <IconCategory />)}
+          </NavLink>
+        )}
+        {canManageTags(scopes) && (
           <NavLink to="/tags">
             {NavLinkWithFeedback(t("tags.name"), <IconTag />)}
           </NavLink>
         )}
-        {scopes.includes(CUSTOM_FIELD_VIEW) && (
-          <NavLink to="/custom-fields">
-            {NavLinkWithFeedback(
-              t("custom_fields.name"),
-              <IconAlignJustified />
-            )}
-          </NavLink>
-        )}
-        {scopes.includes(DOCUMENT_TYPE_VIEW) && (
+        {canManageDocumentTypes(scopes) && (
           <NavLink to="/document-types">
             {NavLinkWithFeedback(
               t("document_types.name"),
@@ -177,6 +162,7 @@ function NavBarFull() {
 
 function NavBarCollapsed() {
   const {t} = useTranslation()
+  const {pathname} = useLocation()
   const mode = useContext(PanelContext)
   const dispatch = useAppDispatch()
   const {data, isLoading} = useGetVersionQuery()
@@ -188,12 +174,14 @@ function NavBarCollapsed() {
     selectCommanderDocumentTypeID(s, "main")
   )
   const categoryURL = categoryID ? `/category/${categoryID}` : "/category"
+  const portalCatalogNavActive =
+    pathname === "/portal" || pathname.startsWith("/portal/folder/")
 
   const onClick = () => {
     if (viewOption == "document-type") {
       /*
         Handle situation when user is in "document-type" view mode in commander
-        and he/she clicks on "home" or "inbox" folders. In such case
+        when he/she clicks category / library navigation. In such case
         it is obvious that user intends to switch to "tiles" view
 
         TODO: instead of switching to tiles, switch to last view options mode
@@ -219,24 +207,20 @@ function NavBarCollapsed() {
   return (
     <>
       <div className="navbar">
-        {scopes.includes(NODE_VIEW) && (
-          <NavLink to={`/home/${user.home_folder_id}`} onClick={onClick}>
-            {NavLinkWithFeedbackShort(<IconHome />)}
-          </NavLink>
+        {scopes.includes(PORTAL_VIEW) && (
+          <Link
+            to="/portal"
+            onClick={onClick}
+            className={portalCatalogNavActive ? "active" : undefined}
+          >
+            <Group>
+              <IconBook2 />
+            </Group>
+          </Link>
         )}
-        {scopes.includes(NODE_VIEW) && (
-          <NavLink to={`/inbox/${user.inbox_folder_id}`} onClick={onClick}>
-            {NavLinkWithFeedbackShort(<IconInbox />)}
-          </NavLink>
-        )}
-        {scopes.includes(NODE_VIEW) && (
-          <NavLink to={categoryURL} onClick={onClick}>
-            {NavLinkWithFeedbackShort(<IconCategory />)}
-          </NavLink>
-        )}
-        {scopes.includes(SHARED_NODE_VIEW) && (
-          <NavLink to={"/shared"} onClick={onClick}>
-            {NavLinkWithFeedbackShort(<IconUserShare />)}
+        {scopes.includes(PORTAL_FEED_VIEW) && (
+          <NavLink to="/portal/feed" end onClick={onClick}>
+            {NavLinkWithFeedbackShort(<IconNews />)}
           </NavLink>
         )}
         {scopes.includes(NODE_VIEW) && (
@@ -244,15 +228,15 @@ function NavBarCollapsed() {
             {NavLinkWithFeedbackShort(<IconBookmark />)}
           </NavLink>
         )}
-        {scopes.includes(TAG_VIEW) && (
-          <NavLink to="/tags">{NavLinkWithFeedbackShort(<IconTag />)}</NavLink>
-        )}
-        {scopes.includes(CUSTOM_FIELD_VIEW) && (
-          <NavLink to="/custom-fields">
-            {NavLinkWithFeedbackShort(<IconAlignJustified />)}
+        {scopes.includes(NODE_VIEW) && (
+          <NavLink to={categoryURL} onClick={onClick}>
+            {NavLinkWithFeedbackShort(<IconCategory />)}
           </NavLink>
         )}
-        {scopes.includes(DOCUMENT_TYPE_VIEW) && (
+        {canManageTags(scopes) && (
+          <NavLink to="/tags">{NavLinkWithFeedbackShort(<IconTag />)}</NavLink>
+        )}
+        {canManageDocumentTypes(scopes) && (
           <NavLink to="/document-types">
             {NavLinkWithFeedbackShort(<IconTriangleSquareCircle />)}
           </NavLink>

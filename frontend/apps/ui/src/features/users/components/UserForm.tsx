@@ -13,7 +13,7 @@ export default function UserForm({user}: Args) {
   return (
     <Stack>
       <TextInput
-        label="ID"
+        label={t("common.field_id")}
         value={user?.id}
         onChange={() => {}}
         rightSection={<CopyButton value={user?.id || ""} />}

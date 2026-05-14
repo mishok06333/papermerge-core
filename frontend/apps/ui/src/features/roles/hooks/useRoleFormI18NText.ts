@@ -26,6 +26,29 @@ export default function useI18NText(): I18NRoleFormModal | undefined {
             page_management: t("roleForm.permissionTree.page_management"),
             categories: t("roleForm.permissionTree.categories"),
             shares: t("roleForm.permissionTree.shares"),
+            legal_portal: t("roleForm.permissionTree.legal_portal"),
+            portal_feed: t("roleForm.permissionTree.portal_feed"),
+            portal_feed_manage: t(
+              "roleForm.permissionTree.portal_feed_manage"
+            ),
+            portal_section_create: t(
+              "roleForm.permissionTree.portal_section_create"
+            ),
+            portal_section_update: t(
+              "roleForm.permissionTree.portal_section_update"
+            ),
+            portal_section_delete: t(
+              "roleForm.permissionTree.portal_section_delete"
+            ),
+            portal_document_upload: t(
+              "roleForm.permissionTree.portal_document_upload"
+            ),
+            portal_document_update: t(
+              "roleForm.permissionTree.portal_document_update"
+            ),
+            portal_document_delete: t(
+              "roleForm.permissionTree.portal_document_delete"
+            ),
             comments: t("roleForm.permissionTree.comments"),
             users: t("roleForm.permissionTree.users"),
             roles: t("roleForm.permissionTree.roles"),

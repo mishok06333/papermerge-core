@@ -2,13 +2,7 @@ import {createBrowserRouter, Navigate} from "react-router-dom"
 
 import App from "@/app/App.tsx"
 import Folder, {loader as folderLoader} from "@/pages/Folder"
-import Home, {loader as homeLoader} from "@/pages/Home"
-import Inbox, {loader as inboxLoader} from "@/pages/Inbox"
 
-import {
-  CustomFieldDetails,
-  CustomFieldsList
-} from "@/features/custom-fields/pages"
 import {
   DocumentTypeDetails,
   DocumentTypesList
@@ -17,16 +11,10 @@ import {GroupDetails, GroupsList} from "@/features/groups/pages"
 import CategoryListView, {
   loader as categoryLoader
 } from "@/features/nodes/pages/CategoryListView"
+import PortalFeedPage from "@/features/portal/pages/PortalFeedPage"
+import PortalFolderPage from "@/features/portal/pages/PortalFolderPage"
+import PortalHomeRedirect from "@/features/portal/pages/PortalHomeRedirect"
 import {RoleDetails, RolesList} from "@/features/roles/pages"
-import SharedDocumentView, {
-  loader as sharedDocumentLoader
-} from "@/features/shared_nodes/pages/SharedDocumentView"
-import SharedFolderView, {
-  loader as sharedFolderLoader
-} from "@/features/shared_nodes/pages/SharedFolderView"
-import SharedNodesListView, {
-  loader as sharedNodesLoader
-} from "@/features/shared_nodes/pages/SharedNodesListView"
 import {TagDetails, TagsList} from "@/features/tags/pages"
 import {UserDetails, UsersList} from "@/features/users/pages"
 import Document from "@/pages/Document"
@@ -53,9 +41,15 @@ const router = createBrowserRouter([
     path: "/login/",
     element: <Navigate to="/" replace />
   },
+  // Auth-server redirects here after login. Must be top-level: under RR7 a
+  // child `path: "/home"` of `path: "/"` does not match URL "/home" (404).
   {
     path: "/home",
-    element: <App />
+    element: <Navigate to="/library/favorites" replace />
+  },
+  {
+    path: "/home/:folderId",
+    element: <Navigate to="/library/favorites" replace />
   },
   {
     path: "/",
@@ -63,14 +57,8 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       {
-        path: "/home/:folderId",
-        element: <Home />,
-        loader: homeLoader
-      },
-      {
         path: "/inbox/:folderId",
-        element: <Inbox />,
-        loader: inboxLoader
+        element: <Navigate to="/library/favorites" replace />
       },
       {
         path: "/folder/:folderId",
@@ -101,19 +89,16 @@ const router = createBrowserRouter([
         element: <LibraryPage />
       },
       {
-        path: "/shared",
-        element: <SharedNodesListView />,
-        loader: sharedNodesLoader
+        path: "/portal",
+        element: <PortalHomeRedirect />
       },
       {
-        path: "/shared/folder/:folderId",
-        element: <SharedFolderView />,
-        loader: sharedFolderLoader
+        path: "/portal/folder/:folderId",
+        element: <PortalFolderPage />
       },
       {
-        path: "/shared/document/:documentId",
-        element: <SharedDocumentView />,
-        loader: sharedDocumentLoader
+        path: "/portal/feed",
+        element: <PortalFeedPage />
       },
       {
         path: "/tags",
@@ -122,14 +107,6 @@ const router = createBrowserRouter([
       {
         path: "/tags/:tagId",
         element: <TagDetails />
-      },
-      {
-        path: "/custom-fields/",
-        element: <CustomFieldsList />
-      },
-      {
-        path: "/custom-fields/:customFieldID",
-        element: <CustomFieldDetails />
       },
       {
         path: "/document-types/",

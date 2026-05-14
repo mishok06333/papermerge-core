@@ -10,6 +10,7 @@ from papermerge.search.cli import search
 from papermerge.search.cli import index
 from papermerge.search.cli import index_schema
 from papermerge.core.cli.library_seed import app as library_seed_app
+from papermerge.core.features.portal.cli.cli import app as portal_cli
 
 app = typer.Typer(help="Papermerge DMS command line management tool")
 app.add_typer(usr_cli.app, name="users")
@@ -22,6 +23,7 @@ app.add_typer(search.app, name="search")
 app.add_typer(index.app, name="index")
 app.add_typer(index_schema.app, name="index-schema")
 app.add_typer(library_seed_app, name="library-seed")
+app.add_typer(portal_cli, name="portal")
 
 
 def main():

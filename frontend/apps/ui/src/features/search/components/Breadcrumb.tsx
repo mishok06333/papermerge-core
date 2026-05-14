@@ -1,11 +1,7 @@
-import {selectCurrentUser} from "@/slices/currentUser"
-import {equalUUIDs} from "@/utils"
 import {Anchor, Breadcrumbs, Group, Skeleton} from "@mantine/core"
-import {IconHome, IconInbox} from "@tabler/icons-react"
-import {useSelector} from "react-redux"
+import {IconFolder} from "@tabler/icons-react"
 
-import type {NType, UserDetails} from "@/types"
-import {useTranslation} from "react-i18next"
+import type {NType} from "@/types"
 
 type Args = {
   items?: Array<[string, string]> | null
@@ -25,7 +21,11 @@ export default function Path({items, onClick, pageNumber}: Args) {
   if (items.length == 1) {
     return (
       <Breadcrumbs>
-        <RootItem itemId={items[0][0]} onClick={onClick} />
+        <RootItem
+          itemId={items[0][0]}
+          rootTitle={items[0][1]}
+          onClick={onClick}
+        />
         {pageNumber && pageNumber > 1 && `Page ${pageNumber}`}
       </Breadcrumbs>
     )
@@ -38,7 +38,11 @@ export default function Path({items, onClick, pageNumber}: Args) {
 
   return (
     <Breadcrumbs>
-      <RootItem itemId={items[0][0]} onClick={onClick} />
+      <RootItem
+        itemId={items[0][0]}
+        rootTitle={items[0][1]}
+        onClick={onClick}
+      />
       {links}
       {pageNumber && pageNumber > 1 && `Page ${pageNumber}`}
     </Breadcrumbs>
@@ -47,37 +51,16 @@ export default function Path({items, onClick, pageNumber}: Args) {
 
 type RootItemArgs = {
   itemId: string
+  rootTitle: string
   onClick: (n: NType) => void
 }
 
-function RootItem({itemId, onClick}: RootItemArgs) {
-  const {t} = useTranslation()
-  const user = useSelector(selectCurrentUser) as UserDetails | undefined
-
-  const onLocalClick = (id: string) => {
-    onClick({id: id, ctype: "folder"})
-  }
-
-  if (!user) {
-    return <Skeleton>{t("home.name")}</Skeleton>
-  }
-
-  if (equalUUIDs(itemId, user.home_folder_id)) {
-    return (
-      <Anchor onClick={() => onLocalClick(user.home_folder_id)}>
-        <Group>
-          <IconHome />
-          {t("home.name")}
-        </Group>
-      </Anchor>
-    )
-  }
-
+function RootItem({itemId, rootTitle, onClick}: RootItemArgs) {
   return (
-    <Anchor onClick={() => onLocalClick(user.inbox_folder_id)}>
+    <Anchor onClick={() => onClick({id: itemId, ctype: "folder"})}>
       <Group>
-        <IconInbox />
-        {t("inbox.name")}
+        <IconFolder />
+        {rootTitle}
       </Group>
     </Anchor>
   )

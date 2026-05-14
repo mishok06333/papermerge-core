@@ -2,8 +2,10 @@ import {useDispatch} from "react-redux"
 
 import {searchResultItemTargetUpdated} from "@/features/ui/uiSlice"
 import {Checkbox} from "@mantine/core"
+import {useTranslation} from "react-i18next"
 
 export default function OpenInOtherPanelCheckbox() {
+  const {t} = useTranslation()
   const dispatch = useDispatch()
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -12,6 +14,10 @@ export default function OpenInOtherPanelCheckbox() {
   }
 
   return (
-    <Checkbox onChange={onChange} defaultChecked label="Open in other panel" />
+    <Checkbox
+      onChange={onChange}
+      defaultChecked
+      label={t("search.open_in_other_panel")}
+    />
   )
 }

@@ -13,6 +13,18 @@ SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(
     "postgresql://", "postgresql+asyncpg://", 1
 )
 
+# Async engine requires async drivers. Plain sqlite:// uses pysqlite (sync).
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite+pysqlite://"):
+    SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite://" + SQLALCHEMY_DATABASE_URL[
+        len("sqlite+pysqlite://") :
+    ]
+elif SQLALCHEMY_DATABASE_URL.startswith("sqlite://") and not (
+    SQLALCHEMY_DATABASE_URL.startswith("sqlite+aiosqlite://")
+):
+    SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite://" + SQLALCHEMY_DATABASE_URL[
+        len("sqlite://") :
+    ]
+
 is_postgres = SQLALCHEMY_DATABASE_URL.startswith("postgresql+asyncpg://")
 if is_postgres:
     pool_size = int(os.environ.get("PAPERMERGE__DATABASE__POOL_SIZE", "20"))

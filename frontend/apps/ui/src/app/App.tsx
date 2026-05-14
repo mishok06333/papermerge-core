@@ -17,6 +17,14 @@ import {
 
 import Uploader from "@/components/Uploader"
 import {selectNavBarWidth} from "@/features/ui/uiSlice"
+import {
+  NODE_VIEW,
+  PORTAL_FEED_VIEW,
+  PORTAL_VIEW,
+  DOCUMENT_TYPE_VIEW,
+  canManageDocumentTypes,
+  canManageTags
+} from "@/scopes"
 import "./App.css"
 
 function App() {
@@ -31,28 +39,28 @@ function App() {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    /* notice *EXACT match* of the root route.
-      Without it, user will always be redirected to home folder,
-      even when he/she opens a document via direct url pasting in browser */
-    if (status == "succeeded" && user && location.pathname == "/") {
-      /*
-      (1)
-      This code addresses following problem: what happens when user lands
-      on root route (i.e. "/")?
-      Without any code change - the app shell will be render an empty outlet!!!
-      What we need though is to render "home" folder by default.
-    */
-      navigate(`/home/${user.home_folder_id}`)
+    if (status != "succeeded" || !user) {
+      return
     }
-    if (status == "succeeded" && user && location.pathname == "/home") {
-      // see (1)
-      navigate(`/home/${user.home_folder_id}`)
+    const scopes = user.scopes ?? []
+    const defaultPath = scopes.includes(NODE_VIEW)
+      ? "/library/favorites"
+      : scopes.includes(PORTAL_VIEW)
+        ? "/portal"
+        : scopes.includes(PORTAL_FEED_VIEW)
+          ? "/portal/feed"
+          : canManageTags(scopes)
+            ? "/tags"
+            : scopes.includes(DOCUMENT_TYPE_VIEW) ||
+                canManageDocumentTypes(scopes)
+              ? "/document-types/"
+              : "/library/favorites"
+
+    const p = location.pathname
+    if (p === "/" || p === "/home" || p === "/home/") {
+      navigate(defaultPath)
     }
-    if (status == "succeeded" && user && location.pathname == "/home/") {
-      // see (2)
-      navigate(`/home/${user.home_folder_id}`)
-    }
-  }, [status])
+  }, [status, user, location.pathname, navigate])
 
   useEffect(() => {
     if (ref?.current) {

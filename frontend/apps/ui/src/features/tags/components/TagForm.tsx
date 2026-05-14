@@ -15,7 +15,7 @@ export default function TagForm({tag}: Args) {
     <Box>
       <TextInput
         my="md"
-        label="ID"
+        label={t("common.field_id")}
         value={tag?.id || ""}
         onChange={() => {}}
         rightSection={<CopyButton value={tag?.id || ""} />}
@@ -40,8 +40,8 @@ export default function TagForm({tag}: Args) {
       />
       <TextInput
         my="md"
-        label="Owner"
-        value={tag?.group_name || "Me"}
+        label={t("common.owner")}
+        value={tag?.group_name || t("me")}
         onChange={() => {}}
         rightSection={<CopyButton value={tag?.group_name || OWNER_ME} />}
       />

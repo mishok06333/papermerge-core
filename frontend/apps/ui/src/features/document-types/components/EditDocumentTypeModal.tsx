@@ -1,5 +1,4 @@
 import {OWNER_ME} from "@/cconstants"
-import {useGetCustomFieldsQuery} from "@/features/custom-fields/apiSlice"
 import {
   Button,
   ComboboxItem,
@@ -7,7 +6,7 @@ import {
   Loader,
   LoadingOverlay,
   Modal,
-  MultiSelect,
+  Text,
   Textarea,
   TextInput
 } from "@mantine/core"
@@ -37,23 +36,21 @@ export default function EditDocumentTypeModal({
   const [name, setName] = useState<string>("")
   const [pathTemplate, setPathTemplate] = useState<string>("")
   const [owner, setOwner] = useState<ComboboxItem>({label: OWNER_ME, value: ""})
+  const [error, setError] = useState<string>("")
 
-  const {data: allCustomFields = []} = useGetCustomFieldsQuery(owner.value)
   const {data, isLoading} = useGetDocumentTypeQuery(documentTypeId)
   const [updateDocumentType, {isLoading: isLoadingGroupUpdate}] =
     useEditDocumentTypeMutation()
-
-  const [customFieldIDs, setCustomFieldIDs] = useState<string[]>([])
 
   useEffect(() => {
     formReset()
   }, [isLoading, data, opened])
 
   const formReset = () => {
+    setError("")
     if (data) {
       setName(data.name || "")
       setPathTemplate(data.path_template || "")
-      setCustomFieldIDs(data.custom_fields.map(cf => cf.id) || [])
       if (data.group_name && data.group_id) {
         setOwner({label: data.group_name, value: data.group_id})
       } else {
@@ -64,17 +61,13 @@ export default function EditDocumentTypeModal({
     }
   }
 
-  const onOwnerChange = (option: ComboboxItem) => {
-    setOwner(option)
-    setCustomFieldIDs([])
-  }
-
   const onLocalSubmit = async () => {
+    const custom_field_ids = data?.custom_fields.map(cf => cf.id) ?? []
     const updatedDocumentType = {
       id: documentTypeId,
       name,
       path_template: pathTemplate,
-      custom_field_ids: customFieldIDs
+      custom_field_ids
     }
     let dtData
 
@@ -87,8 +80,10 @@ export default function EditDocumentTypeModal({
       await updateDocumentType(dtData).unwrap()
     } catch (err: unknown) {
       // @ts-ignore
-      setError(err.data.detail)
+      setError(err.data?.detail ?? `${err}`)
+      return
     }
+    setError("")
     formReset()
     onSubmit()
   }
@@ -116,16 +111,6 @@ export default function EditDocumentTypeModal({
         label={t("document_types.form.name")}
         placeholder={t("document_types.form.name")}
       />
-      <MultiSelect
-        label={t("document_types.form.custom_fields")}
-        placeholder={t("common.pick_value")}
-        onChange={setCustomFieldIDs}
-        searchable
-        data={allCustomFields.map(i => {
-          return {label: i.name, value: i.id}
-        })}
-        value={customFieldIDs}
-      />
       <Textarea
         label={t("document_types.form.path_template")}
         resize="vertical"
@@ -134,7 +119,8 @@ export default function EditDocumentTypeModal({
         value={pathTemplate}
         onChange={event => setPathTemplate(event.currentTarget.value)}
       />
-      <OwnerSelector value={owner} onChange={onOwnerChange} />
+      <OwnerSelector value={owner} onChange={setOwner} />
+      {error ? <Text c="red">{error}</Text> : null}
       <Group justify="space-between" mt="md">
         <Button variant="default" onClick={onLocalCancel}>
           {t("common.cancel")}

@@ -4,6 +4,16 @@ export interface I18NPermissionTree {
   page_management: string
   categories: string
   shares: string
+  /** Legal portal permission group title */
+  legal_portal?: string
+  portal_feed?: string
+  portal_feed_manage?: string
+  portal_section_create?: string
+  portal_section_update?: string
+  portal_section_delete?: string
+  portal_document_upload?: string
+  portal_document_update?: string
+  portal_document_delete?: string
   comments: string
   users: string
   roles: string

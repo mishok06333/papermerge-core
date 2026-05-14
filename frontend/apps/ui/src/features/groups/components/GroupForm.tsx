@@ -22,14 +22,14 @@ export default function GroupModal({group}: Args) {
         my="md"
         checked={Boolean(group?.home_folder_id && group?.inbox_folder_id)}
         readOnly={true}
-        label="This group has special folders: inbox and home"
+        label={t("groups.form.special_folders_readonly")}
       />
       {group?.home_folder_id && (
         <TextInput
           my="sm"
           value={group.home_folder_id}
           readOnly={true}
-          label="Home ID"
+          label={t("groups.form.home_id")}
           rightSection={<CopyButton value={group?.home_folder_id || ""} />}
         />
       )}
@@ -38,7 +38,7 @@ export default function GroupModal({group}: Args) {
           my="sm"
           value={group.inbox_folder_id}
           readOnly={true}
-          label="Inbox ID"
+          label={t("groups.form.inbox_id")}
           rightSection={<CopyButton value={group?.inbox_folder_id || ""} />}
         />
       )}

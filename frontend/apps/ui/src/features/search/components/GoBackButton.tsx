@@ -1,20 +1,18 @@
 import {Tooltip, ActionIcon} from "@mantine/core"
 import {IconArrowLeft} from "@tabler/icons-react"
 import {useNavigate} from "react-router-dom"
-import {selectCurrentUser} from "@/slices/currentUser"
-import {useSelector} from "react-redux"
-import type {User} from "@/types"
+import {useTranslation} from "react-i18next"
 
 export default function GoBackButton() {
-  const user = useSelector(selectCurrentUser) as User
+  const {t} = useTranslation()
   const navigate = useNavigate()
 
   const onClick = () => {
-    navigate(`/home/${user.home_folder_id}`)
+    navigate("/library/favorites")
   }
 
   return (
-    <Tooltip label="Go back to home folder" withArrow>
+    <Tooltip label={t("search.go_back_library")} withArrow>
       <ActionIcon size={"lg"} variant="default" onClick={onClick}>
         <IconArrowLeft stroke={1.4} />
       </ActionIcon>

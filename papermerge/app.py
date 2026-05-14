@@ -28,14 +28,7 @@ from papermerge.core.features.liveness_probe.router import \
     router as probe_router
 from papermerge.search.routers.search import router as search_router
 from papermerge.core.features.tasks.router import router as tasks_router
-from papermerge.core.features.shared_nodes.router import \
-    router as shared_nodes_router
-from papermerge.core.features.shared_nodes.router_folders import (
-    router as shared_folder_router,
-)
-from papermerge.core.features.shared_nodes.router_documents import (
-    router as shared_document_router,
-)
+from papermerge.core.features.portal.router import router as portal_router
 from papermerge.core.routers.version import (
     router as version_router,
 )
@@ -78,10 +71,8 @@ async def correlation_id_middleware(request: Request, call_next):
 
 
 app.include_router(nodes_router, prefix=prefix)
-app.include_router(shared_nodes_router, prefix=prefix)
+app.include_router(portal_router, prefix=prefix)
 app.include_router(folders_router, prefix=prefix)
-app.include_router(shared_folder_router, prefix=prefix)
-app.include_router(shared_document_router, prefix=prefix)
 app.include_router(thumbnails_router, prefix=prefix)
 app.include_router(document_router, prefix=prefix)
 app.include_router(document_versions_router, prefix=prefix)

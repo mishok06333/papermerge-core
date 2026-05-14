@@ -20,6 +20,7 @@ export const EditNodeTitleModalContainer = ({
   onCancel,
   opened
 }: Args) => {
+  const {t} = useTranslation()
   const txt = useI18nText()
   const [renameFolder, {isLoading}] = useRenameFolderMutation()
   const [title, setTitle] = useState(node.title)
@@ -41,7 +42,7 @@ export const EditNodeTitleModalContainer = ({
       onSubmit()
       reset() // sets error message back to empty string
     } catch (error: any) {
-      setError(error?.data?.detail ?? "Something went wrong")
+      setError(error?.data?.detail ?? t("common.generic_error"))
     }
   }
 

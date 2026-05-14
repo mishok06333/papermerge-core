@@ -14,27 +14,33 @@ from papermerge.core.utils.cli import async_command
 
 
 app = typer.Typer(
-    help="Role management (presets: worker, modder, editor_ts, reader_ts)"
+    help="Role management (built-ins: admin, moderator, employee)"
 )
 
 
 @app.command()
 @async_command
 async def create_admin(exists_ok: bool = True):
-    """Creates role named 'admin' containing all permissions."""
+    """Create or refresh role ``admin`` with every permission (idempotent)."""
+    _ = exists_ok  # Typer CLI flag kept for backward compatibility
     all_scopes = sorted(scopes.Scopes.all_scopes())
-    async with AsyncSessionLocal() as db_session:
-        role, error = await roles_dbapi.create_role(
-            db_session, name="admin", scopes=all_scopes, exists_ok=exists_ok
-        )
     console = Console()
-    if error:
-        console.print(error, style="red")
-        raise typer.Exit(1)
-    console.print(
-        f"Role [bold]admin[/bold] ready (id={role.id})" if role else "admin unchanged",
-        style="green",
-    )
+    async with AsyncSessionLocal() as db_session:
+        stmt = select(orm.Role).where(orm.Role.name == "admin")
+        existing = (await db_session.execute(stmt)).scalar_one_or_none()
+        if existing:
+            attrs = schema.UpdateRole(name="admin", scopes=all_scopes)
+            await roles_dbapi.update_role(db_session, existing.id, attrs)
+            rid = existing.id
+        else:
+            role, error = await roles_dbapi.create_role(
+                db_session, name="admin", scopes=all_scopes, exists_ok=False
+            )
+            if error:
+                console.print(error, style="red")
+                raise typer.Exit(1)
+            rid = role.id
+    console.print(f"Role [bold]admin[/bold] ready (id={rid})", style="green")
 
 
 @app.command("ls")
@@ -60,16 +66,15 @@ async def list_roles():
 @app.command("seed-test-roles")
 @async_command
 async def seed_test_roles():
-    """Create or update worker and modder roles for permission testing.
+    """Seed moderator/employee roles and remove legacy worker/modder/editor_ts/reader_ts.
 
-    Run paper-cli perms sync first so permission rows exist.
-    Assign these roles to test users in the UI or via API.
+    Run ``paper-cli perms sync`` first so permission rows exist.
     """
     console = Console()
     async with AsyncSessionLocal() as db_session:
         results = await test_role_presets.ensure_all_preset_roles(db_session)
 
-    table = Table(title="Test roles")
+    table = Table(title="Built-in roles")
     table.add_column("Role", style="cyan")
     table.add_column("# perms", style="green")
     table.add_column("Status", style="magenta")
@@ -98,7 +103,7 @@ async def seed_test_roles():
 async def seed_one_test_role(
     name: str = typer.Argument(
         ...,
-        help="Preset: worker | modder | editor_ts | reader_ts",
+        help="Preset: moderator | employee",
     ),
 ):
     """Create or update a single preset role."""

@@ -89,10 +89,8 @@ export const SHARED_NODES_ROOT_BREADCRUMB = [
 ]
 
 export const SUPPORTED_LANGS: I18nLangType[] = [
-  {code: "en", name: "English"},
-  {code: "de", name: "Deutsch"},
   {code: "ru", name: "Русский"},
-  {code: "kk", name: "Қазақша"}
+  {code: "en", name: "English"}
 ]
 
 export const ERRORS_422_UNPROCESSABLE_CONTENT = "/errors/unprocessable-content"

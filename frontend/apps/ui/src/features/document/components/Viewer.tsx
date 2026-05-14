@@ -3,7 +3,7 @@ import {useCurrentDoc} from "@/features/document/hooks"
 import {Alert, Button, Flex, Group, Loader} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
 import {useContext} from "react"
-import {useNavigate} from "react-router-dom"
+import {useLocation, useNavigate} from "react-router-dom"
 
 import Breadcrumbs from "@/components/Breadcrumbs"
 import PanelContext from "@/contexts/PanelContext"
@@ -32,7 +32,6 @@ import {
   selectContentHeight,
   selectThumbnailsPanelOpen
 } from "@/features/ui/uiSlice"
-import {selectCurrentUser} from "@/slices/currentUser"
 import type {NType, PanelMode} from "@/types"
 import {getViewerChromeKind} from "@/features/document/documentPreview"
 import DocxPageColumn from "@/features/document/components/DocxViewer/DocxPageColumn"
@@ -48,15 +47,18 @@ import DeleteEntireDocumentConfirm from "./DeleteEntireDocumentConfirm"
 import PagesHaveChangedDialog from "./PageHaveChangedDialog"
 import PageList from "./PageList"
 import ThumbnailList from "./ThumbnailList"
+import {isPortalDocumentNavState} from "@/features/portal/portalNavState"
+import {useTranslation} from "react-i18next"
 
 export default function Viewer() {
+  const {t} = useTranslation()
   const {doc} = useCurrentDoc()
   const {docVer} = useCurrentDocVer()
-  const user = useAppSelector(selectCurrentUser)
 
   const ref = useRef<HTMLDivElement>(null)
   const mode: PanelMode = useContext(PanelContext)
   const navigate = useNavigate()
+  const location = useLocation()
   const dispatch = useAppDispatch()
   const height = useAppSelector(s => selectContentHeight(s, mode))
   /* Ensure the PDF buffer is always present in fileManager so
@@ -101,7 +103,11 @@ export default function Viewer() {
       )
     } else if (mode == "main" && node.ctype == "folder") {
       dispatch(currentDocVerUpdated({mode: mode, docVerID: undefined}))
-      navigate(`/folder/${node.id}`)
+      if (isPortalDocumentNavState(location.state)) {
+        navigate(`/portal/folder/${node.id}`, {state: location.state})
+      } else {
+        navigate(`/folder/${node.id}`)
+      }
     }
   }
 
@@ -157,7 +163,12 @@ export default function Viewer() {
 
   const onDeleteEntireDocumentConfirmSubmit = () => {
     closeDeleteEntireDocumentConfirm()
-    navigate(`/home/${user.home_folder_id}`)
+    if (isPortalDocumentNavState(location.state)) {
+      const pid = doc?.parent_id ?? location.state.portalRootId
+      navigate(`/portal/folder/${pid}`, {state: location.state})
+    } else {
+      navigate("/library/favorites")
+    }
   }
 
   const onDeletePagesItemClicked = () => {
@@ -248,14 +259,14 @@ export default function Viewer() {
       {previewState.error && (
         <Alert
           color="red"
-          title="Preview loading failed"
+          title={t("viewer.preview_load_failed")}
           mt="sm"
           variant="light"
         >
           {previewState.error}
           <Group mt="xs">
             <Button size="xs" variant="light" onClick={previewState.retry}>
-              Retry preview loading
+              {t("viewer.retry_preview")}
             </Button>
           </Group>
         </Alert>

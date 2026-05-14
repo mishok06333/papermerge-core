@@ -1,13 +1,14 @@
 import {Box, Breadcrumbs, Group, Loader, LoadingOverlay} from "@mantine/core"
 import {Link, useNavigation} from "react-router-dom"
-
-import {useGetRoleQuery} from "@/features/roles/apiSlice"
-import type {RoleDetails} from "@/types"
-import {DeleteRoleButton} from "./DeleteButton"
-import EditButton from "./EditButton"
+import {useTranslation} from "react-i18next"
 import {RoleForm} from "kommon"
-import {server2clientPerms} from "@/features/roles/utils"
+
+import type {Role} from "@/types"
+import {useGetRoleQuery} from "@/features/roles/apiSlice"
+import {formatBuiltinRoleName, server2clientPerms} from "@/features/roles/utils"
 import useI18NText from "@/features/roles/hooks/useRoleFormI18NText"
+import EditButton from "./EditButton"
+import {DeleteRoleButton} from "./DeleteButton"
 
 interface RoleDetailsArgs {
   roleId: string
@@ -53,14 +54,17 @@ export default function RoleDetailsComponent({roleId}: RoleDetailsArgs) {
   )
 }
 
-function Path({role}: {role: RoleDetails | null}) {
+function Path({role}: {role: Role | null}) {
   const navigation = useNavigation()
+  const {t} = useTranslation()
 
   return (
     <Group>
       <Breadcrumbs>
         <Link to="/roles/">Roles</Link>
-        <Link to={`/roles/${role?.id}`}>{role?.name}</Link>
+        <Link to={`/roles/${role?.id}`}>
+          {role?.name ? formatBuiltinRoleName(role.name, t) : ""}
+        </Link>
       </Breadcrumbs>
       {navigation.state == "loading" && <Loader size="sm" />}
     </Group>

@@ -14,12 +14,10 @@ import {
   selectCurrentNodeID,
   selectPanelComponent
 } from "@/features/ui/uiSlice"
-import {selectCurrentUser} from "@/slices/currentUser"
 
 export default function ToggleSecondaryPanel() {
   const mode: PanelMode = useContext(PanelContext)
   const dispatch = useAppDispatch()
-  const user = useAppSelector(selectCurrentUser)
   const nodeID = useAppSelector(s => selectCurrentNodeID(s, mode))
   const ctype = useAppSelector(s => selectCurrentNodeCType(s, mode))
   const secondaryPanel = useAppSelector(s =>
@@ -27,17 +25,14 @@ export default function ToggleSecondaryPanel() {
   )
 
   const onClick = () => {
-    let currentNodeID = nodeID
-    let currentCType: CType | undefined = ctype
-    if (!nodeID) {
-      currentNodeID = user.home_folder_id
-      currentCType = "folder"
+    if (!nodeID || !ctype) {
+      return
     }
     dispatch(secondaryPanelOpened(ctype == "folder" ? "commander" : "viewer"))
     dispatch(
       currentNodeChanged({
-        id: currentNodeID!,
-        ctype: currentCType!,
+        id: nodeID,
+        ctype: ctype as CType,
         panel: "secondary"
       })
     )
@@ -48,7 +43,12 @@ export default function ToggleSecondaryPanel() {
       is no secondary panel opened */
     if (!secondaryPanel) {
       return (
-        <ActionIcon size="lg" onClick={onClick} variant="default">
+        <ActionIcon
+          size="lg"
+          onClick={onClick}
+          variant="default"
+          disabled={!nodeID || !ctype}
+        >
           <IconColumns2 size={18} />
         </ActionIcon>
       )

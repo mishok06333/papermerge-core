@@ -11,6 +11,7 @@ import {otherPanel} from "@/utils"
 import {Button, Group, Loader, Modal, Text} from "@mantine/core"
 import {skipToken} from "@reduxjs/toolkit/query"
 import {useContext, useState} from "react"
+import {useTranslation} from "react-i18next"
 
 import type {PanelMode} from "@/types"
 
@@ -26,6 +27,7 @@ export default function MoveDocumentDialogConfirm({
   onCancel,
   onSubmit
 }: Args) {
+  const {t} = useTranslation()
   /* Modal dialog to confirm the moving of the document to
     the current folder of the other panel.
 
@@ -60,8 +62,8 @@ export default function MoveDocumentDialogConfirm({
       onSubmit()
       reset()
     } catch (error: unknown) {
-      // @ts-ignore
-      setError(err.data.detail)
+      const err = error as {data?: {detail?: string}}
+      setError(err?.data?.detail ?? t("common.generic_error"))
     }
   }
 
@@ -72,25 +74,22 @@ export default function MoveDocumentDialogConfirm({
   return (
     doc &&
     targetFolder && (
-      <Modal title={"Move Document"} opened={opened} onClose={onCancel}>
-        Move document
-        <Text c="green" span>
-          {" "}
-          {doc.title}{" "}
+      <Modal title={t("document.move_document.title")} opened={opened} onClose={onCancel}>
+        <Text component="span">
+          {t("document.move_document.body", {
+            docTitle: doc.title,
+            folderTitle: targetFolder.title
+          })}
         </Text>
-        to folder{" "}
-        <Text c="blue" span>
-          {targetFolder.title}
-        </Text>
-        ?{error && <Error message={error} />}
+        {error && <Error message={error} />}
         <Group justify="space-between" mt="md">
           <Button variant="default" onClick={onCancel}>
-            No
+            {t("document.move_document.no")}
           </Button>
           <Group>
             {isLoading && <Loader size="sm" />}
             <Button disabled={isLoading} onClick={onMoveDocument}>
-              Yes
+              {t("document.move_document.yes")}
             </Button>
           </Group>
         </Group>

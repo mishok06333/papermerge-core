@@ -3,12 +3,14 @@ import {DatePickerInput, DateValue} from "@mantine/dates"
 import {IconCalendar} from "@tabler/icons-react"
 import dayjs from "dayjs"
 import {useEffect, useState} from "react"
+import {useTranslation} from "react-i18next"
 import {CustomFieldArgs} from "./types"
 
 export default function CustomFieldDate({
   customField,
   onChange
 }: CustomFieldArgs) {
+  const {t} = useTranslation()
   const [value, setValue] = useState<Date | null>(null)
   const icon = (
     <IconCalendar style={{width: rem(18), height: rem(18)}} stroke={1.5} />
@@ -50,7 +52,7 @@ export default function CustomFieldDate({
       // `valueFormat` will be retrieved from user preferences
       valueFormat="DD.MM.YYYY"
       label={customField.name}
-      placeholder="Pick date"
+      placeholder={t("common.pick_date")}
       value={value}
       onChange={onLocalChange}
     />

@@ -24,6 +24,9 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from papermerge.core.db.base import Base
 
+# Import models so Base.metadata sees all tables (incl. portal_settings).
+from papermerge.core.features.portal.db import orm as _portal_orm  # noqa: F401
+
 target_metadata = Base.metadata
 
 

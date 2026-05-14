@@ -2,7 +2,7 @@ from typing import List, Tuple
 from uuid import UUID
 
 from sqlalchemy import select, exists, literal
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core.features.nodes.db import orm
@@ -110,6 +110,35 @@ async def require_node_perm(
         raise exc.HTTP403Forbidden()
 
 
+async def _user_has_portal_view_via_account_roles(
+    db_session: AsyncSession, user_id: UUID
+) -> bool:
+    """True if user has ``portal.view`` on any account role (users_roles).
+
+    Portal nodes are owned by the ``legal_portal`` group; this allows portal
+    readers without membership in that group, as long as their role grants
+    ``portal.view``.
+    """
+    from papermerge.core.features.auth import scopes as auth_scopes
+    from papermerge.core.features.roles.db.orm import Role
+    from papermerge.core.features.users.db.orm import User
+
+    u = await db_session.scalar(
+        select(User)
+        .options(selectinload(User.roles).selectinload(Role.permissions))
+        .where(User.id == user_id)
+    )
+    if u is None:
+        return False
+    if u.is_superuser:
+        return True
+    for role in u.roles:
+        for perm in role.permissions:
+            if perm.codename == auth_scopes.PORTAL_VIEW:
+                return True
+    return False
+
+
 async def has_node_perm(
     db_session: AsyncSession,
     node_id: UUID,
@@ -167,6 +196,18 @@ async def has_node_perm(
     has_direct_access = (await db_session.execute(node_access_stmt)).scalar_one()
     if has_direct_access:
         return True
+
+    from papermerge.core.features.auth import scopes as auth_scopes
+
+    if codename == auth_scopes.NODE_VIEW:
+        from papermerge.core.features.portal.db import api as portal_dbapi
+
+        root_id = await portal_dbapi.get_portal_root_id(db_session)
+        if root_id is not None and await portal_dbapi.is_node_under_portal_root(
+            db_session, node_id, root_id
+        ):
+            if await _user_has_portal_view_via_account_roles(db_session, user_id):
+                return True
 
     ancestor_ids = [item[0] for item in await get_ancestors(db_session, node_id)]
     # account roles assigned to the user (users_roles)

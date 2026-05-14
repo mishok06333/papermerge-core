@@ -1060,10 +1060,6 @@ export const selectCurrentSharedNodeID = (state: RootState) => {
   return state.ui.currentSharedNode?.id
 }
 
-export const selectSharedNode = (state: RootState, nodeID: string) => {
-  return state.sharedNodes.entities[nodeID]
-}
-
 export const selectCurrentSharedRootID = (state: RootState) => {
   return state.ui.currentSharedRootID
 }
@@ -1078,12 +1074,6 @@ export const selectCurrentNodeCType = (state: RootState, mode: PanelMode) => {
 
 export const selectCurrentDocumentID = (state: RootState, mode: PanelMode) => {
   if (mode == "main") {
-    if (state.ui.mainPanelComponent === "sharedViewer") {
-      const sn = state.ui.currentSharedNode
-      if (sn?.ctype === "document") {
-        return sn.id
-      }
-    }
     const node = state.ui.currentNodeMain
     if (node?.ctype == "document") {
       return node.id
@@ -1139,39 +1129,9 @@ export const selectSelectedNodesCount = createSelector(
 )
 
 export const selectOneSelectedSharedNode = (
-  state: RootState,
-  mode: PanelMode
+  _state: RootState,
+  _mode: PanelMode
 ): undefined | NodeType => {
-  if (mode == "main") {
-    if (
-      state.ui.mainCommanderSelectedIDs &&
-      state.ui.mainCommanderSelectedIDs.length == 1
-    ) {
-      const sel_id = state.ui.mainCommanderSelectedIDs[0]
-      if (
-        state.nodes.entities[sel_id] &&
-        state.nodes.entities[sel_id].is_shared
-      ) {
-        return state.nodes.entities[sel_id]
-      }
-    }
-    return undefined
-  } // main
-
-  if (
-    state.ui.secondaryCommanderSelectedIDs &&
-    state.ui.secondaryCommanderSelectedIDs.length == 1
-  ) {
-    const sel_id2 = state.ui.secondaryCommanderSelectedIDs[0] as string
-    if (
-      state.nodes.entities &&
-      state.nodes.entities[sel_id2] &&
-      state.nodes.entities[sel_id2].is_shared
-    ) {
-      return state.nodes.entities[sel_id2]
-    }
-  }
-
   return undefined
 }
 

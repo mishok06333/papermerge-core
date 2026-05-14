@@ -3,24 +3,17 @@ import {LoaderFunctionArgs} from "react-router"
 import DualPanel from "@/components/DualPanel"
 import {currentNodeChanged} from "@/features/ui/uiSlice"
 
-import {getCurrentUser} from "@/utils"
 import {store} from "@/app/store"
 
-import type {User} from "@/types"
-
-export default function Home() {
+export default function Folder() {
   return <DualPanel />
 }
 
 export async function loader({params, request}: LoaderFunctionArgs) {
   const url = new URL(request.url)
-  const user: User = await getCurrentUser()
-  let folderId
-
-  if (params.folderId) {
-    folderId = params.folderId
-  } else {
-    folderId = user.home_folder_id
+  const folderId = params.folderId
+  if (!folderId) {
+    throw new Response("Missing folder id", {status: 400})
   }
 
   store.dispatch(

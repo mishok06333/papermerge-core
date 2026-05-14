@@ -40,12 +40,11 @@ export const apiSlice = createApi({
     "User",
     "Tag",
     "Node",
-    "SharedNode",
-    "SharedNodeAccessDetails",
+    "PortalRoot",
+    "PortalNodes",
+    "PortalFeed",
     "NodeTag", // tags fetched per node
     "Folder",
-    "SharedFolder",
-    "SharedDocument",
     "Document",
     "CustomField", // CRUD custom field
     "DocumentType",

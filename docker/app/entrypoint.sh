@@ -40,7 +40,7 @@ exec_createsuperuser() {
 }
 
 exec_seed_roles() {
-    echo "[init] Ensuring built-in roles (admin + worker/modder presets)..."
+    echo "[init] Ensuring built-in roles (admin, moderator, employee)..."
     _run_core paper-cli roles create-admin --exists-ok
     _run_core paper-cli roles seed-test-roles
 }
@@ -49,6 +49,11 @@ exec_assign_admin_role() {
     admin_username="${PAPERMERGE__AUTH__USERNAME:-admin}"
     echo "[init] Assigning 'admin' role to superuser '${admin_username}'..."
     _run_core paper-cli users assign-role "${admin_username}" admin
+}
+
+exec_portal_bootstrap() {
+    echo "[init] Ensuring legal portal root (group + folder)..."
+    _run_core paper-cli portal init || echo "[init] portal init failed (see logs)"
 }
 
 exec_index_schema_apply() {
@@ -64,6 +69,7 @@ exec_init() {
     exec_createsuperuser
     exec_seed_roles
     exec_assign_admin_role
+    exec_portal_bootstrap
     exec_index_schema_apply
 }
 

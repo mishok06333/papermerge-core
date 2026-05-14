@@ -1,5 +1,6 @@
 import asyncio
 import io
+import json
 import logging
 import uuid
 from typing import Annotated
@@ -34,6 +35,8 @@ from papermerge.core.db import common as dbapi_common
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
 from papermerge.core.db.engine import get_db
 from papermerge.core.features.library_ts.db import api as lib_ts_api
+from papermerge.core.features.portal import policy as portal_policy
+from papermerge.core.features.portal.db import api as portal_dbapi
 
 router = APIRouter(
     prefix="/documents",
@@ -77,6 +80,9 @@ async def update_document_custom_field_values(
         node_id=document_id,
         codename=scopes.NODE_UPDATE,
         user_id=user.id,
+    )
+    await portal_policy.require_portal_on_update_node(
+        db_session, user, document_id
     )
 
     try:
@@ -122,6 +128,9 @@ async def get_document_custom_field_values(
         node_id=document_id,
         codename=scopes.NODE_VIEW,
         user_id=user.id,
+    )
+    await portal_policy.require_portal_view_if_under_portal(
+        db_session, user, document_id
     )
 
     try:
@@ -186,6 +195,9 @@ async def upload_file(
         codename=scopes.DOCUMENT_UPLOAD,
         user_id=user.id,
     )
+    await portal_policy.require_portal_on_document_file_upload(
+        db_session, user, document_id
+    )
 
     doc, error = await dbapi.upload(
         db_session,
@@ -198,6 +210,22 @@ async def upload_file(
 
     if error:
         raise HTTPException(status_code=400, detail=error.model_dump())
+
+    root_id = await portal_dbapi.get_portal_root_id(db_session)
+    if root_id and await portal_dbapi.is_node_under_portal_root(
+        db_session, document_id, root_id
+    ):
+        last_ver = doc.versions[-1] if doc.versions else None
+        ver_no = last_ver.number if last_ver else None
+        await lib_ts_api.add_audit(
+            db_session,
+            user_id=user.id,
+            action="portal_document_upload",
+            resource_type="document",
+            resource_id=document_id,
+            detail=json.dumps({"title": doc.title, "version": ver_no})[:2000],
+        )
+        await db_session.commit()
 
     return doc
 
@@ -230,6 +258,9 @@ async def get_document_last_version(
             node_id=doc_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
+        )
+        await portal_policy.require_portal_view_if_under_portal(
+            db_session, user, doc_id
         )
 
         result = await dbapi.get_last_doc_ver_preview(
@@ -279,6 +310,9 @@ async def get_doc_versions_list(
             codename=scopes.NODE_VIEW,
             user_id=user.id,
         )
+        await portal_policy.require_portal_view_if_under_portal(
+            db_session, user, doc_id
+        )
 
         result = await dbapi.get_doc_versions_list(
             db_session,
@@ -316,6 +350,9 @@ async def get_document_details(
             node_id=document_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
+        )
+        await portal_policy.require_portal_view_if_under_portal(
+            db_session, user, document_id
         )
 
         doc = await dbapi.get_doc(db_session, id=document_id)
@@ -361,6 +398,9 @@ async def update_document_type(
             node_id=document_id,
             codename=scopes.NODE_UPDATE,
             user_id=user.id,
+        )
+        await portal_policy.require_portal_on_update_node(
+            db_session, user, document_id
         )
 
         await dbapi.update_doc_type(

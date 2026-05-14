@@ -9,7 +9,12 @@ import {
   usePutLibraryRatingMutation
 } from "@/features/library/libraryApiSlice"
 import {useAppSelector} from "@/app/hooks"
-import {COMMENT_CREATE, COMMENT_DELETE, COMMENT_UPDATE} from "@/scopes"
+import {
+  COMMENT_CREATE,
+  COMMENT_DELETE,
+  COMMENT_UPDATE,
+  NODE_UPDATE
+} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {User} from "@/types"
 import {
@@ -37,8 +42,11 @@ export default function DocumentLibraryPanel({documentId}: Props) {
   const canCreateComments = scopes.includes(COMMENT_CREATE)
   const canEditComments = scopes.includes(COMMENT_UPDATE)
   const canDeleteComments = scopes.includes(COMMENT_DELETE)
-  const {data: note, isLoading: noteLoading} =
-    useGetLibraryNoteQuery(documentId)
+  const canEditPrivateNote = scopes.includes(NODE_UPDATE)
+  const {data: note, isLoading: noteLoading} = useGetLibraryNoteQuery(
+    documentId,
+    {skip: !canEditPrivateNote}
+  )
   const {data: rating} = useGetLibraryRatingQuery(documentId)
   const {data: comments, refetch: refetchComments} =
     useGetLibraryCommentsQuery(documentId)
@@ -66,33 +74,37 @@ export default function DocumentLibraryPanel({documentId}: Props) {
   return (
     <Stack gap="sm" mt="md">
       <Divider label={t("library.panel_title")} labelPosition="center" />
-      <Text size="sm" fw={600}>
-        {t("library.my_note")}
-      </Text>
-      <Textarea
-        placeholder={t("library.note_placeholder")}
-        value={noteLoading ? "" : noteDraft}
-        onChange={e => setNoteDraft(e.currentTarget.value)}
-        minRows={3}
-        disabled={noteLoading}
-      />
-      <Button
-        size="xs"
-        loading={savingNote}
-        onClick={async () => {
-          try {
-            await putNote({documentId, body: noteDraft}).unwrap()
-            notifications.show({
-              title: t("library.note_saved"),
-              color: "green"
-            })
-          } catch {
-            notifications.show({title: t("library.error"), color: "red"})
-          }
-        }}
-      >
-        {t("common.save")}
-      </Button>
+      {canEditPrivateNote ? (
+        <>
+          <Text size="sm" fw={600}>
+            {t("library.my_note")}
+          </Text>
+          <Textarea
+            placeholder={t("library.note_placeholder")}
+            value={noteLoading ? "" : noteDraft}
+            onChange={e => setNoteDraft(e.currentTarget.value)}
+            minRows={3}
+            disabled={noteLoading}
+          />
+          <Button
+            size="xs"
+            loading={savingNote}
+            onClick={async () => {
+              try {
+                await putNote({documentId, body: noteDraft}).unwrap()
+                notifications.show({
+                  title: t("library.note_saved"),
+                  color: "green"
+                })
+              } catch {
+                notifications.show({title: t("library.error"), color: "red"})
+              }
+            }}
+          >
+            {t("common.save")}
+          </Button>
+        </>
+      ) : null}
 
       <Text size="sm" fw={600} mt="sm">
         {t("library.rating")}

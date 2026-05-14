@@ -79,9 +79,9 @@ function ChangeUserPasswordModal({
 
     validate: {
       confirmPassword: (value: string, values: PasswordWithConfirmation) =>
-        value !== values.password ? "Passwords did not match" : null,
+        value !== values.password ? t("users.validation.password_mismatch") : null,
       password: (value: string) =>
-        value.length < 1 ? "Password should not be empty" : null
+        value.length < 1 ? t("users.validation.password_empty") : null
     }
   })
 

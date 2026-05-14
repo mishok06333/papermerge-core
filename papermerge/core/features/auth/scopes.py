@@ -19,6 +19,7 @@ class ScopeCategory(Enum):
     CUSTOM_FIELD = "custom_field"
     DOCUMENT_TYPE = "document_type"
     SHARED_NODE = "shared_node"
+    PORTAL = "portal"
     COMMENT = "comment"
 
 
@@ -125,6 +126,17 @@ class Scopes:
     SHARED_NODE_VIEW = "shared_node.view"
     SHARED_NODE_UPDATE = "shared_node.update"
     SHARED_NODE_DELETE = "shared_node.delete"
+
+    # Legal portal (shared catalog under portal_settings.portal_root_node_id)
+    PORTAL_VIEW = "portal.view"
+    PORTAL_FEED_VIEW = "portal.feed.view"
+    PORTAL_FEED_MANAGE = "portal.feed.manage"
+    PORTAL_SECTION_CREATE = "portal.section.create"
+    PORTAL_SECTION_UPDATE = "portal.section.update"
+    PORTAL_SECTION_DELETE = "portal.section.delete"
+    PORTAL_DOCUMENT_UPLOAD = "portal.document.upload"
+    PORTAL_DOCUMENT_UPDATE = "portal.document.update"
+    PORTAL_DOCUMENT_DELETE = "portal.document.delete"
 
     # Comment permissions (document library / collaboration)
     COMMENT_CREATE = "comment.create"

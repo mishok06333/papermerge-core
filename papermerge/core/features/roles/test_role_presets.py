@@ -1,85 +1,41 @@
-"""Predefined permission sets for local/testing roles (worker, modder).
+"""Built-in roles seeded on deploy (Docker entrypoint / ``paper-cli roles``).
 
-* **worker** — typical document operator: folders, documents, tags, pages, OCR,
-  custom fields and document types, shared nodes, and ``user.me`` only.
-* **modder** — worker plus read/update access to users, groups, and roles (no
-  create/delete for those admin objects).
+* **admin** — all scopes (handled by ``create_admin``; kept in sync on boot).
+* **moderator** — same scope set as admin; non-superusers get full app rights via this role.
+* **employee** — browse/download/view metadata, portal read, comments and ratings;
+  no node/document/tag/page edits and no private library notes (notes require ``node.update``).
 """
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core import orm
 from papermerge.core.features.auth.scopes import Scopes
 from papermerge.core.features.roles import schema as roles_schema
 from papermerge.core.features.roles.db import api as roles_dbapi
+from papermerge.core.features.roles.db.orm import users_roles_association
 
-WORKER_ROLE_NAME = "worker"
-MODDER_ROLE_NAME = "modder"
+MODERATOR_ROLE_NAME = "moderator"
+EMPLOYEE_ROLE_NAME = "employee"
 
-
-def worker_scopes() -> list[str]:
-    categories = (
-        "node",
-        "document",
-        "tag",
-        "page",
-        "custom_field",
-        "document_type",
-        "shared_node",
-        "comment",
-    )
-    scopes: set[str] = set()
-    for cat in categories:
-        scopes.update(Scopes.get_scopes_by_category(cat))
-    scopes.update(
-        {
-            Scopes.USER_ME,
-            Scopes.TASK_OCR,
-            Scopes.OCRLANG_VIEW,
-        }
-    )
-    return sorted(scopes)
+OBSOLETE_SEEDED_ROLE_NAMES = frozenset(
+    {"worker", "modder", "editor_ts", "reader_ts"}
+)
 
 
-def modder_scopes() -> list[str]:
-    scopes = set(worker_scopes())
-    scopes.update(
-        {
-            Scopes.COMMENT_CREATE,
-            Scopes.COMMENT_UPDATE,
-            Scopes.COMMENT_DELETE,
-            Scopes.USER_VIEW,
-            Scopes.USER_SELECT,
-            Scopes.USER_UPDATE,
-            Scopes.GROUP_VIEW,
-            Scopes.GROUP_SELECT,
-            Scopes.GROUP_UPDATE,
-            Scopes.ROLE_VIEW,
-            Scopes.ROLE_SELECT,
-            Scopes.ROLE_UPDATE,
-        }
-    )
-    return sorted(scopes)
+def full_access_scopes() -> list[str]:
+    return sorted(Scopes.all_scopes())
 
 
-EDITOR_TS_ROLE_NAME = "editor_ts"
-READER_TS_ROLE_NAME = "reader_ts"
-
-
-def editor_ts_scopes() -> list[str]:
-    """TS «Редактор»: same content-management set as worker (scoped by sharing in UI)."""
-    return worker_scopes()
-
-
-def reader_ts_scopes() -> list[str]:
-    """TS «Пользователь»: просмотр, поиск, скачивание, избранное (без правок контента)."""
+def employee_scopes() -> list[str]:
+    """Read-only document tree + collaboration (comments, ratings), no content edits."""
     return sorted(
         {
             Scopes.NODE_VIEW,
             Scopes.DOCUMENT_DOWNLOAD,
+            Scopes.DOCUMENT_DOWNLOAD_ALL_VERSIONS,
             Scopes.DOCUMENT_DOWNLOAD_LAST_VERSION_ONLY,
             Scopes.TAG_VIEW,
             Scopes.TAG_SELECT,
@@ -88,18 +44,37 @@ def reader_ts_scopes() -> list[str]:
             Scopes.DOCUMENT_TYPE_VIEW,
             Scopes.DOCUMENT_TYPE_SELECT,
             Scopes.CUSTOM_FIELD_VIEW,
-            Scopes.SHARED_NODE_VIEW,
+            Scopes.PORTAL_VIEW,
+            Scopes.PORTAL_FEED_VIEW,
             Scopes.PAGE_VIEW,
+            Scopes.SHARED_NODE_VIEW,
+            Scopes.COMMENT_CREATE,
+            Scopes.COMMENT_UPDATE,
+            Scopes.COMMENT_DELETE,
         }
     )
 
 
 PRESET_SCOPES: dict[str, list[str]] = {
-    WORKER_ROLE_NAME: worker_scopes(),
-    MODDER_ROLE_NAME: modder_scopes(),
-    EDITOR_TS_ROLE_NAME: editor_ts_scopes(),
-    READER_TS_ROLE_NAME: reader_ts_scopes(),
+    MODERATOR_ROLE_NAME: full_access_scopes(),
+    EMPLOYEE_ROLE_NAME: employee_scopes(),
 }
+
+
+async def prune_obsolete_seeded_roles(db_session: AsyncSession) -> None:
+    """Remove legacy preset roles so a rebuilt stack only exposes the new built-ins."""
+    for name in OBSOLETE_SEEDED_ROLE_NAMES:
+        stmt = select(orm.Role).where(orm.Role.name == name)
+        role = (await db_session.execute(stmt)).scalar_one_or_none()
+        if role is None:
+            continue
+        await db_session.execute(
+            delete(users_roles_association).where(
+                users_roles_association.c.role_id == role.id
+            )
+        )
+        await db_session.commit()
+        await roles_dbapi.delete_role(db_session, role_id=role.id)
 
 
 async def ensure_preset_role(
@@ -130,7 +105,9 @@ async def ensure_preset_role(
 async def ensure_all_preset_roles(
     db_session: AsyncSession,
 ) -> list[tuple[str, roles_schema.RoleDetails | None, str | None]]:
-    """Create or update every preset test role."""
+    """Drop legacy seeded roles, then create/update moderator and employee."""
+    await prune_obsolete_seeded_roles(db_session)
+
     out: list[tuple[str, roles_schema.RoleDetails | None, str | None]] = []
     for name in PRESET_SCOPES:
         details, err = await ensure_preset_role(db_session, name)

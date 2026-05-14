@@ -14,7 +14,6 @@ import nodesReducer from "@/features/nodes/nodesSlice"
 import thumbnailObjects from "@/features/nodes/thumbnailObjectsSlice"
 import rolesReducer from "@/features/roles/rolesSlice"
 import searchReducer from "@/features/search/searchSlice"
-import sharedNodesReducer from "@/features/shared_nodes/store/sharedNodesSlice"
 import tagsReducer from "@/features/tags/tagsSlice"
 import uiReducer from "@/features/ui/uiSlice"
 import usersReducer from "@/features/users/usersSlice"
@@ -22,6 +21,7 @@ import currentUserReducer from "@/slices/currentUser"
 import {configureStore} from "@reduxjs/toolkit"
 import {listenerMiddleware} from "./listenerMiddleware"
 import "@/features/library/libraryApiSlice"
+import "@/features/portal/portalApiSlice"
 
 export const store = configureStore({
   reducer: {
@@ -34,7 +34,6 @@ export const store = configureStore({
     documentTypes: documentTypesReducer,
     users: usersReducer,
     nodes: nodesReducer,
-    sharedNodes: sharedNodesReducer,
     search: searchReducer,
     pages: pagesReducer,
     imageObjects: imageObjects,

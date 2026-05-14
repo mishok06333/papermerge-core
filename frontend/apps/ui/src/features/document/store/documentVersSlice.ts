@@ -1,5 +1,4 @@
 import {RootState} from "@/app/types"
-import {apiSliceWithSharedNodes} from "@/features/shared_nodes/store/apiSlice"
 import type {
   ClientDocumentVersion,
   ClientPage,
@@ -20,7 +19,7 @@ import {
   DOC_VER_PAGINATION_PAGE_BATCH_SIZE,
   DOC_VER_PAGINATION_THUMBNAIL_BATCH_SIZE
 } from "../constants"
-import type {DocumentType, DocumentVersion} from "../types"
+import type {DocumentVersion} from "../types"
 import {clientDVFromDV} from "../utils"
 import {apiSliceWithDocuments} from "./apiSlice"
 
@@ -172,40 +171,6 @@ const docVersSlice = createSlice({
         }
 
         docVerAdapter.upsertOne(state, ver)
-      }
-    )
-    builder.addMatcher(
-      apiSliceWithSharedNodes.endpoints.getSharedDocument.matchFulfilled,
-      (state, action: PayloadAction<DocumentType>) => {
-        let all_vers: Array<ClientDocumentVersion> = []
-
-        action.payload.versions.forEach(v => {
-          const serverPages = v.pages.map(p => {
-            return {id: p.id, number: p.number, angle: 0, text: p.text}
-          })
-          let ver: ClientDocumentVersion = {
-            id: v.id,
-            lang: v.lang,
-            number: v.number,
-            file_name: v.file_name,
-            document_id: v.document_id,
-            size: v.size,
-            short_description: v.short_description,
-            pages: serverPages.map(p => ({...p})),
-            initial_pages: serverPages.map(p => ({...p})),
-            pagination: {
-              page_number: 1,
-              per_page: DOC_VER_PAGINATION_PAGE_BATCH_SIZE
-            },
-            thumbnailsPagination: {
-              page_number: 1,
-              per_page: DOC_VER_PAGINATION_THUMBNAIL_BATCH_SIZE
-            }
-          }
-          all_vers.push(ver)
-        })
-
-        docVerAdapter.addMany(state, all_vers)
       }
     )
   }

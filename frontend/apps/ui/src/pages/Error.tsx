@@ -1,4 +1,5 @@
 import {useRouteError} from "react-router-dom"
+import {useTranslation} from "react-i18next"
 
 interface RouteError {
   data: string
@@ -15,13 +16,14 @@ interface RouteError {
 }
 
 export default function PageNotFound() {
+  const {t} = useTranslation()
   const error = useRouteError() as RouteError
   console.error(error)
 
   return (
     <div id="error-page">
-      <h1>Oops!</h1>
-      <p>Sorry, an unexpected error has occurred.</p>
+      <h1>{t("pages.error.unexpected.title")}</h1>
+      <p>{t("pages.error.unexpected.message")}</p>
     </div>
   )
 }

@@ -1,5 +1,4 @@
 import {Group, Text, useMantineTheme} from "@mantine/core"
-import logoURL from "/logo_transparent_bg.svg"
 
 import {ColorSchemeToggle} from "@/components/ColorSchemeToggle/ColorSchemeToggle"
 import classes from "./Header.module.css"
@@ -27,7 +26,6 @@ function Header() {
       <div className={classes.inner}>
         <Group>
           <SidebarToggle />
-          <img src={logoURL} width={"30px"} alt="" />
           <Text fw={600} size="sm" visibleFrom="sm">
             {APP_TITLE}
           </Text>

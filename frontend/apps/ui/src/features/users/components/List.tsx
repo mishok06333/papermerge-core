@@ -12,6 +12,7 @@ import {Center, Checkbox, Group, Loader, Stack, Table} from "@mantine/core"
 import {useState} from "react"
 import {useDispatch, useSelector} from "react-redux"
 import {useNavigate} from "react-router-dom"
+import {useTranslation} from "react-i18next"
 
 import Pagination from "@/components/Pagination"
 
@@ -123,10 +124,11 @@ export default function UsersList() {
 }
 
 function Empty() {
+  const {t} = useTranslation()
   return (
     <Center>
       <Stack align="center">
-        <div>Currently there are no users</div>
+        <div>{t("users.list_empty")}</div>
       </Stack>
     </Center>
   )

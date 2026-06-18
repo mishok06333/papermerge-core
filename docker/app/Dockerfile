@@ -1,19 +1,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: frontend bundle
 # ---------------------------------------------------------------------------
-FROM node:20.19 AS frontend_build
-
-# Apply latest security updates. Retry to tolerate transient mirror failures.
-RUN set -eux; \
-    attempts=0; max_attempts=5; \
-    until [ "$attempts" -ge "$max_attempts" ]; do \
-        if apt-get update && apt-get upgrade -y; then break; fi; \
-        attempts=$((attempts + 1)); \
-        echo "apt-get failed (attempt ${attempts}/${max_attempts}), retrying..."; \
-        sleep $((attempts * 5)); \
-    done; \
-    [ "$attempts" -lt "$max_attempts" ] || (echo "apt-get failed"; exit 1); \
-    rm -rf /var/lib/apt/lists/*
+FROM node:20.19-bookworm-slim AS frontend_build
 
 WORKDIR /build_frontend_app
 COPY frontend/ .

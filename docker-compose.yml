@@ -58,12 +58,47 @@ services:
       PAPERMERGE__AUTH__USERNAME: ${ADMIN_USERNAME:-admin}
       PAPERMERGE__AUTH__EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       PAPERMERGE__AUTH__PASSWORD: ${ADMIN_PASSWORD:-admin}
+      PAPERMERGE__SEARCH__URL: ${PAPERMERGE__SEARCH__URL:-solr://solr:8983/papermerge}
     volumes:
       - ./media:/var/media/pmg
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+
+  solr:
+    image: solr:9.7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8983:8983"
+    volumes:
+      - solrdata:/var/solr
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8983/solr/papermerge/admin/ping || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 40s
+    command:
+      - solr-precreate
+      - papermerge
+
+  index_worker:
+    build:
+      context: .
+      dockerfile: docker/indexworker/Dockerfile
+    restart: unless-stopped
+    environment:
+      PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER:-papermerge}:${POSTGRES_PASSWORD:-papermerge}@db:5432/${POSTGRES_DB:-papermerge}
+      PAPERMERGE__REDIS__URL: redis://redis:6379/0
+      PAPERMERGE__SEARCH__URL: ${PAPERMERGE__SEARCH__URL:-solr://solr:8983/papermerge}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      solr:
         condition: service_healthy
 
   ocr_worker:
@@ -89,3 +124,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  solrdata:

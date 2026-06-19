@@ -42,6 +42,13 @@ async def get_portal_root_id(db_session: AsyncSession) -> UUID | None:
     return row.portal_root_node_id
 
 
+async def get_portal_group_id(db_session: AsyncSession) -> UUID | None:
+    row = await get_portal_settings_row(db_session)
+    if row is None:
+        return None
+    return row.portal_group_id
+
+
 async def is_node_under_portal_root(
     db_session: AsyncSession, node_id: UUID, root_id: UUID | None
 ) -> bool:

@@ -305,7 +305,7 @@ function getPermissionTree(txt?: I18NPermissionTree) {
     },
     {
       value: "portal",
-      label: txt?.legal_portal || "Legal portal",
+      label: txt?.legal_portal || "Home",
       children: [
         {value: "portal.view", label: txt?.view || "View catalog"},
         {value: "portal.feed.view", label: txt?.portal_feed || "News feed"},

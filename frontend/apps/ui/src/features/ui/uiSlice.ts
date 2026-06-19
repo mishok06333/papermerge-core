@@ -193,9 +193,6 @@ interface SearchState {
   /* Query string as entered by user i.e exactly what user sees
   in search box when he/she submits search query */
   query: string
-  /* when clicking on result item, should it open
-  clicked item (document or folder) in main panel or in secondary one? */
-  openResultItemInOtherPanel: boolean
 }
 
 interface DocumentsByTypeColumnsArg {
@@ -453,16 +450,9 @@ const uiSlice = createSlice({
       const query = action.payload
       state.mainPanelComponent = "searchResults"
       state.search = {
-        query: query,
-        openResultItemInOtherPanel: true
+        query: query
       }
       state.currentNodeMain = undefined
-    },
-    searchResultItemTargetUpdated(state, action: PayloadAction<boolean>) {
-      if (state.search) {
-        /* in which panel will search result item open ? */
-        state.search.openResultItemInOtherPanel = action.payload
-      }
     },
     mainPanelComponentUpdated(state, action: PayloadAction<PanelComponent>) {
       state.mainPanelComponent = action.payload
@@ -958,7 +948,6 @@ export const {
   This happens when user clicks enter in search field
   in the header */
   mainPanelSwitchedToSearchResults,
-  searchResultItemTargetUpdated,
   secondaryPanelClosed,
   secondaryPanelOpened,
   commanderSelectionNodeAdded,
@@ -1306,9 +1295,6 @@ export const selectSearchQuery = (state: RootState) => state.ui.search?.query
 
 export const selectSearchLastPageSize = (state: RootState): number =>
   state.ui.searchLastPageSize || PAGINATION_DEFAULT_ITEMS_PER_PAGES
-
-export const selectOpenResultItemInOtherPanel = (state: RootState) =>
-  state.ui.search?.openResultItemInOtherPanel
 
 export const selectDocumentCurrentPage = (
   state: RootState,

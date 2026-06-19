@@ -39,15 +39,18 @@ export default function NewsAttachmentPickerModal({
   maxAttachments = 30
 }: Props) {
   const {t} = useTranslation()
-  const [stack, setStack] = useState<FolderCrumb[]>([{id: portalRoot.id, title: portalRoot.title}])
+  const portalRootLabel = t("portal.root_folder")
+  const [stack, setStack] = useState<FolderCrumb[]>([
+    {id: portalRoot.id, title: portalRootLabel}
+  ])
 
   const parentId = stack[stack.length - 1].id
 
   useEffect(() => {
     if (opened) {
-      setStack([{id: portalRoot.id, title: portalRoot.title}])
+      setStack([{id: portalRoot.id, title: portalRootLabel}])
     }
-  }, [opened, portalRoot.id, portalRoot.title])
+  }, [opened, portalRoot.id, portalRootLabel])
 
   const {data, isLoading} = useGetPortalNodesQuery(
     {parentId, page_size: 200},

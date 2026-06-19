@@ -5,7 +5,6 @@ import {useEffect, useRef} from "react"
 import {useDispatch} from "react-redux"
 
 import GoBackButton from "./GoBackButton"
-import OpenInOtherPanelCheckbox from "./OpenInOtherPanelCheckbox"
 
 export default function ActionButtons() {
   const {height, width} = useViewportSize()
@@ -29,7 +28,6 @@ export default function ActionButtons() {
     <Group ref={ref} justify="space-between">
       <Group>
         <GoBackButton />
-        <OpenInOtherPanelCheckbox />
       </Group>
       {/*
       <Group>

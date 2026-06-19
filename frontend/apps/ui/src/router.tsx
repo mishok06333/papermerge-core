@@ -19,6 +19,7 @@ import {TagDetails, TagsList} from "@/features/tags/pages"
 import {UserDetails, UsersList} from "@/features/users/pages"
 import Document from "@/pages/Document"
 import LibraryPage from "@/features/library/pages/LibraryPage"
+import SearchPage from "@/pages/Search"
 import AuditLogPage from "@/features/audit/pages/AuditLogPage"
 
 import {AccessForbidden, NotFound, UnprocessableContent} from "@/pages/errors"
@@ -87,6 +88,10 @@ const router = createBrowserRouter([
       {
         path: "/library/:section",
         element: <LibraryPage />
+      },
+      {
+        path: "/search",
+        element: <SearchPage />
       },
       {
         path: "/portal",

@@ -26,7 +26,9 @@ class SearchIndex(Schema):
 
     lang: Annotated[str, KeywordField()] = "en"
 
-    user_id: Annotated[str, StringField(index=True)]
+    user_id: Annotated[Optional[str], StringField(index=True)] = None
+
+    group_id: Annotated[Optional[str], StringField(index=True)] = None
 
     title: Annotated[
         str, TextField(general_search=True, multi_lang=True)

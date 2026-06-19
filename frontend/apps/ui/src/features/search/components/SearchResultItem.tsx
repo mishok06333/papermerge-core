@@ -22,9 +22,7 @@ export default function SearchResultItem({item, onClick}: Args) {
       id: item.document_id!,
       ctype: "document" as CType
     }
-    const page = item.page_number!
-
-    onClick(node, page)
+    onClick(node, item.page_number ?? undefined)
   }
 
   const onLocalClickFolderItem = () => {

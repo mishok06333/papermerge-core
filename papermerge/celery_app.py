@@ -67,6 +67,9 @@ def s3preview_queue_name() -> str:
     return prefixed("s3preview")
 
 
+# Register search index celery tasks (index_add_node, etc.).
+import papermerge.search.tasks  # noqa: E402, F401
+
 app.conf.task_routes = {
     # `s3_worker`: uploads/downloads of document version files
     # via s3 queue

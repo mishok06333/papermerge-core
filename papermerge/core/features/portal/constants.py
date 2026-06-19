@@ -8,7 +8,7 @@ via the ``portal.view`` permission on their roles (see ``has_node_perm`` in
 """
 
 PORTAL_GROUP_NAME = "legal_portal"
-PORTAL_ROOT_FOLDER_TITLE = "Legal portal"
+PORTAL_ROOT_FOLDER_TITLE = "Home"
 
 # Singleton row in portal_settings
 PORTAL_SETTINGS_ROW_ID = 1

@@ -516,7 +516,9 @@ async def get_nodes_details(
             user_id=user.id,
         )
 
-    nodes = await nodes_dbapi.get_nodes(db_session, node_ids=node_ids, user_id=user.id)
+    # Permissions were checked above; do not filter by user_id here — portal
+    # and other group-owned nodes have user_id=NULL.
+    nodes = await nodes_dbapi.get_nodes(db_session, node_ids=node_ids)
 
     return nodes
 

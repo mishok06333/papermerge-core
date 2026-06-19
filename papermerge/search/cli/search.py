@@ -4,6 +4,7 @@ import uuid
 import typer
 from salinic import IndexRO, Search, create_engine
 from rich import print
+from papermerge.search.query_utils import prepare_user_query
 from papermerge.search.schema import SearchIndex as Index
 
 app = typer.Typer(help="Search command")
@@ -22,7 +23,11 @@ def search_cmd(
     engine = create_engine(SEARCH_URL)
     index = IndexRO(engine, schema=Index)
 
-    sq = Search(Index).query(query, page_number=page_number, page_size=page_size)
+    sq = Search(Index).query(
+        prepare_user_query(query),
+        page_number=page_number,
+        page_size=page_size,
+    )
 
     results = index.search(sq, user_id=str(user_id))
     print(results)

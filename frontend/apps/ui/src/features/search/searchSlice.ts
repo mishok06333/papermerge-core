@@ -31,9 +31,7 @@ const nodesSlice = createSlice({
     builder.addMatcher(
       apiSliceWithSearch.endpoints.getNodes.matchFulfilled,
       (state, action: PayloadAction<NodeType[]>) => {
-        const payload = action.payload
-        console.log(payload)
-        nodeAdapter.addMany(state.nodes, payload)
+        nodeAdapter.addMany(state.nodes, action.payload)
       }
     )
   }

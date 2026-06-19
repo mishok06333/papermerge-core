@@ -8,12 +8,9 @@ authors = [
 maintainers = [
     { name = "Eugen Ciur", email = "eugen@papermerge.com" }
 ]
-license = "Apache 2.0"
+license = "Apache-2.0"
 readme = "README.md"
-homepage = "https://www.papermerge.com/"
-documentation = "https://docs.papermerge.io/"
 classifiers = [
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3"
@@ -28,10 +25,6 @@ keywords = [
     "document-management",
     "paperless",
     "archives"
-]
-packages = [
-    { include = "papermerge/core" },
-    { include = "papermerge/search" },
 ]
 requires-python = ">=3.13,<4"
 dependencies = [
@@ -63,8 +56,14 @@ dependencies = [
 ]
 
 [project.urls]
+Homepage = "https://www.papermerge.com/"
+Documentation = "https://docs.papermerge.io/"
 Tracker = "https://github.com/ciur/papermerge/issues"
 Source = "https://github.com/papermerge/papermerge-core"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["papermerge*"]
 
 
 [project.optional-dependencies]

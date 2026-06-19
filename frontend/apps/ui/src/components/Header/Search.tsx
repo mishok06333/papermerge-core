@@ -4,30 +4,30 @@ import {IconSearch} from "@tabler/icons-react"
 import {useState} from "react"
 import {useDispatch} from "react-redux"
 import {useTranslation} from "react-i18next"
+import {useNavigate} from "react-router-dom"
 
 export default function Search() {
   const {t} = useTranslation()
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const [value, setValue] = useState("")
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.currentTarget.value)
   }
 
-  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    const {key} = event
+  const submitSearch = () => {
+    const query = value.trim()
+    if (!query) {
+      return
+    }
+    dispatch(mainPanelSwitchedToSearchResults(query))
+    navigate(`/search?q=${encodeURIComponent(query)}`)
+  }
 
-    if (key === "Enter") {
-      /*
-      dispatch(
-        fetchPaginatedSearchResults({
-          query: value,
-          page_number: 1,
-          page_size: 10
-        })
-      )
-      */
-      dispatch(mainPanelSwitchedToSearchResults(value))
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      submitSearch()
     }
   }
 

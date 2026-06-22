@@ -108,12 +108,15 @@ async def get_folder_by_id(db_session: AsyncSession, id: uuid.UUID) -> schema.Fo
 async def get_paginated_nodes(
     db_session: AsyncSession,
     parent_id: UUID,
-    user_id: UUID,
+    user_id: UUID | None,
     page_size: int,
     page_number: int,
     order_by: list[str],
     filter: str | None = None,
 ) -> PaginatedResponse[Union[schema.Document, schema.Folder]]:
+    from papermerge.core.features.nodes.db import visibility_api as vis_dbapi
+    from papermerge.core.features.nodes.visibility import can_view_node
+
     loader_opt = selectin_polymorphic(orm.Node, [Folder, orm.Document])
     subq = exists().where(orm.SharedNode.node_id == orm.Node.id)
     if filter:
@@ -136,35 +139,35 @@ async def get_paginated_nodes(
             .where(orm.Node.deleted_at.is_(None))
         )
 
-    stmt = (
-        query.offset((page_number - 1) * page_size)
-        .order_by(*str2colexpr(order_by))
-        .limit(page_size)
-        .options(loader_opt)
-    )
+    query = query.order_by(*str2colexpr(order_by)).options(loader_opt)
+    rows = (await db_session.execute(query)).all()
 
-    count_stmt = (
-        select(func.count())
-        .select_from(orm.Node)
-        .where(
-            orm.Node.parent_id == parent_id,
-            orm.Node.deleted_at.is_(None),
-        )
-    )
-
-    total_nodes = await db_session.scalar(count_stmt)
-    rows = (await db_session.execute(stmt)).all()
-
-    items = []
-    num_pages = math.ceil(total_nodes / page_size)
-
+    visible_rows = []
     for row in rows:
         node = row.Node
+        if await can_view_node(db_session, node_id=node.id, user_id=user_id):
+            visible_rows.append(row)
+
+    total_nodes = len(visible_rows)
+    num_pages = max(1, math.ceil(total_nodes / page_size)) if total_nodes else 0
+    start = (page_number - 1) * page_size
+    page_rows = visible_rows[start : start + page_size]
+
+    items = []
+    for row in page_rows:
+        node = row.Node
         node.is_shared = row.is_shared
+        vis_summary = await vis_dbapi.visibility_summary_for_node(
+            db_session, node.id
+        )
         if node.ctype == "folder":
-            items.append(schema.Folder.model_validate(node))
+            folder = schema.Folder.model_validate(node)
+            folder.visibility_summary = vis_summary
+            items.append(folder)
         else:
-            items.append(schema.DocumentNode.model_validate(node))
+            doc = schema.DocumentNode.model_validate(node)
+            doc.visibility_summary = vis_summary
+            items.append(doc)
 
     return PaginatedResponse[Union[schema.DocumentNode, schema.Folder]](
         page_size=page_size,

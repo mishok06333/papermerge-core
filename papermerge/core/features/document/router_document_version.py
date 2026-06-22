@@ -4,7 +4,7 @@ from typing import Annotated
 
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, HTTPException, Security, Depends, status, Request
+from fastapi import APIRouter, HTTPException, Security, Depends, status, Request, Query
 
 from papermerge.core import schema, utils, dbapi, orm
 from papermerge.core.features.auth import get_current_user
@@ -51,6 +51,7 @@ async def download_document_version(
         schema.User, Security(get_current_user, scopes=[scopes.DOCUMENT_DOWNLOAD])
     ],
     db_session: AsyncSession = Depends(get_db),
+    inline: bool = Query(False),
 ):
     """Downloads given document version
 
@@ -93,8 +94,8 @@ async def download_document_version(
     )
     return DocumentFileResponse(
         file_path,
-        filename=file_name,  # Will be in Content-Disposition header
-        content_disposition_type="attachment"
+        filename=file_name,
+        content_disposition_type="inline" if inline else "attachment",
     )
 
 @router.get(

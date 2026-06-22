@@ -26,6 +26,10 @@ def start_ocr(
 
     Required scope: `{scope}`
     """
+    if not settings.papermerge__ocr__enabled:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="OCR is disabled")
 
     tasks.send_task(
         constants.WORKER_OCR_DOCUMENT,

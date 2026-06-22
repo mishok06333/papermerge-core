@@ -54,9 +54,10 @@ class UpdateNode(BaseModel):
 class DocumentNode(BaseModel):
     """Minimalist part of the document returned as part of nodes list"""
 
-    ocr: bool = True  # will this document be OCRed?
+    ocr: bool = False
     ocr_status: OCRStatusEnum = OCRStatusEnum.unknown
     thumbnail_url: str
+    visibility_summary: str | None = None
 
 
 class Node(BaseModel):
@@ -144,6 +145,7 @@ class Folder(NewFolder):
     group_id: UUID | None = None
     perms: list[str] = []
     is_shared: bool = False
+    visibility_summary: str | None = None
 
     breadcrumb: List[Tuple[UUID, str]] = []
 
@@ -168,3 +170,29 @@ class Owner(BaseModel):
     name: str
     user_id: UUID | None = None
     group_id: UUID | None = None
+
+
+class NodeVisibilitySettings(BaseModel):
+    inherit: bool = True
+    access_level: str = "private"
+    role_ids: list[UUID] = []
+    effective_access_level: str = "private"
+    is_inherited: bool = True
+
+
+class UpdateNodeVisibility(BaseModel):
+    inherit: bool = False
+    access_level: Literal["private", "role_based", "public"] = "private"
+    role_ids: list[UUID] | None = None
+
+
+class LibraryCatalogRoot(BaseModel):
+    id: UUID
+    title: str
+
+
+class PublicDocumentMeta(BaseModel):
+    id: UUID
+    title: str
+    parent_id: UUID
+    breadcrumb: List[Tuple[UUID, str]] = []

@@ -201,7 +201,7 @@ class DocumentNode(BaseModel):
     parent_id: UUID | None
     document_type_id: UUID | None = None
     breadcrumb: list[tuple[UUID, str]] = Field(default_factory=list)
-    ocr: bool = True  # will this document be OCRed?
+    ocr: bool = False
     ocr_status: OCRStatusEnum = OCRStatusEnum.unknown
     thumbnail_url: ThumbnailUrl = None
     preview_status: str | None = None
@@ -210,6 +210,7 @@ class DocumentNode(BaseModel):
     owner_name: str | None = None
     perms: list[str] = Field(default_factory=list)
     is_shared: bool = False
+    visibility_summary: str | None = None
 
     @field_validator("thumbnail_url", mode="before")
     def thumbnail_url_validator(cls, value, info):
@@ -274,7 +275,7 @@ class NewDocument(BaseModel):
     # Will OCR be triggered immediately?
     # True: means, yes, trigger OCR after upload
     # False: means, skip OCR
-    ocr: bool = True
+    ocr: bool = False
     ocr_status: OCRStatusEnum = OCRStatusEnum.unknown
     size: int = 0
     page_count: int = 0

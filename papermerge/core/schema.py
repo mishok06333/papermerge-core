@@ -1,5 +1,6 @@
 from .features.nodes.schema import (
-    Folder, NewFolder, Node, UpdateNode, MoveNode, Owner
+    Folder, NewFolder, Node, UpdateNode, MoveNode, Owner,
+    NodeVisibilitySettings, UpdateNodeVisibility, LibraryCatalogRoot,
 )
 from .features.shared_nodes.schema import (
     CreateSharedNode,
@@ -50,6 +51,9 @@ __all__ = [
     'Owner',
     'UpdateNode',
     'MoveNode',
+    'NodeVisibilitySettings',
+    'UpdateNodeVisibility',
+    'LibraryCatalogRoot',
     'Document',
     'DocumentNode',
     'NewDocument',

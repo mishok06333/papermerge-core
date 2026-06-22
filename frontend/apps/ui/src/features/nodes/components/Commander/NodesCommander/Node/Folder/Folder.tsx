@@ -16,6 +16,7 @@ import {
 
 import DropNodesModal from "@/features/nodes/components/Commander/NodesCommander/DropNodesDialog"
 import Tags from "@/features/nodes/components/Commander/NodesCommander/Node/Tags"
+import NodeVisibilityIcon from "@/features/nodes/components/Commander/NodesCommander/Node/NodeVisibilityIcon"
 import type {NodeType, PanelMode} from "@/types"
 import classes from "./Folder.module.scss"
 
@@ -112,7 +113,10 @@ export default function Folder({
           <div className={classes.folderIcon}></div>
           {node.is_shared && <IconUsers className={classes.iconUsers} />}
           <Tags names={tagNames} node={node} />
-          <div className={classes.title}>{node.title}</div>
+          <div className={classes.title}>
+            {node.title}
+            <NodeVisibilityIcon summary={node.visibility_summary} />
+          </div>
         </a>
       </Stack>
       {draggedNodesSourceFolderID && (

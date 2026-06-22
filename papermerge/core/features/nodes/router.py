@@ -671,3 +671,65 @@ async def remove_node_tags(
     send_task(INDEX_ADD_NODE, kwargs={"node_id": str(node_id)}, route_name="i3")
 
     return node
+
+
+@router.get(
+    "/{node_id}/visibility",
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "description": f"No `{scopes.NODE_VIEW}` permission on the node",
+            "content": OPEN_API_GENERIC_JSON_DETAIL,
+        },
+    },
+)
+@utils.docstring_parameter(scope=scopes.NODE_VIEW)
+async def get_node_visibility(
+    node_id: UUID,
+    user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
+    db_session: AsyncSession = Depends(get_db),
+) -> schema.NodeVisibilitySettings:
+    """Get visibility settings for a node (explicit + effective)."""
+    from papermerge.core.features.nodes.db import visibility_api as vis_dbapi
+
+    await dbapi_common.require_node_perm(
+        db_session,
+        node_id=node_id,
+        codename=scopes.NODE_VIEW,
+        user_id=user.id,
+    )
+    return await vis_dbapi.get_node_visibility_settings(db_session, node_id)
+
+
+@router.put(
+    "/{node_id}/visibility",
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "description": f"No `{scopes.NODE_UPDATE}` permission on the node",
+            "content": OPEN_API_GENERIC_JSON_DETAIL,
+        },
+    },
+)
+@utils.docstring_parameter(scope=scopes.NODE_UPDATE)
+async def update_node_visibility(
+    node_id: UUID,
+    attrs: schema.UpdateNodeVisibility,
+    user: Annotated[
+        schema.User, Security(get_current_user, scopes=[scopes.NODE_UPDATE])
+    ],
+    db_session: AsyncSession = Depends(get_db),
+) -> schema.NodeVisibilitySettings:
+    """Set visibility for a node (or inherit from parent)."""
+    from papermerge.core.features.nodes.db import visibility_api as vis_dbapi
+
+    await dbapi_common.require_node_perm(
+        db_session,
+        node_id=node_id,
+        codename=scopes.NODE_UPDATE,
+        user_id=user.id,
+    )
+    try:
+        return await vis_dbapi.set_node_visibility_settings(
+            db_session, node_id, attrs
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))

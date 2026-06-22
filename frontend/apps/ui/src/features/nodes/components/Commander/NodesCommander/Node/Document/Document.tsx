@@ -13,6 +13,7 @@ import {
 
 import Thumbnail from "@/components/NodeThumbnail/Thumbnail"
 import Tags from "@/features/nodes/components/Commander/NodesCommander/Node/Tags"
+import NodeVisibilityIcon from "@/features/nodes/components/Commander/NodesCommander/Node/NodeVisibilityIcon"
 import type {NodeType, PanelMode} from "@/types"
 import classes from "./Document.module.scss"
 
@@ -82,7 +83,10 @@ export default function Document({
           serverThumbnailUrl={node.thumbnail_url}
         />
         <Tags names={tagNames} />
-        <div className={classes.title}>{node.title}</div>
+        <div className={classes.title}>
+          {node.title}
+          <NodeVisibilityIcon summary={node.visibility_summary} />
+        </div>
       </a>
     </Stack>
   )

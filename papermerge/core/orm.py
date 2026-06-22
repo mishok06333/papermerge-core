@@ -8,6 +8,8 @@ from .features.roles.db.orm import Role, Permission, roles_permissions_associati
 from .features.document_types.db.orm import DocumentType, DocumentTypeCustomField
 from .features.shared_nodes.db.orm import SharedNode
 from .features.portal.db.orm import PortalNews, PortalNewsAttachment, PortalSettings
+from .features.nodes.db.visibility_orm import NodeVisibility, NodeVisibilityRole
+from .features.library_ts.db.settings_orm import LibrarySettings
 
 __all__ = [
     'User',
@@ -31,4 +33,7 @@ __all__ = [
     'PortalNews',
     'PortalNewsAttachment',
     'PortalSettings',
+    'NodeVisibility',
+    'NodeVisibilityRole',
+    'LibrarySettings',
 ]

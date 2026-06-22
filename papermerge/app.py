@@ -14,6 +14,7 @@ from papermerge.core.features.roles.router import router as roles_router
 from papermerge.core.features.document_types.router import router as dt_router
 from papermerge.core.features.custom_fields.router import router as cf_router
 from papermerge.core.features.nodes.router import router as nodes_router
+from papermerge.core.features.nodes.router_public import router as public_nodes_router
 from papermerge.core.features.nodes.router_folders import \
     router as folders_router
 from papermerge.core.features.nodes.router_thumbnails import \
@@ -71,6 +72,7 @@ async def correlation_id_middleware(request: Request, call_next):
 
 
 app.include_router(nodes_router, prefix=prefix)
+app.include_router(public_nodes_router, prefix=prefix)
 app.include_router(portal_router, prefix=prefix)
 app.include_router(folders_router, prefix=prefix)
 app.include_router(thumbnails_router, prefix=prefix)

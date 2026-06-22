@@ -27,6 +27,11 @@ import {AccessForbidden, NotFound, UnprocessableContent} from "@/pages/errors"
 import {loader as documentLoader} from "@/pages/Document"
 
 import ErrorPage from "@/pages/Error.tsx"
+import GuestApp from "@/features/public/GuestApp"
+import PublicCatalogPage from "@/features/public/pages/PublicCatalogPage"
+import PublicDocumentPage from "@/features/public/pages/PublicDocumentPage"
+import PublicBrowseRedirect from "@/features/public/pages/PublicBrowseRedirect"
+import PostAuthRedirect from "@/features/auth/PostAuthRedirect"
 import {
   ERRORS_403_ACCESS_FORBIDDEN,
   ERRORS_404_RESOURCE_NOT_FOUND,
@@ -35,25 +40,45 @@ import {
 
 const router = createBrowserRouter([
   {
+    element: <GuestApp />,
+    children: [
+      {
+        path: "/",
+        element: <PublicBrowseRedirect />
+      },
+      {
+        path: "/browse",
+        element: <PublicBrowseRedirect />
+      },
+      {
+        path: "/browse/folder/:folderId",
+        element: <PublicCatalogPage />
+      },
+      {
+        path: "/browse/document/:documentId",
+        element: <PublicDocumentPage />
+      }
+    ]
+  },
+  {
     path: "/login",
-    element: <Navigate to="/" replace />
+    element: <PostAuthRedirect />
   },
   {
     path: "/login/",
-    element: <Navigate to="/" replace />
+    element: <PostAuthRedirect />
   },
   // Auth-server redirects here after login. Must be top-level: under RR7 a
   // child `path: "/home"` of `path: "/"` does not match URL "/home" (404).
   {
     path: "/home",
-    element: <Navigate to="/library/favorites" replace />
+    element: <PostAuthRedirect />
   },
   {
     path: "/home/:folderId",
-    element: <Navigate to="/library/favorites" replace />
+    element: <PostAuthRedirect />
   },
   {
-    path: "/",
     element: <App />,
     errorElement: <ErrorPage />,
     children: [

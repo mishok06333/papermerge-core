@@ -34,6 +34,7 @@ from papermerge.core.features.document import (
 )
 from papermerge.core.features.nodes import \
     router_thumbnails as thumbnails_router
+from papermerge.core.features.nodes import router_public as public_nodes_router
 from papermerge.core.features.custom_fields.schema import CustomFieldType
 from papermerge.core.features.document_types import \
     router as document_types_router
@@ -295,6 +296,7 @@ def get_app_with_routes():
     app.include_router(roles_router.router, prefix="")
     app.include_router(cf_router.router, prefix="")
     app.include_router(nodes_router.router, prefix="")
+    app.include_router(public_nodes_router.router, prefix="")
     app.include_router(shared_nodes_router, prefix="")
     app.include_router(folders_router.router, prefix="")
     app.include_router(docs_router.router, prefix="")

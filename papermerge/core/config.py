@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     papermerge__main__cache_enabled: bool = False
     papermerge__database__url: str = "sqlite:////db/db.sqlite3"
     papermerge__redis__url: str | None = None
+    papermerge__ocr__enabled: bool = Field(
+        default=False,
+        description="When false, OCR is disabled: no scheduling, no UI config, no worker.",
+    )
     papermerge__ocr__default_lang_code: str = 'rus'
     papermerge__ocr__lang_codes: str = Field(
         default="deu,eng,rus",
@@ -66,9 +70,15 @@ class Settings(BaseSettings):
     # are treated as authenticated as `papermerge__dev__auth_bypass_username`.
     papermerge__dev__auth_bypass_enabled: bool = False
     papermerge__dev__auth_bypass_username: str = "admin"
+    papermerge__library__catalog_root_node_id: str | None = Field(
+        default=None,
+        description="Optional UUID of the library catalog root folder for public browsing.",
+    )
 
     @model_validator(mode="after")
     def default_lang_in_lang_codes(self) -> "Settings":
+        if not self.papermerge__ocr__enabled:
+            return self
         codes = {
             c.strip()
             for c in self.papermerge__ocr__lang_codes.split(",")

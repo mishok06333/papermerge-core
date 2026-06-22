@@ -156,6 +156,7 @@ export type NodeType = NType & {
   breadcrumb: Array<[string, string]>
   document_type_id?: string
   is_shared: boolean
+  visibility_summary?: string | null
   // node is top most level shared node
   // i.e. for current user it looks like root
   // this flag is used to determine the root of breadcrumb of the browsed shared nodes

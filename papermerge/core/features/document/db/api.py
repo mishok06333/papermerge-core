@@ -813,6 +813,8 @@ async def should_schedule_ocr(
     pdf_ver: orm.DocumentVersion | None,
     blob_ver: orm.DocumentVersion | None,
 ) -> bool:
+    if not settings.papermerge__ocr__enabled:
+        return False
     if doc.ocr is not True:
         return False
     if blob_ver is not None:

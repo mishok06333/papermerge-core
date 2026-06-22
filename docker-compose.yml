@@ -48,10 +48,7 @@ services:
       PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER:-papermerge}:${POSTGRES_PASSWORD:-papermerge}@db:5432/${POSTGRES_DB:-papermerge}
       PAPERMERGE__MAIN__MEDIA_ROOT: /var/media/pmg
       PAPERMERGE__REDIS__URL: redis://redis:6379/0
-      PAPERMERGE__OCR__LANG_CODES: ${OCR_LANGS:-deu,eng,rus}
-      PAPERMERGE__OCR__DEFAULT_LANG_CODE: ${OCR_DEFAULT_LANG:-rus}
-      PAPERMERGE__OCR__MULTI_LANG_CODES: ${OCR_MULTI_LANGS:-eng+rus}
-      PAPERMERGE__OCR__AUTOMATIC: ${OCR_AUTOMATIC:-false}
+      PAPERMERGE__OCR__ENABLED: "false"
       PAPERMERGE__MAIN__APP_TITLE: ${APP_TITLE:-Хабаровский центр социальной поддержки населения}
       PAPERMERGE__AUTH__BRAND_TITLE: ${AUTH_BRAND_TITLE:-${APP_TITLE:-Хабаровский центр социальной поддержки населения}}
       PAPERMERGE__AUTH__LOGIN_SUBTITLE: ${AUTH_LOGIN_SUBTITLE:-Электронная библиотека}
@@ -99,26 +96,6 @@ services:
       redis:
         condition: service_healthy
       solr:
-        condition: service_healthy
-
-  ocr_worker:
-    build:
-      context: .
-      dockerfile: docker/ocrworker/Dockerfile
-    command: worker
-    restart: unless-stopped
-    environment:
-      PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER:-papermerge}:${POSTGRES_PASSWORD:-papermerge}@db:5432/${POSTGRES_DB:-papermerge}
-      PAPERMERGE__REDIS__URL: redis://redis:6379/0
-      PAPERMERGE__MAIN__MEDIA_ROOT: /var/media/pmg
-      PAPERMERGE__OCR__MULTI_LANG_CODES: ${OCR_MULTI_LANGS:-eng+rus}
-      OCR_WORKER_ARGS: -Q ocr -c ${OCR_WORKER_CONCURRENCY:-2}
-    volumes:
-      - ./media:/var/media/pmg
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
 
 volumes:

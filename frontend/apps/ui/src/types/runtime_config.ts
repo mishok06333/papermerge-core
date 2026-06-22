@@ -1,13 +1,7 @@
-import {OCRCode} from "@/types"
-
-export type RuntimeConfig = {
-  ocr__lang_codes: string
-  ocr__default_lang_code: OCRCode
-  ocr__automatic: boolean
-}
+export type RuntimeConfig = Record<string, unknown>
 
 declare global {
   interface Window {
-    __PAPERMERGE_RUNTIME_CONFIG__: RuntimeConfig
+    __PAPERMERGE_RUNTIME_CONFIG__?: RuntimeConfig
   }
 }

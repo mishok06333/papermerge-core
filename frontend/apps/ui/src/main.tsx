@@ -14,10 +14,17 @@ import "@mantine/notifications/styles.css"
 import theme from "@/themes"
 import {initializeI18n} from "./initializeI18n"
 import router from "./router"
+import {isGuestRoute} from "./features/public/guestMode"
+import {hasAuthCookie} from "./features/public/guestMode"
+import "@/features/public/publicApiSlice"
 
 async function start_app() {
   store.dispatch(cookieLoaded())
-  store.dispatch(fetchCurrentUser())
+  const guestMode =
+    isGuestRoute(window.location.pathname) && !hasAuthCookie()
+  if (!guestMode || hasAuthCookie()) {
+    store.dispatch(fetchCurrentUser())
+  }
 
   await initializeI18n()
 

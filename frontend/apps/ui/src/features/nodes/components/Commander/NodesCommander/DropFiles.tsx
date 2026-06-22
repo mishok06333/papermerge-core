@@ -21,7 +21,6 @@ import type {UploadFileOutput} from "@/features/nodes/types"
 import {
   buildFileNameWithOriginalExtension,
   isAcceptableUploadStem,
-  isOcrCandidateFile,
   splitStemAndExtension
 } from "@/features/document/documentPreview"
 import type {FolderType} from "@/types"
@@ -64,14 +63,6 @@ export const DropFilesModal = ({
   const [fileStems, setFileStems] = useState<string[]>([])
   const filesArray = [...source_files]
   const target_title = target.title
-  const showOcrOption = filesArray.some((f, i) =>
-    isOcrCandidateFile(
-      buildFileNameWithOriginalExtension(
-        f.name,
-        fileStems[i] ?? splitStemAndExtension(f.name).stem
-      )
-    )
-  )
 
   useEffect(() => {
     if (opened) {
@@ -103,7 +94,7 @@ export const DropFilesModal = ({
         uploadFile({
           file,
           refreshTarget: true,
-          ocr: isOcrCandidateFile(file.name),
+          ocr: false,
           target
         })
       )
@@ -170,11 +161,6 @@ export const DropFilesModal = ({
             )
           })}
         </Stack>
-        {showOcrOption ? (
-          <Text size="sm" c="dimmed" mb="md">
-            OCR будет запущен автоматически после загрузки.
-          </Text>
-        ) : null}
         {error && <Error message={error} />}
         <Group gap="lg" justify="space-between">
           <Button variant="default" onClick={localCancel}>

@@ -13,9 +13,7 @@ import LibraryFavoriteToggle from "@/features/library/components/LibraryFavorite
 import DownloadButton from "@/features/document/components/DownloadButton"
 import RotateButton from "@/features/document/components/RotateButton"
 import RotateCCButton from "@/features/document/components/RotateCCButton"
-import ViewOCRTextButton from "@/features/document/components/ViewOCRTextButton"
 import {VIEWER_FILE_EDITING_ENABLED} from "@/features/document/constants"
-import {isBuiltinTextDocument} from "@/features/document/documentPreview"
 import {
   useCurrentDoc,
   useCurrentDocVer,
@@ -63,7 +61,6 @@ export default function ActionButtons({
           <EditTitleButton onClick={onEditNodeTitleClicked} />
         )}
         {doc?.id ? <LibraryFavoriteToggle nodeId={doc.id} /> : null}
-        {!isBuiltinTextDocument(docVer?.file_name) && <ViewOCRTextButton />}
         <DownloadButton />
         {VIEWER_FILE_EDITING_ENABLED && selectedPages.length > 0 && (
           <RotateButton onClick={onRotateCWClicked} />

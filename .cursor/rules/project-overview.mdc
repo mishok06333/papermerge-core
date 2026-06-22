@@ -12,7 +12,7 @@ module contracts, and recurring footguns.
 ## Deployment shape (single, canonical)
 
 - **One** compose file: [docker-compose.yml](mdc:docker-compose.yml).
-  Services: `db` (Postgres 16), `redis`, `app`, `ocr_worker`.
+  Services: `db` (Postgres 16), `redis`, `app`, `solr`, `index_worker`.
 - **One** env file: [.env.dev](mdc:.env.dev) is the committed reference;
   developers `cp .env.dev .env` before `docker compose up`. `.env` is
   git-ignored. Everything else (standalone dev compose, native-auth
@@ -21,13 +21,9 @@ module contracts, and recurring footguns.
   one container runs nginx + core API (FastAPI) + auth-server under
   supervisord. The frontend is built inside that Dockerfile (node 20.19
   stage) and served as static assets by the same nginx.
-- **OCR worker** is a separate container built from
-  [docker/ocrworker/Dockerfile](mdc:docker/ocrworker/Dockerfile). It extends the
-  upstream `papermerge/ocrworker:0.3.1` image and adds extra tesseract
-  language packs. Talks to the same Postgres and Redis.
-- Persisted storage: named volumes `pgdata`, `redisdata` plus a bind mount
-  `./media -> /var/media/pmg` shared by `app` and `ocr_worker` (so native
-  backend on the host and containers see the same document files/previews).
+- Persisted storage: named volumes `pgdata`, `redisdata`, `solrdata` plus a bind mount
+  `./media -> /var/media/pmg` shared by `app` (native backend on the host
+  uses the same path for document files/previews).
 - `db` and `redis` publish localhost-only ports (`127.0.0.1:5432`,
   `127.0.0.1:6379`) for native backend development without exposing them
   on external interfaces.
@@ -180,12 +176,9 @@ the uniform `orm.Foo` path.
   The auth-server's `papermerge-runtime-config.js` is now emitted inline by
   a shell heredoc in `docker/app/entrypoint.sh::render_runtime_configs`
   (defaults mirror the old `roco` behaviour, e.g. `login_provider: "db"`).
-  The UI's runtime config is still rendered by `env2js` from
-  `docker/app/core.js.tmpl` — note that the shipped `env2js` binary only
-  substitutes a hardcoded whitelist (`PAPERMERGE__OCR__LANG_CODES`,
-  `PAPERMERGE__OCR__DEFAULT_LANG_CODE`, `PAPERMERGE__OCR__AUTOMATIC`),
-  so any new UI config vars must either be added to a different renderer
-  or to the inline heredoc path. The script-tag injection into each SPA's
+  The UI's runtime config is rendered by `env2js` from
+  `docker/app/core.js.tmpl` (currently an empty object `{}`; OCR is disabled).
+  The script-tag injection into each SPA's
   `index.html` matches on `</title>` (NOT on the literal word
   "Papermerge") so that branded/customised titles still work.
 - **`PAPERMERGE__AUTH__PASSWORD` / `USERNAME` / `EMAIL`** are the env

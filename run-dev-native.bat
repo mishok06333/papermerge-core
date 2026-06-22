@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 
 REM Run native backend+frontend for development, while using
-REM already-running container services (Postgres/Redis/OCR worker).
+REM already-running container services (Postgres/Redis/Solr/index worker).
 
 set "ROOT_DIR=%~dp0"
 cd /d "%ROOT_DIR%"
@@ -16,7 +16,6 @@ REM Container services are expected on localhost.
 set "PAPERMERGE__DATABASE__URL=postgresql://papermerge:papermerge@127.0.0.1:5432/papermerge"
 set "PAPERMERGE__REDIS__URL=redis://127.0.0.1:6379/0"
 set "PAPERMERGE__MAIN__MEDIA_ROOT=%ROOT_DIR%media"
-set "PAPERMERGE__OCR__MULTI_LANG_CODES=eng+rus"
 
 REM Full-text search (Solr in docker-compose, exposed on localhost).
 set "PAPERMERGE__SEARCH__URL=solr://127.0.0.1:8983/papermerge"
@@ -34,7 +33,7 @@ set "VITE_BASE_URL=http://127.0.0.1:%DEV_BE_PORT%"
 set "VITE_WS_URL=ws://127.0.0.1:%DEV_BE_PORT%/ws"
 
 echo Starting backend on http://127.0.0.1:%DEV_BE_PORT%
-start "papermerge-be-dev" cmd /k "cd /d ""%ROOT_DIR%"" && set ""PAPERMERGE__DATABASE__URL=%PAPERMERGE__DATABASE__URL%"" && set ""PAPERMERGE__REDIS__URL=%PAPERMERGE__REDIS__URL%"" && set ""PAPERMERGE__MAIN__MEDIA_ROOT=%PAPERMERGE__MAIN__MEDIA_ROOT%"" && set ""PAPERMERGE__OCR__MULTI_LANG_CODES=%PAPERMERGE__OCR__MULTI_LANG_CODES%"" && set ""PAPERMERGE__MAIN__API_PREFIX=%PAPERMERGE__MAIN__API_PREFIX%"" && set ""PAPERMERGE__MAIN__CORS_ORIGINS=%PAPERMERGE__MAIN__CORS_ORIGINS%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_ENABLED=%PAPERMERGE__DEV__AUTH_BYPASS_ENABLED%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_USERNAME=%PAPERMERGE__DEV__AUTH_BYPASS_USERNAME%"" && set ""PAPERMERGE__SEARCH__URL=%PAPERMERGE__SEARCH__URL%"" && poetry env use 3.13 && poetry install -E pg && poetry run task migrate && poetry run paper-cli index-schema apply && poetry run task server --host 127.0.0.1 --port %DEV_BE_PORT%"
+start "papermerge-be-dev" cmd /k "cd /d ""%ROOT_DIR%"" && set ""PAPERMERGE__DATABASE__URL=%PAPERMERGE__DATABASE__URL%"" && set ""PAPERMERGE__REDIS__URL=%PAPERMERGE__REDIS__URL%"" && set ""PAPERMERGE__MAIN__MEDIA_ROOT=%PAPERMERGE__MAIN__MEDIA_ROOT%"" && set ""PAPERMERGE__MAIN__API_PREFIX=%PAPERMERGE__MAIN__API_PREFIX%"" && set ""PAPERMERGE__MAIN__CORS_ORIGINS=%PAPERMERGE__MAIN__CORS_ORIGINS%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_ENABLED=%PAPERMERGE__DEV__AUTH_BYPASS_ENABLED%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_USERNAME=%PAPERMERGE__DEV__AUTH_BYPASS_USERNAME%"" && set ""PAPERMERGE__SEARCH__URL=%PAPERMERGE__SEARCH__URL%"" && set ""PAPERMERGE__OCR__ENABLED=false"" && poetry env use 3.13 && poetry install -E pg && poetry run task migrate && poetry run paper-cli index-schema apply && poetry run task server --host 127.0.0.1 --port %DEV_BE_PORT%"
 
 echo Starting frontend on http://127.0.0.1:%DEV_FE_PORT%
 start "papermerge-fe-dev" cmd /k "cd /d ""%ROOT_DIR%frontend"" && set ""VITE_BASE_URL=%VITE_BASE_URL%"" && set ""VITE_WS_URL=%VITE_WS_URL%"" && yarn workspace ui dev --host 127.0.0.1 --port %DEV_FE_PORT%"
@@ -48,7 +47,7 @@ echo Solr:         http://127.0.0.1:8983/solr/#/papermerge
 echo.
 echo Start container deps first:
 echo   copy .env.dev .env
-echo   docker compose up -d db redis solr ocr_worker index_worker
+echo   docker compose up -d db redis solr index_worker
 echo   docker compose exec index_worker poetry run paper-cli index index
 echo.
 echo Auth bypass is ON for this run only.

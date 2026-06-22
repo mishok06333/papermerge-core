@@ -222,9 +222,41 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
           {type: "Node", id: arg.sourceFolderID}
         ]
       }
+    }),
+    getNodeVisibility: builder.query<NodeVisibilitySettings, string>({
+      query: nodeID => `/nodes/${nodeID}/visibility`,
+      providesTags: (_result, _error, id) => [{type: "Node", id}]
+    }),
+    updateNodeVisibility: builder.mutation<
+      NodeVisibilitySettings,
+      {nodeID: string; body: UpdateNodeVisibility}
+    >({
+      query: ({nodeID, body}) => ({
+        url: `/nodes/${nodeID}/visibility`,
+        method: "PUT",
+        body
+      }),
+      invalidatesTags: (_result, _error, arg) => [
+        {type: "Node", id: arg.nodeID},
+        "Node"
+      ]
     })
   })
 })
+
+export type NodeVisibilitySettings = {
+  inherit: boolean
+  access_level: "private" | "role_based" | "public"
+  role_ids: string[]
+  effective_access_level: string
+  is_inherited: boolean
+}
+
+export type UpdateNodeVisibility = {
+  inherit: boolean
+  access_level?: "private" | "role_based" | "public"
+  role_ids?: string[]
+}
 
 export const {
   useGetPaginatedNodesQuery,
@@ -235,5 +267,7 @@ export const {
   useUpdateNodeTagsMutation,
   useGetNodeTagsQuery,
   useDeleteNodesMutation,
-  useMoveNodesMutation
+  useMoveNodesMutation,
+  useGetNodeVisibilityQuery,
+  useUpdateNodeVisibilityMutation
 } = apiSliceWithNodes

@@ -56,6 +56,11 @@ exec_portal_bootstrap() {
     _run_core paper-cli portal init || echo "[init] portal init failed (see logs)"
 }
 
+exec_library_catalog_bootstrap() {
+    echo "[init] Ensuring library catalog root for public browsing..."
+    _run_core paper-cli library init-catalog || echo "[init] library init-catalog failed (see logs)"
+}
+
 exec_index_schema_apply() {
     if [ -n "${PAPERMERGE__SEARCH__URL:-}" ]; then
         echo "[init] Applying search index schema (PAPERMERGE__SEARCH__URL set)..."
@@ -70,6 +75,7 @@ exec_init() {
     exec_seed_roles
     exec_assign_admin_role
     exec_portal_bootstrap
+    exec_library_catalog_bootstrap
     exec_index_schema_apply
 }
 
@@ -99,8 +105,7 @@ window.__PAPERMERGE_RUNTIME_CONFIG__ = {
 };
 EOF
 
-    # Core UI runtime config (PAPERMERGE__OCR__*). env2js is a Papermerge-
-    # specific renderer that knows how to substitute OCR vars in this template.
+    # Core UI runtime config (optional; empty object when OCR and other knobs are off).
     /bin/env2js -f /etc/papermerge/core.js.tmpl \
         > /usr/share/nginx/html/ui/papermerge-runtime-config.js
 

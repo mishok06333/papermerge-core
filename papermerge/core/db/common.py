@@ -190,32 +190,38 @@ async def has_node_perm(
     # groups user belongs to
     user_group_ids = select(ug.c.group_id).where(ug.c.user_id == user_id)
 
-    # Fast path: direct ownership/group access on the node itself.
-    node_access_stmt = exists(
-        select(orm.Node.id).where(
-            (orm.Node.id == node_id)
-            & ((orm.Node.user_id == user_id) | (orm.Node.group_id.in_(user_group_ids)))
-            & (orm.Node.deleted_at.is_(None))
-        )
-    ).select()
-    has_direct_access = (await db_session.execute(node_access_stmt)).scalar_one()
-    if has_direct_access:
-        return True
-
     from papermerge.core.features.auth import scopes as auth_scopes
     from papermerge.core.features.portal.db import api as portal_dbapi
+
+    # Fast path: direct ownership/group access (except node.view — visibility applies).
+    if codename != auth_scopes.NODE_VIEW:
+        node_access_stmt = exists(
+            select(orm.Node.id).where(
+                (orm.Node.id == node_id)
+                & ((orm.Node.user_id == user_id) | (orm.Node.group_id.in_(user_group_ids)))
+                & (orm.Node.deleted_at.is_(None))
+            )
+        ).select()
+        has_direct_access = (await db_session.execute(node_access_stmt)).scalar_one()
+        if has_direct_access:
+            return True
+    else:
+        personal_access_stmt = exists(
+            select(orm.Node.id).where(
+                (orm.Node.id == node_id)
+                & (orm.Node.user_id == user_id)
+                & (orm.Node.deleted_at.is_(None))
+            )
+        ).select()
+        if (await db_session.execute(personal_access_stmt)).scalar_one():
+            return True
 
     root_id = await portal_dbapi.get_portal_root_id(db_session)
     if root_id is not None and await portal_dbapi.is_node_under_portal_root(
         db_session, node_id, root_id
     ):
         # Group-owned portal tree: infer library access from portal.* on account roles.
-        if codename == auth_scopes.NODE_VIEW:
-            if await _user_has_any_portal_perm_via_account_roles(
-                db_session, user_id, auth_scopes.PORTAL_VIEW
-            ):
-                return True
-        elif codename == auth_scopes.NODE_CREATE:
+        if codename == auth_scopes.NODE_CREATE:
             if await _user_has_any_portal_perm_via_account_roles(
                 db_session,
                 user_id,
@@ -295,7 +301,16 @@ async def has_node_perm(
 
     has_access = (await db_session.execute(stmt)).scalar_one()
 
-    return has_access
+    if has_access:
+        return True
+
+    from papermerge.core.features.auth import scopes as auth_scopes
+    from papermerge.core.features.nodes.visibility import can_view_node
+
+    if codename == auth_scopes.NODE_VIEW:
+        return await can_view_node(db_session, node_id=node_id, user_id=user_id)
+
+    return False
 
 
 async def get_node_owner(db_session: AsyncSession, node_id: UUID) -> nodes_schema.Owner:

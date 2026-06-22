@@ -46,8 +46,9 @@ const NotificationsMenu: React.FC = () => {
   const [markRead] = useMarkLibraryNotificationReadMutation()
   const [markingId, setMarkingId] = React.useState<string | null>(null)
 
-  const unreadCount = data?.filter(n => !n.read_at).length ?? 0
-  const rows = data ?? []
+  const unreadCount =
+    data?.filter(n => !n.read_at && n.kind !== "ocr_completed").length ?? 0
+  const rows = (data ?? []).filter(n => n.kind !== "ocr_completed")
 
   React.useEffect(() => {
     if (!hasScope) {
@@ -90,12 +91,11 @@ const NotificationsMenu: React.FC = () => {
 
   const formatNotification = (kind: string, payload: string | null) => {
     const parsed = parsePayload(payload)
-    if (kind === "ocr_completed" && parsed) {
-      const docTitle = parsed.title || "документ"
+    if (kind === "ocr_completed") {
       return {
-        title: "OCR завершен",
-        message: `Документ "${docTitle}" успешно распознан и готов к работе.`,
-        documentId: parsed.document_id
+        title: kind,
+        message: payload || "",
+        documentId: parsed?.document_id
       }
     }
 

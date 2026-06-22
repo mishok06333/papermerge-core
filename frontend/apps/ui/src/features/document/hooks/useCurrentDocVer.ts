@@ -41,9 +41,6 @@ export default function useCurrentDocVer(): ReturnState {
   const docVerFromSlice = useAppSelector(s =>
     selectDocVerByID(s, latestDocVerID)
   )
-  const hasAnyOcrTextInSlice = Boolean(
-    docVerFromSlice?.pages?.some(p => (p.text || "").trim().length > 0)
-  )
   const {
     // should be `currentData` here not `data`, otherwise there will
     // be a flicker previous document when user opens viewer
@@ -53,10 +50,7 @@ export default function useCurrentDocVer(): ReturnState {
     isError,
     error
   } = useGetDocLastVersionQuery(currentDocumentID ?? skipToken, {
-    // Ensure newly opened documents always re-check latest version and
-    // keep polling while OCR text is still unavailable.
-    refetchOnMountOrArgChange: true,
-    pollingInterval: hasAnyOcrTextInSlice ? 0 : 4000
+    refetchOnMountOrArgChange: true
   })
 
   useEffect(() => {

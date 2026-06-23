@@ -165,9 +165,16 @@ export function isPdfStyleViewer(fileName: string | null | undefined): boolean {
   return getBlobViewerCategory(fileName) === "pdf-pages"
 }
 
-export type ViewerChromeKind = "pdf" | "docx" | "blob"
+export type ViewerChromeKind = "native-pdf" | "docx" | "blob"
 
-/** Which main viewer shell to use (thumbnails + page strip vs simple blob pane). */
+/** Browser-native PDF preview (iframe) vs custom viewers for other formats. */
+export function usesNativePdfPreview(
+  fileName: string | null | undefined
+): boolean {
+  return getViewerChromeKind(fileName) === "native-pdf"
+}
+
+/** Which main viewer shell to use (native PDF iframe vs docx vs blob pane). */
 export function getViewerChromeKind(
   fileName: string | null | undefined
 ): ViewerChromeKind {
@@ -176,7 +183,7 @@ export function getViewerChromeKind(
     if (isImageWrappedPdf(fileName)) {
       return "blob"
     }
-    return "pdf"
+    return "native-pdf"
   }
   if (cat === "docx") {
     return "docx"

@@ -15,7 +15,6 @@ import {useRef} from "react"
 
 import DocumentDetails from "@/components/document/DocumentDetails/DocumentDetails"
 import DocumentDetailsToggle from "@/components/document/DocumentDetailsToggle"
-import ThumbnailsToggle from "@/components/document/ThumbnailsToggle"
 import classes from "@/components/document/Viewer.module.css"
 import {applyPageChangesThunk} from "@/features/document/actions/applyPageOpChanges"
 import ActionButtons from "@/features/document/components/ActionButtons"
@@ -29,15 +28,15 @@ import {
 import {
   currentDocVerUpdated,
   currentNodeChanged,
-  selectContentHeight,
-  selectThumbnailsPanelOpen
+  selectContentHeight
 } from "@/features/ui/uiSlice"
 import type {NType, PanelMode} from "@/types"
-import {getViewerChromeKind} from "@/features/document/documentPreview"
+import {getViewerChromeKind, usesNativePdfPreview} from "@/features/document/documentPreview"
 import DocxPageColumn from "@/features/document/components/DocxViewer/DocxPageColumn"
 import {DocxScrollProvider} from "@/features/document/components/DocxViewer/DocxScrollContext"
 import {DOC_VER_PAGINATION_PAGE_BATCH_SIZE} from "../constants"
 import BlobDocumentViewer from "./BlobDocumentViewer/BlobDocumentViewer"
+import NativePdfViewer from "./NativePdfViewer/NativePdfViewer"
 import ContextMenu from "./ContextMenu"
 
 import {useSelectedPages} from "@/features/document/hooks"
@@ -45,8 +44,6 @@ import useContextMenu from "@/features/document/hooks/useContextMenu"
 import {viewerSelectionCleared} from "@/features/ui/uiSlice"
 import DeleteEntireDocumentConfirm from "./DeleteEntireDocumentConfirm"
 import PagesHaveChangedDialog from "./PageHaveChangedDialog"
-import PageList from "./PageList"
-import ThumbnailList from "./ThumbnailList"
 import {isPortalDocumentNavState} from "@/features/portal/portalNavState"
 import {useTranslation} from "react-i18next"
 
@@ -61,13 +58,12 @@ export default function Viewer() {
   const location = useLocation()
   const dispatch = useAppDispatch()
   const height = useAppSelector(s => selectContentHeight(s, mode))
-  /* Ensure the PDF buffer is always present in fileManager so
-   * `SelectablePdfPage` can render a text layer even when page previews are
-   * already cached in Redux from a previous visit. */
-  useEnsureDocVerBuffer(docVer)
-  /* generate first batch of previews: for pages and for their thumbnails */
+  const chrome = docVer ? getViewerChromeKind(docVer.file_name) : undefined
+  const customPreview = Boolean(docVer && !usesNativePdfPreview(docVer.file_name))
+  /* Buffer + raster previews only for custom viewers (docx/blob), not native PDF iframe. */
+  useEnsureDocVerBuffer(customPreview ? docVer : undefined)
   const previewState = useGeneratePreviews({
-    docVer: docVer,
+    docVer: customPreview ? docVer : undefined,
     pageNumber: 1,
     pageSize: DOC_VER_PAGINATION_PAGE_BATCH_SIZE,
     imageSize: "md"
@@ -91,9 +87,6 @@ export default function Viewer() {
     }
   ] = useDisclosure(false)
 
-  const thumbnailsIsOpen = useAppSelector(s =>
-    selectThumbnailsPanelOpen(s, mode)
-  )
   const pages = useAppSelector(s => selectAllPages(s, docVer?.id)) || []
 
   const onClick = (node: NType) => {
@@ -108,12 +101,6 @@ export default function Viewer() {
       } else {
         navigate(`/folder/${node.id}`)
       }
-    }
-  }
-
-  const onContextMenuChange = (cmOpened: boolean) => {
-    if (!cmOpened) {
-      close()
     }
   }
 
@@ -199,21 +186,15 @@ export default function Viewer() {
   }
 
   /**
-   * Preview chrome switches on `docVer.file_name` (see `getViewerChromeKind` / `documentPreview.ts`).
-   * Only one branch mounts at a time; changing chrome unmounts the previous subtree. The `Viewer`
-   * shell (this component), `DocumentDetails`, dialogs, and Redux/fileManager/pdf.js caches are
-   * outside those subtrees and persist.
+   * Preview chrome switches on `docVer.file_name` (see `getViewerChromeKind`).
    *
-   * - pdf: `ThumbnailList`? + `PageList` → `PagesListContainer` → per-page `Page` (`PageContainer`):
-   *   `.pdf` → `SelectablePdfPage` (internal loading / canvas+text / raster `<img>` without unmounting);
-   *   other `pdf-pages` extensions → viewer `Page` (raster); `PageContainer`’s `BlobMediaPage` branch
-   *   is defensive (normally unreachable while chrome is `pdf`).
-   * - docx: `DocxScrollProvider` → `DocxPageColumn` (`DocxPreviewCore`), not `PageContainer`.
-   * - blob: `BlobDocumentViewer` → `BlobMediaPage` (`layout="standalone"`).
-   *
-   * Viewer mounts immediately and keeps loading previews in the background.
+   * - native-pdf: browser iframe PDF viewer (`NativePdfViewer`).
+   * - docx: `DocxScrollProvider` → `DocxPageColumn`.
+   * - blob: `BlobDocumentViewer` → `BlobMediaPage` (video/audio/text/image/…).
    */
-  const chrome = getViewerChromeKind(docVer.file_name)
+  if (!chrome) {
+    return <Loader />
+  }
 
   return (
     <div ref={ref}>
@@ -228,9 +209,7 @@ export default function Viewer() {
         <DocumentDetailsToggle />
       </Group>
       <Flex className={classes.inner} style={{height: `${height}px`}}>
-        {chrome === "pdf" && thumbnailsIsOpen && <ThumbnailList />}
-        {chrome === "pdf" && <ThumbnailsToggle />}
-        {chrome === "pdf" && <PageList />}
+        {chrome === "native-pdf" && <NativePdfViewer />}
         {chrome === "docx" && (
           <DocxScrollProvider>
             <DocxPageColumn />
@@ -243,20 +222,22 @@ export default function Viewer() {
           docID={doc?.id}
           isLoading={false}
         />
-        <PagesHaveChangedDialog docID={doc.id} />
-        <ContextMenu
-          opened={opened}
-          position={position}
-          onEditNodeTitleItemClicked={onEditNodeTitleItem}
-          onRotateCCItemClicked={onRotateCCItemClicked}
-          onRotateCWItemClicked={onRotateCWItemClicked}
-          onResetChangesItemClicked={onResetChangesItemClicked}
-          onSaveChangesItemClicked={onSaveChangesItemClicked}
-          onDeletePagesItemClicked={onDeletePagesItemClicked}
-          onDeleteDocumentItemClicked={onDeleteDocumentItemClicked}
-        />
+        {customPreview && <PagesHaveChangedDialog docID={doc.id} />}
+        {customPreview && (
+          <ContextMenu
+            opened={opened}
+            position={position}
+            onEditNodeTitleItemClicked={onEditNodeTitleItem}
+            onRotateCCItemClicked={onRotateCCItemClicked}
+            onRotateCWItemClicked={onRotateCWItemClicked}
+            onResetChangesItemClicked={onResetChangesItemClicked}
+            onSaveChangesItemClicked={onSaveChangesItemClicked}
+            onDeletePagesItemClicked={onDeletePagesItemClicked}
+            onDeleteDocumentItemClicked={onDeleteDocumentItemClicked}
+          />
+        )}
       </Flex>
-      {previewState.error && (
+      {customPreview && previewState.error && (
         <Alert
           color="red"
           title={t("viewer.preview_load_failed")}
@@ -271,11 +252,13 @@ export default function Viewer() {
           </Group>
         </Alert>
       )}
-      {previewState.isBootstrapping && !previewState.allPreviewsAreAvailable && (
-        <Group mt="xs">
-          <Loader size="sm" />
-        </Group>
-      )}
+      {customPreview &&
+        previewState.isBootstrapping &&
+        !previewState.allPreviewsAreAvailable && (
+          <Group mt="xs">
+            <Loader size="sm" />
+          </Group>
+        )}
       <EditNodeTitleModal
         opened={openedEditNodeTitleModal}
         node={{id: doc?.id!, title: doc?.title!}}

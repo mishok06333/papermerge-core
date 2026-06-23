@@ -30,7 +30,7 @@ from papermerge.core.utils.misc import str2date, str2float, float2str
 from papermerge.core.pathlib import (
     abs_docver_path,
 )
-from papermerge.core.features.document.schema import DocumentCFVRow
+from papermerge.core.features.document.upload_text import extract_upload_text
 from papermerge.core.features.document.ordered_document_cfv import \
     OrderedDocumentCFV
 from papermerge.core import config
@@ -732,6 +732,7 @@ async def upload(
             db_session.add_all([db_page_orig, db_page_pdf])
 
     else:
+        raw_content = content.getvalue() if isinstance(content, io.BytesIO) else content
         blob_ver = await create_next_version(
             db_session,
             doc=doc,
@@ -741,14 +742,22 @@ async def upload(
         )
         await copy_file(src=content, dst=abs_docver_path(blob_ver.id, blob_ver.file_name))
         blob_ver.page_count = 1
+        extracted_text = extract_upload_text(
+            content=raw_content,
+            file_name=safe_file_name,
+            content_type=ct,
+        )
         db_session.add(
             orm.Page(
                 number=1,
                 page_count=1,
                 lang=blob_ver.lang,
                 document_version_id=blob_ver.id,
+                text=extracted_text,
             )
         )
+        if extracted_text:
+            blob_ver.text = extracted_text
 
     try:
         await db_session.commit()
@@ -787,6 +796,13 @@ async def upload(
             kwargs={"doc_ver_ids": [str(blob_ver.id)]},
             route_name="s3",
         )
+
+    # Node create triggers indexing before upload; re-index once pages exist.
+    tasks.send_task(
+        constants.INDEX_ADD_NODE,
+        kwargs={"node_id": str(doc.id)},
+        route_name="i3",
+    )
 
     if await should_schedule_ocr(
         db_session=db_session,

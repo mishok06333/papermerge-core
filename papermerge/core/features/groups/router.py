@@ -13,6 +13,7 @@ from papermerge.core.features.groups.db import api as dbapi
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
 from papermerge.core.routers.params import CommonQueryParams
 from papermerge.core.db.engine import get_db
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 
 router = APIRouter(
     prefix="/groups",
@@ -105,6 +106,16 @@ async def create_group(
             raise HTTPException(status_code=400, detail="Group already exists")
         raise HTTPException(status_code=400, detail=error_msg)
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="group_create",
+        resource_type="group",
+        resource_id=group.id,
+        detail=group.name,
+    )
+    await db_session.commit()
+
     return group
 
 
@@ -134,6 +145,15 @@ async def delete_group(
         await dbapi.delete_group(db_session, group_id)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Group not found")
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="group_delete",
+        resource_type="group",
+        resource_id=group_id,
+    )
+    await db_session.commit()
 
 
 @router.patch("/{group_id}", status_code=200, response_model=schema.Group)
@@ -182,5 +202,14 @@ async def update_group(
         )
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Group not found")
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=cur_user.id,
+        action="group_update",
+        resource_type="group",
+        resource_id=group_id,
+    )
+    await db_session.commit()
 
     return group

@@ -16,6 +16,7 @@ from papermerge.core.features.page_mngm.db.api import \
 from papermerge.core.features.page_mngm.db.api import \
     move_pages as api_move_pages
 from papermerge.core.db.engine import get_db
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 
 logger = logging.getLogger(__name__)
 config = get_settings()
@@ -56,6 +57,16 @@ async def apply_page_operations(
     """
     new_doc = await apply_pages_op(db_session, items, user_id=user.id)
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="pages_update",
+        resource_type="document",
+        resource_id=new_doc.id,
+        detail=str(len(items)),
+    )
+    await db_session.commit()
+
     return schema.Document.model_validate(new_doc)
 
 
@@ -88,6 +99,16 @@ async def move_pages(
     if source is not None:
         source = await doc_dbapi.load_doc(db_session, doc_id=source.id)
     target = await doc_dbapi.load_doc(db_session, doc_id=target.id)
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="pages_move",
+        resource_type="document",
+        resource_id=target.id,
+        detail=str(len(arg.source_page_ids)),
+    )
+    await db_session.commit()
 
     model = schema.MovePagesOut(source=source, target=target)
 
@@ -125,6 +146,17 @@ async def extract_pages(
 
     if source is not None:
         source = await doc_dbapi.load_doc(db_session, source.id)
+
+    target_doc_ids = [doc.id for doc in target_docs]
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="pages_extract",
+        resource_type="folder",
+        resource_id=arg.target_folder_id,
+        detail=str(len(arg.source_page_ids)),
+    )
+    await db_session.commit()
 
     model = schema.ExtractPagesOut(source=source, target=target_nodes)
 

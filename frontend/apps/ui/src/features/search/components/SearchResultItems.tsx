@@ -1,5 +1,5 @@
 import {NType, SearchResultNode} from "@/types"
-import {Text} from "@mantine/core"
+import {Stack, Text} from "@mantine/core"
 import {useTranslation} from "react-i18next"
 import SearchResultItem from "./SearchResultItem"
 
@@ -14,9 +14,19 @@ export default function SearchResultItems({items, onClick}: Args) {
     return <Text my={"md"}>{t("search.nothing_found")}</Text>
   }
 
-  const itemComponents = items?.map(i => (
-    <SearchResultItem key={i.id} item={i} onClick={onClick} />
-  ))
-
-  return <div>{itemComponents}</div>
+  return (
+    <Stack gap="sm" py="xs">
+      {items.map(item => (
+        <SearchResultItem
+          key={
+            item.entity_type == "document"
+              ? (item.document_id ?? item.id)
+              : item.id
+          }
+          item={item}
+          onClick={onClick}
+        />
+      ))}
+    </Stack>
+  )
 }

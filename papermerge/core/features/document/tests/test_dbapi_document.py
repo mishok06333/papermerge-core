@@ -596,11 +596,6 @@ async def test_document_upload_png(make_document, user, db_session: AsyncSession
 
 
 async def test_document_upload_txt(make_document, user, db_session: AsyncSession):
-    """Uploading of txt files is not supported
-
-    When uploading txt file `upload` method should return an error
-    """
-
     doc: schema.Document = await make_document(
         title="some doc", user=user, parent=user.home_folder
     )
@@ -618,9 +613,12 @@ async def test_document_upload_txt(make_document, user, db_session: AsyncSession
             content_type="text/plain",
         )
 
-    assert fresh_doc is None
-    error: err_schema.Error
-    assert len(error.messages) == 1
+    assert error is None
+    assert fresh_doc is not None
+    last_ver = fresh_doc.versions[-1]
+    assert last_ver.text == "dummy"
+    assert len(last_ver.pages) == 1
+    assert last_ver.pages[0].text == "dummy"
 
 
 async def test_get_last_ver_pages(db_session: AsyncSession, make_document, user):

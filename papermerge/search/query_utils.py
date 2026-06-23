@@ -32,4 +32,7 @@ def _wildcard_term(token: str) -> str:
     # stored inside a larger Solr token ("compose.yml"); use infix matching.
     if len(token) <= 3:
         return f"*{token}*"
+    # Solr may split identifiers on _ or - (e.g. POSTGRES_DB, docker-compose).
+    if "_" in token or "-" in token:
+        return f"*{token}*"
     return f"{token}*"

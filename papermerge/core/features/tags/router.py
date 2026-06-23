@@ -15,6 +15,7 @@ from papermerge.core.features.tags.db import api as tags_dbapi
 from papermerge.core.features.tags import schema as tags_schema
 from papermerge.core.exceptions import EntityNotFound
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 from .types import PaginatedQueryParams
 
 router = APIRouter(
@@ -152,6 +153,16 @@ async def create_tag(
     if error:
         raise HTTPException(status_code=400, detail=error.model_dump())
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="tag_create",
+        resource_type="tag",
+        resource_id=tag.id,
+        detail=tag.name,
+    )
+    await db_session.commit()
+
     return tag
 
 
@@ -172,6 +183,15 @@ async def delete_tag(
         await tags_dbapi.delete_tag(db_session, tag_id=tag_id)
     except EntityNotFound:
         raise HTTPException(status_code=404, detail="Does not exists")
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="tag_delete",
+        resource_type="tag",
+        resource_id=tag_id,
+    )
+    await db_session.commit()
 
 
 @router.patch(
@@ -210,5 +230,15 @@ async def update_tag(
 
     if error:
         raise HTTPException(status_code=400, detail=error.model_dump())
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="tag_update",
+        resource_type="tag",
+        resource_id=tag_id,
+        detail=tag.name,
+    )
+    await db_session.commit()
 
     return tag

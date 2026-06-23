@@ -53,6 +53,7 @@ import {
   selectCommanderSortMenuColumn,
   selectCommanderSortMenuDir,
   selectContentHeight,
+  selectHomeFolderTreeSidebarHeight,
   selectDraggedNodes,
   selectDraggedNodesSourceFolderID,
   selectDraggedPages,
@@ -99,6 +100,10 @@ export default function Commander() {
   const [dragOver, setDragOver] = useState<boolean>(false)
   const mode: PanelMode = useContext(PanelContext)
   const height = useAppSelector(s => selectContentHeight(s, mode))
+  // Commander group padding (0.25rem top + bottom).
+  const folderTreeHeight = useAppSelector(
+    s => selectHomeFolderTreeSidebarHeight(s) - 8
+  )
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const location = useLocation()
@@ -386,7 +391,7 @@ export default function Commander() {
             portalRootId={portalRoot.id}
             portalRootTitle={t("portal.root_folder")}
             currentFolderId={currentNodeID}
-            height={height}
+            height={folderTreeHeight}
             documentNavState={portalDocumentNavState}
             folderNav="commander"
             commanderPageSize={lastPageSize}

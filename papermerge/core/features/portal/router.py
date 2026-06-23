@@ -15,6 +15,7 @@ from papermerge.core.features.portal.db import api as portal_dbapi
 from papermerge.core.features.portal.policy import require_portal_view_if_under_portal
 from papermerge.core.routers.params import CommonQueryParams
 from papermerge.core.types import PaginatedResponse
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 
 router = APIRouter(prefix="/portal", tags=["portal"])
 
@@ -149,6 +150,14 @@ async def create_portal_feed_item(
         body=payload.body,
         attachment_node_ids=attachment_ids,
     )
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="portal_feed_create",
+        resource_type="portal_news",
+        resource_id=row["id"],
+        detail=payload.title[:2000],
+    )
     await db_session.commit()
     return portal_schema.PortalNewsOut(**row)
 
@@ -186,6 +195,13 @@ async def update_portal_feed_item(
     )
     if row is None:
         raise exc.HTTP404NotFound()
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="portal_feed_update",
+        resource_type="portal_news",
+        resource_id=news_id,
+    )
     await db_session.commit()
     return portal_schema.PortalNewsOut(**row)
 
@@ -207,5 +223,12 @@ async def delete_portal_feed_item(
     ok = await portal_dbapi.delete_portal_news(db_session, news_id)
     if not ok:
         raise exc.HTTP404NotFound()
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="portal_feed_delete",
+        resource_type="portal_news",
+        resource_id=news_id,
+    )
     await db_session.commit()
     return Response(status_code=204)

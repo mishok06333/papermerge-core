@@ -16,6 +16,7 @@ from papermerge.core.features.users.schema import User
 from papermerge.core.features.users.db import api as user_dbapi
 from papermerge.core.db.engine import get_db
 from .types import PaginatedQueryParams
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 
 router = APIRouter(
     prefix="/custom-fields",
@@ -164,6 +165,16 @@ async def create_custom_field(
     except IntegrityError:
         raise HTTPException(status_code=400, detail="Duplicate custom field name")
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="custom_field_create",
+        resource_type="custom_field",
+        resource_id=custom_field.id,
+        detail=custom_field.name,
+    )
+    await db_session.commit()
+
     return custom_field
 
 
@@ -193,6 +204,15 @@ async def delete_custom_field(
         await dbapi.delete_custom_field(db_session, custom_field_id)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Custom field not found")
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="custom_field_delete",
+        resource_type="custom_field",
+        resource_id=custom_field_id,
+    )
+    await db_session.commit()
 
 
 @router.patch(
@@ -236,5 +256,14 @@ async def update_custom_field(
         )
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Not found")
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=cur_user.id,
+        action="custom_field_update",
+        resource_type="custom_field",
+        resource_id=custom_field_id,
+    )
+    await db_session.commit()
 
     return cfield

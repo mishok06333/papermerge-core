@@ -174,18 +174,21 @@ async def create_node(
         raise HTTPException(status_code=400, detail=error.model_dump())
 
     root_id = await portal_dbapi.get_portal_root_id(db_session)
-    if root_id and await portal_dbapi.is_node_under_portal_root(
-        db_session, created_node.id, root_id
-    ):
-        await lib_ts_api.add_audit(
-            db_session,
-            user_id=user.id,
-            action="portal_node_create",
-            resource_type=created_node.ctype,
-            resource_id=created_node.id,
-            detail=json.dumps({"title": created_node.title})[:2000],
+    is_portal = bool(
+        root_id
+        and await portal_dbapi.is_node_under_portal_root(
+            db_session, created_node.id, root_id
         )
-        await db_session.commit()
+    )
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="node_create",
+        resource_type=created_node.ctype,
+        resource_id=created_node.id,
+        detail=json.dumps({"title": created_node.title, "portal": is_portal})[:2000],
+    )
+    await db_session.commit()
 
     send_task(INDEX_ADD_NODE, kwargs={"node_id": str(created_node.id)}, route_name="i3")
     return created_node
@@ -230,25 +233,27 @@ async def update_node(
     )
 
     root_id = await portal_dbapi.get_portal_root_id(db_session)
-    if root_id and await portal_dbapi.is_node_under_portal_root(
-        db_session, node_id, root_id
-    ):
-        await lib_ts_api.add_audit(
-            db_session,
-            user_id=user.id,
-            action="portal_node_update",
-            resource_type="node",
-            resource_id=node_id,
-            detail=json.dumps(
-                {
-                    "title": updated_node.title,
-                    "parent_id": str(updated_node.parent_id)
-                    if updated_node.parent_id
-                    else None,
-                }
-            )[:2000],
-        )
-        await db_session.commit()
+    is_portal = bool(
+        root_id
+        and await portal_dbapi.is_node_under_portal_root(db_session, node_id, root_id)
+    )
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="node_update",
+        resource_type="node",
+        resource_id=node_id,
+        detail=json.dumps(
+            {
+                "title": updated_node.title,
+                "parent_id": str(updated_node.parent_id)
+                if updated_node.parent_id
+                else None,
+                "portal": is_portal,
+            }
+        )[:2000],
+    )
+    await db_session.commit()
 
     send_task(INDEX_ADD_NODE, kwargs={"node_id": str(updated_node.id)}, route_name="i3")
 
@@ -410,18 +415,22 @@ async def move_nodes(
         raise HTTPException(status_code=420, detail=error.model_dump())
 
     root_id = await portal_dbapi.get_portal_root_id(db_session)
-    if root_id:
-        for sid in params.source_ids:
-            if await portal_dbapi.is_node_under_portal_root(db_session, sid, root_id):
-                await lib_ts_api.add_audit(
-                    db_session,
-                    user_id=user.id,
-                    action="portal_node_move",
-                    resource_type="node",
-                    resource_id=sid,
-                    detail=json.dumps({"target_id": str(params.target_id)})[:2000],
-                )
-        await db_session.commit()
+    for sid in params.source_ids:
+        is_portal = bool(
+            root_id
+            and await portal_dbapi.is_node_under_portal_root(db_session, sid, root_id)
+        )
+        await lib_ts_api.add_audit(
+            db_session,
+            user_id=user.id,
+            action="node_move",
+            resource_type="node",
+            resource_id=sid,
+            detail=json.dumps(
+                {"target_id": str(params.target_id), "portal": is_portal}
+            )[:2000],
+        )
+    await db_session.commit()
 
     return params.source_ids
 
@@ -473,6 +482,16 @@ async def assign_node_tags(
     if error:
         raise HTTPException(status_code=400, detail=error.model_dump())
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="node_tags_set",
+        resource_type="node",
+        resource_id=node_id,
+        detail=json.dumps({"tags": tags})[:2000],
+    )
+    await db_session.commit()
+
     send_task(INDEX_ADD_NODE, kwargs={"node_id": str(node_id)}, route_name="i3")
 
     return node
@@ -508,17 +527,20 @@ async def get_nodes_details(
     if len(node_ids) == 0:
         return []
 
+    allowed_ids: list[uuid.UUID] = []
     for node_id in node_ids:
-        await dbapi_common.require_node_perm(
+        if await dbapi_common.has_node_perm(
             db_session,
             node_id=node_id,
             codename=scopes.NODE_VIEW,
             user_id=user.id,
-        )
+        ):
+            allowed_ids.append(node_id)
 
-    # Permissions were checked above; do not filter by user_id here — portal
-    # and other group-owned nodes have user_id=NULL.
-    nodes = await nodes_dbapi.get_nodes(db_session, node_ids=node_ids)
+    if not allowed_ids:
+        return []
+
+    nodes = await nodes_dbapi.get_nodes(db_session, node_ids=allowed_ids)
 
     return nodes
 
@@ -580,6 +602,16 @@ async def update_node_tags(
 
     if error:
         raise HTTPException(status_code=400, detail=error.model_dump())
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="node_tags_append",
+        resource_type="node",
+        resource_id=node_id,
+        detail=json.dumps({"tags": tags})[:2000],
+    )
+    await db_session.commit()
 
     send_task(INDEX_ADD_NODE, kwargs={"node_id": str(node_id)}, route_name="i3")
 
@@ -668,6 +700,16 @@ async def remove_node_tags(
     if error:
         raise HTTPException(status_code=400, detail=error.model_dump())
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="node_tags_remove",
+        resource_type="node",
+        resource_id=node_id,
+        detail=json.dumps({"tags": tags})[:2000],
+    )
+    await db_session.commit()
+
     send_task(INDEX_ADD_NODE, kwargs={"node_id": str(node_id)}, route_name="i3")
 
     return node
@@ -728,8 +770,18 @@ async def update_node_visibility(
         user_id=user.id,
     )
     try:
-        return await vis_dbapi.set_node_visibility_settings(
+        result = await vis_dbapi.set_node_visibility_settings(
             db_session, node_id, attrs
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="node_visibility_update",
+        resource_type="node",
+        resource_id=node_id,
+        detail=json.dumps(attrs.model_dump(mode="json"))[:2000],
+    )
+    await db_session.commit()
+    return result

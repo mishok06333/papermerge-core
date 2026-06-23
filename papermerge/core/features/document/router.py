@@ -94,6 +94,16 @@ async def update_document_custom_field_values(
     except NoResultFound:
         raise exc.HTTP404NotFound()
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="document_custom_fields_update",
+        resource_type="document",
+        resource_id=document_id,
+        detail=json.dumps({"keys": list(custom_fields.keys())})[:2000],
+    )
+    await db_session.commit()
+
     send_task(
         const.PATH_TMPL_MOVE_DOCUMENT,
         kwargs={"document_id": str(document_id)},
@@ -212,20 +222,25 @@ async def upload_file(
         raise HTTPException(status_code=400, detail=error.model_dump())
 
     root_id = await portal_dbapi.get_portal_root_id(db_session)
-    if root_id and await portal_dbapi.is_node_under_portal_root(
-        db_session, document_id, root_id
-    ):
-        last_ver = doc.versions[-1] if doc.versions else None
-        ver_no = last_ver.number if last_ver else None
-        await lib_ts_api.add_audit(
-            db_session,
-            user_id=user.id,
-            action="portal_document_upload",
-            resource_type="document",
-            resource_id=document_id,
-            detail=json.dumps({"title": doc.title, "version": ver_no})[:2000],
+    is_portal = bool(
+        root_id
+        and await portal_dbapi.is_node_under_portal_root(
+            db_session, document_id, root_id
         )
-        await db_session.commit()
+    )
+    last_ver = doc.versions[-1] if doc.versions else None
+    ver_no = last_ver.number if last_ver else None
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="document_upload",
+        resource_type="document",
+        resource_id=document_id,
+        detail=json.dumps(
+            {"title": doc.title, "version": ver_no, "portal": is_portal}
+        )[:2000],
+    )
+    await db_session.commit()
 
     return doc
 
@@ -410,6 +425,18 @@ async def update_document_type(
         )
     except NoResultFound:
         raise exc.HTTP404NotFound()
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="document_type_update",
+        resource_type="document",
+        resource_id=document_id,
+        detail=json.dumps(
+            {"document_type_id": str(document_type.document_type_id)}
+        )[:2000],
+    )
+    await db_session.commit()
 
     send_task(
         const.PATH_TMPL_MOVE_DOCUMENT,

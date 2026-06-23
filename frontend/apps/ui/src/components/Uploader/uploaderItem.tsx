@@ -12,10 +12,13 @@ import {
   rem
 } from "@mantine/core"
 import {IconCircleCheck, IconFolder, IconX} from "@tabler/icons-react"
-import {useContext} from "react"
+import {useContext, useMemo} from "react"
 import {useNavigate} from "react-router-dom"
 
+import {useGetPortalRootQuery} from "@/features/portal/portalApiSlice"
+import {makePortalDocumentNavState} from "@/features/portal/portalNavState"
 import {selectLastPageSize} from "@/features/ui/uiSlice"
+import {equalUUIDs} from "@/utils"
 import classes from "./uploaderItem.module.css"
 
 type Args = {
@@ -26,14 +29,36 @@ export default function UploaderItem({fileItem}: Args) {
   const mode: PanelMode = useContext(PanelContext)
   const navigate = useNavigate()
   const lastPageSize = useAppSelector(s => selectLastPageSize(s, mode))
+  const {data: portalRoot} = useGetPortalRootQuery()
   let statusComponent
+
+  const isUnderPortalRoot = useMemo(() => {
+    if (!portalRoot || !fileItem.target.breadcrumb?.length) {
+      return false
+    }
+    const rootId = fileItem.target.breadcrumb[0][0]
+    return equalUUIDs(rootId, portalRoot.id)
+  }, [portalRoot, fileItem.target.breadcrumb])
+
+  const canOpenDocument =
+    fileItem.status === "success" && fileItem.source?.id != null
 
   const onTargetClick = () => {
     navigate(`/folder/${fileItem.target.id}?page_size=${lastPageSize}`)
   }
 
   const onFileClick = () => {
-    console.log(`File clicked ${fileItem.file_name}`)
+    if (!canOpenDocument) {
+      return
+    }
+    const documentId = fileItem.source!.id
+    if (portalRoot && isUnderPortalRoot) {
+      navigate(`/document/${documentId}`, {
+        state: makePortalDocumentNavState(portalRoot)
+      })
+    } else {
+      navigate(`/document/${documentId}`)
+    }
   }
 
   if (fileItem.status == "uploading") {
@@ -81,7 +106,14 @@ export default function UploaderItem({fileItem}: Args) {
             {fileItem.target.title}
           </Text>
         </Group>
-        <Box className={classes.uploaderItemFile} onClick={onFileClick}>
+        <Box
+          className={
+            canOpenDocument
+              ? classes.uploaderItemFile
+              : classes.uploaderItemFileDisabled
+          }
+          onClick={canOpenDocument ? onFileClick : undefined}
+        >
           <Text w={150} truncate="end">
             {fileItem.file_name}
           </Text>

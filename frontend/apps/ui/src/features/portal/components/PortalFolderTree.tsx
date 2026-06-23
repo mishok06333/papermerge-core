@@ -3,7 +3,6 @@ import {
   Box,
   Group,
   Loader,
-  ScrollArea,
   Text,
   Tree,
   type RenderTreeNodePayload,
@@ -107,6 +106,7 @@ type Props = {
   portalRootId: string
   portalRootTitle: string
   currentFolderId: string
+  /** Total sidebar height (title + scrollable tree area). */
   height: number
   documentNavState: PortalDocumentNavState
   /** Where folder nodes navigate: portal catalog vs dual-panel commander. */
@@ -448,11 +448,14 @@ export default function PortalFolderTree({
   }
 
   return (
-    <Box className={classes.sidebar} style={{width: effectiveWidth}}>
-      <Text size="sm" fw={600} mb="xs" px="xs">
+    <Box
+      className={classes.sidebar}
+      style={{width: effectiveWidth, height}}
+    >
+      <Text size="sm" fw={600} mb="xs" px="xs" className={classes.title}>
         {t("portal.tree_title")}
       </Text>
-      <ScrollArea h={height} type="scroll">
+      <Box className={classes.scroll}>
         {rootLoading ? (
           <Loader size="sm" ml="xs" />
         ) : (
@@ -465,7 +468,7 @@ export default function PortalFolderTree({
             renderNode={renderTreeNode}
           />
         )}
-      </ScrollArea>
+      </Box>
       <Box
         className={classes.resizeHandle}
         onPointerDown={onResizePointerDown}

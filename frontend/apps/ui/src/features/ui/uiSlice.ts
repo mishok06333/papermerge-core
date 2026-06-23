@@ -48,6 +48,7 @@ export const HOME_FOLDER_TREE_WIDTH_MAX = 640
 export const HOME_FOLDER_TREE_WIDTH_DEFAULT = 240
 
 const SMALL_BOTTOM_MARGIN = 13 /* pixles */
+const APP_SHELL_HEADER_HEIGHT = 60
 const EFFECTIVE_VIEWER_MAX_ZOOM_FACTOR = ZOOM_FACTOR_INIT
 
 function clampHomeFolderTreeWidth(width: number): number {
@@ -1024,6 +1025,22 @@ export const selectSearchContentHeight = (state: RootState) => {
   height -= SMALL_BOTTOM_MARGIN
 
   return height
+}
+
+export const selectSearchPageHeight = (state: RootState) => {
+  let height: number = state.ui.sizes.windowInnerHeight
+
+  height -= APP_SHELL_HEADER_HEIGHT
+  height -= state.ui.sizes.outletTopMarginAndPadding
+  height -= SMALL_BOTTOM_MARGIN
+
+  return height
+}
+
+/** Vertical space for the home portal folder tree sidebar (AppShell main margin-bottom). */
+export const selectHomeFolderTreeSidebarHeight = (state: RootState) => {
+  const MAIN_MARGIN_BOTTOM = 8
+  return selectSearchPageHeight(state) - MAIN_MARGIN_BOTTOM
 }
 
 export const selectCurrentNode = (

@@ -1,12 +1,5 @@
 import {useAppSelector} from "@/app/hooks"
-import {
-  ActionIcon,
-  Group,
-  Skeleton,
-  Stack,
-  TagsInput,
-  TextInput
-} from "@mantine/core"
+import {ActionIcon, Group, Skeleton, Stack, TagsInput} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
 import {useContext} from "react"
 import {useTranslation} from "react-i18next"
@@ -17,25 +10,23 @@ import {skipToken} from "@reduxjs/toolkit/query"
 import {IconEdit} from "@tabler/icons-react"
 import classes from "./DocumentDetails.module.css"
 
-import CopyButton from "@/components/CopyButton"
 import {EditNodeTagsModal} from "@/components/EditNodeTags"
 import type {DocumentType} from "@/features/document/types"
 import {
   selectCurrentNodeID,
   selectDocumentDetailsPanelOpen
 } from "@/features/ui/uiSlice"
-import type {ClientDocumentVersion, PanelMode} from "@/types"
+import type {PanelMode} from "@/types"
 import DocumentDetailsToggle from "../DocumentDetailsToggle"
 import DocumentLibraryPanel from "@/features/library/components/DocumentLibraryPanel"
 
 interface Args {
   doc?: DocumentType
   docID?: string
-  docVer?: ClientDocumentVersion
   isLoading: boolean
 }
 
-export default function DocumentDetails({doc, docVer, docID, isLoading}: Args) {
+export default function DocumentDetails({doc, docID, isLoading}: Args) {
   const {t} = useTranslation()
 
   const mode: PanelMode = useContext(PanelContext)
@@ -60,13 +51,6 @@ export default function DocumentDetails({doc, docVer, docID, isLoading}: Args) {
     return (
       <Group align="flex-start" className={classes.documentDetailsOpened}>
         <Stack className={classes.documentDetailsContent} justify="flex-start">
-          <TextInput
-            label={t("common.version_number")}
-            readOnly
-            value={docVer?.number}
-            rightSection={<CopyButton value={`${docVer?.number}` || ""} />}
-          />
-
           <Group>
             <TagsInput
               rightSection={<EditTagsButton />}

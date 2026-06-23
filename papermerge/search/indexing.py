@@ -6,6 +6,7 @@ from salinic import IndexRW, create_engine
 from papermerge.core import dbapi, schema
 from papermerge.core.config import get_settings
 from papermerge.core.db.engine import AsyncSessionLocal
+from papermerge.search.page_text import resolve_page_search_text
 from papermerge.search.schema import SearchIndex
 
 logger = logging.getLogger(__name__)
@@ -40,13 +41,19 @@ async def build_index_items(
             last_ver = await dbapi.get_last_doc_ver(db_session, doc_id=node.id)
             pages = await dbapi.get_doc_ver_pages(db_session, last_ver.id)
             for page in pages:
+                page_text = await resolve_page_search_text(
+                    db_session,
+                    page_id=page.id,
+                    doc_ver=last_ver,
+                    current_text=page.text,
+                )
                 items.append(
                     SearchIndex(
                         id=str(page.id),
                         title=node.title,
                         document_id=str(node.id),
                         page_number=page.number,
-                        text=page.text,
+                        text=page_text,
                         tags=[tag.name for tag in node.tags],
                         **_owner_fields(node),
                     )
@@ -76,12 +83,18 @@ async def build_index_items_for_page(
     if not nodes:
         return None
     node = nodes[0]
+    page_text = await resolve_page_search_text(
+        db_session,
+        page_id=page.id,
+        doc_ver=doc_ver,
+        current_text=page.text,
+    )
     return SearchIndex(
         id=str(page.id),
         title=node.title,
         document_id=str(node.id),
         page_number=page.number,
-        text=page.text,
+        text=page_text,
         tags=[tag.name for tag in node.tags],
         **_owner_fields(node),
     )

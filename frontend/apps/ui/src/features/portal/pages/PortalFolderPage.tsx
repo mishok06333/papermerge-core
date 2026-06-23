@@ -15,8 +15,8 @@ import {selectCurrentUser} from "@/slices/currentUser"
 import type {BreadcrumbType, NodeType, UserDetails} from "@/types"
 import {
   homeFolderTreeToggled,
-  selectContentHeight,
-  selectHomeFolderTreeOpen
+  selectHomeFolderTreeOpen,
+  selectHomeFolderTreeSidebarHeight
 } from "@/features/ui/uiSlice"
 import {
   Anchor,
@@ -69,7 +69,8 @@ export default function PortalFolderPage() {
   const {folderId} = useParams<{folderId: string}>()
   const user = useSelector(selectCurrentUser) as UserDetails | null
   const scopes = user?.scopes ?? []
-  const treeHeight = useAppSelector(s => selectContentHeight(s, "main"))
+  // `p="md"` on the page group — subtract top + bottom padding from sidebar height.
+  const treeHeight = useAppSelector(s => selectHomeFolderTreeSidebarHeight(s) - 32)
   const portalFolderTreeOpen = useAppSelector(selectHomeFolderTreeOpen)
 
   const {data: root} = useGetPortalRootQuery()

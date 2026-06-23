@@ -16,6 +16,7 @@ interface SerializedError {
 
 interface ReturnState {
   isError: boolean
+  isLoading: boolean
   error: FetchBaseQueryError | SerializedError | undefined
   doc: DocumentType | undefined
 }
@@ -31,8 +32,9 @@ export default function useCurrentDoc(): ReturnState {
     // be a flicker previous document when user opens viewer
     currentData: doc,
     isError,
+    isLoading,
     error
   } = useGetDocumentQuery(currentDocumentID ?? skipToken)
 
-  return {doc, isError, error}
+  return {doc, isError, isLoading, error}
 }

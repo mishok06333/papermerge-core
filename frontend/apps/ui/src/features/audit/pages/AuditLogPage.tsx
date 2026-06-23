@@ -79,8 +79,14 @@ export default function AuditLogPage() {
                       {row.user_id ?? "—"}
                     </Text>
                   </Table.Td>
-                  <Table.Td>{row.action}</Table.Td>
-                  <Table.Td>{row.resource_type}</Table.Td>
+                  <Table.Td>
+                    {t(`audit_log.action.${row.action}`, {defaultValue: row.action})}
+                  </Table.Td>
+                  <Table.Td>
+                    {t(`audit_log.resource_type.${row.resource_type}`, {
+                      defaultValue: row.resource_type
+                    })}
+                  </Table.Td>
                   <Table.Td>
                     <Text size="sm" style={{wordBreak: "break-all"}}>
                       {row.resource_id ?? "—"}

@@ -49,7 +49,7 @@ import {useTranslation} from "react-i18next"
 
 export default function Viewer() {
   const {t} = useTranslation()
-  const {doc} = useCurrentDoc()
+  const {doc, isError, isLoading} = useCurrentDoc()
   const {docVer} = useCurrentDocVer()
 
   const ref = useRef<HTMLDivElement>(null)
@@ -177,8 +177,16 @@ export default function Viewer() {
     openDeleteEntireDocumentConfirm()
   }
 
-  if (!doc) {
+  if (isLoading) {
     return <Loader />
+  }
+
+  if (isError || !doc) {
+    return (
+      <Alert color="red" title={t("pages.error.not_found.title")} m="md">
+        {t("pages.error.not_found.message")}
+      </Alert>
+    )
   }
 
   if (!docVer) {
@@ -216,12 +224,7 @@ export default function Viewer() {
           </DocxScrollProvider>
         )}
         {chrome === "blob" && <BlobDocumentViewer />}
-        <DocumentDetails
-          docVer={docVer}
-          doc={doc}
-          docID={doc?.id}
-          isLoading={false}
-        />
+        <DocumentDetails doc={doc} docID={doc?.id} isLoading={false} />
         {customPreview && <PagesHaveChangedDialog docID={doc.id} />}
         {customPreview && (
           <ContextMenu

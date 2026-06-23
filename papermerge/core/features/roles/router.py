@@ -14,6 +14,7 @@ from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
 from papermerge.core.routers.params import CommonQueryParams
 from papermerge.core.db.engine import get_db
 from papermerge.core.schemas.error import ErrorResponse
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 
 router = APIRouter(
     prefix="/roles",
@@ -136,6 +137,15 @@ async def create_role(
                 status_code=500,
                 detail="Failed to create role"
             )
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="role_create",
+        resource_type="role",
+        resource_id=role.id,
+        detail=role.name,
+    )
+    await db_session.commit()
     return role
 
 
@@ -166,6 +176,15 @@ async def delete_role(
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Role not found")
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="role_delete",
+        resource_type="role",
+        resource_id=role_id,
+    )
+    await db_session.commit()
+
 
 @router.patch("/{role_id}", status_code=200, response_model=schema.Role)
 @utils.docstring_parameter(scope=scopes.ROLE_UPDATE)
@@ -187,5 +206,14 @@ async def update_role(
         )
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Role not found")
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=cur_user.id,
+        action="role_update",
+        resource_type="role",
+        resource_id=role_id,
+    )
+    await db_session.commit()
 
     return role

@@ -60,6 +60,13 @@ async def remove_favorite(
     db_session: AsyncSession = Depends(get_db),
 ):
     await lib_api.remove_favorite(db_session, user.id, node_id)
+    await lib_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="favorite_remove",
+        resource_type="node",
+        resource_id=node_id,
+    )
     await db_session.commit()
 
 

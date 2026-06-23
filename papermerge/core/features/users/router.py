@@ -12,6 +12,7 @@ from papermerge.core.features.auth import scopes
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
 from papermerge.core.routers.params import CommonQueryParams
 from papermerge.core.db.engine import get_db
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 
 router = APIRouter(
     prefix="/users",
@@ -135,6 +136,16 @@ async def create_user(
     if error:
         raise HTTPException(status_code=400, detail=error.model_dump())
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=cur_user.id,
+        action="user_create",
+        resource_type="user",
+        resource_id=user.id,
+        detail=user.username,
+    )
+    await db_session.commit()
+
     return user
 
 
@@ -211,6 +222,15 @@ async def delete_user(
             detail="Could not delete user at this time.",
         )
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="user_delete",
+        resource_type="user",
+        resource_id=user_id,
+    )
+    await db_session.commit()
+
 
 @router.patch("/{user_id}", status_code=200, response_model=schema.UserDetails)
 @utils.docstring_parameter(scope=scopes.USER_UPDATE)
@@ -230,6 +250,15 @@ async def update_user(
 
     if error:
         raise HTTPException(status_code=404, detail=error.model_dump())
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=cur_user.id,
+        action="user_update",
+        resource_type="user",
+        resource_id=user_id,
+    )
+    await db_session.commit()
 
     return user
 
@@ -264,5 +293,14 @@ async def change_user_password(
             status_code=500,
             detail={"messages": ["Could not update password."]},
         )
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=cur_user.id,
+        action="user_password_change",
+        resource_type="user",
+        resource_id=user_id,
+    )
+    await db_session.commit()
 
     return user

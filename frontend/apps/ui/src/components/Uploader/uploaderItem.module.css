@@ -10,3 +10,7 @@
 .uploaderItemFile:hover {
   text-decoration: underline;
 }
+
+.uploaderItemFileDisabled {
+  cursor: default;
+}

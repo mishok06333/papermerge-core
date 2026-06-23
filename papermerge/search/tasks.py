@@ -5,13 +5,26 @@ import uuid
 from celery import shared_task
 
 from papermerge.core import constants
+from papermerge.core.db.engine import get_engine
 from papermerge.search import indexing
 
 logger = logging.getLogger(__name__)
 
 
 def _run(coro):
-    return asyncio.run(coro)
+    """Run async indexing code inside Celery prefork workers.
+
+    SQLAlchemy's async engine binds to the event loop of the first
+    ``asyncio.run`` call in a worker process; later tasks must dispose it
+    so the next task gets a fresh loop-bound pool.
+    """
+    try:
+        return asyncio.run(coro)
+    finally:
+        try:
+            asyncio.run(get_engine().dispose())
+        except Exception:
+            logger.exception("Failed to dispose SQLAlchemy engine after index task")
 
 
 @shared_task(name=constants.INDEX_ADD_NODE)

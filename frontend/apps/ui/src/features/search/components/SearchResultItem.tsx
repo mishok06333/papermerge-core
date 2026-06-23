@@ -1,7 +1,12 @@
 import {useAppSelector} from "@/app/hooks"
+import {useGetPortalRootQuery} from "@/features/portal/portalApiSlice"
 import {selectNodeById} from "@/features/search/searchSlice"
-import type {CType, NType, SearchResultNode} from "@/types"
-import {Group, Stack} from "@mantine/core"
+import {normalizeSearchBreadcrumb} from "@/features/search/searchBreadcrumb"
+import type {NType, SearchResultNode} from "@/types"
+import {Badge, Group, Paper, Stack, Text} from "@mantine/core"
+import {IconFile, IconFolder} from "@tabler/icons-react"
+import {useMemo} from "react"
+import {useTranslation} from "react-i18next"
 import Breadcrumb from "./Breadcrumb"
 import Tags from "./Tags"
 import classes from "./item.module.css"
@@ -12,58 +17,83 @@ type Args = {
 }
 
 export default function SearchResultItem({item, onClick}: Args) {
+  const {t} = useTranslation()
   const item_id = (
     item.entity_type == "document" ? item.document_id : item.id
   ) as string
   const nodeDetails = useAppSelector(s => selectNodeById(s, item_id))
+  const {data: portalRoot} = useGetPortalRootQuery()
+  const breadcrumb = useMemo(
+    () =>
+      normalizeSearchBreadcrumb(
+        nodeDetails?.breadcrumb,
+        portalRoot?.id,
+        t("portal.root_folder")
+      ),
+    [nodeDetails?.breadcrumb, portalRoot?.id, t]
+  )
 
-  const onLocalClickDocumentItem = () => {
-    const node = {
-      id: item.document_id!,
-      ctype: "document" as CType
+  const isFolder = item.entity_type == "folder"
+  const pageNumber = item.page_number
+
+  const onCardClick = () => {
+    if (isFolder) {
+      onClick({id: item.id, ctype: "folder"})
+      return
     }
-    onClick(node, item.page_number ?? undefined)
-  }
-
-  const onLocalClickFolderItem = () => {
-    const node = {
-      id: item.id,
-      ctype: "folder" as CType
-    }
-    onClick(node)
-  }
-
-  if (item.entity_type == "folder") {
-    return (
-      <Stack my={"lg"} gap="xs">
-        <Breadcrumb onClick={onClick} items={nodeDetails?.breadcrumb} />
-
-        <Group
-          className={classes.item}
-          align="center"
-          onClick={onLocalClickFolderItem}
-        >
-          <div className={classes.folderIcon}></div>
-          <div className={classes.title}>{item.title}</div>
-          <Tags items={nodeDetails?.tags} maxItems={8} />
-        </Group>
-      </Stack>
-    )
+    onClick({id: item.document_id!, ctype: "document"}, pageNumber ?? undefined)
   }
 
   return (
-    <Stack my={"lg"} pt={"sm"} gap="xs">
-      <Breadcrumb
-        onClick={onClick}
-        // for documents breadcrumb also indicates
-        // page number (if page number > 1)
-        pageNumber={item.page_number}
-        items={nodeDetails?.breadcrumb}
-      />
-      <Group className={classes.item} onClick={onLocalClickDocumentItem}>
-        <div className={classes.title}>{item.title}</div>
-        <Tags items={nodeDetails?.tags} maxItems={8} />
-      </Group>
-    </Stack>
+    <Paper
+      withBorder
+      radius="md"
+      p="md"
+      className={classes.card}
+      onClick={onCardClick}
+    >
+      <Stack gap="sm">
+        <div onClick={event => event.stopPropagation()}>
+          <Breadcrumb
+            onClick={onClick}
+            items={breadcrumb}
+            fallbackTitle={item.title}
+            pageNumber={!isFolder ? pageNumber : undefined}
+          />
+        </div>
+
+        <Group wrap="nowrap" align="flex-start" gap="sm">
+          <div className={classes.icon}>
+            {isFolder ? (
+              <IconFolder size={28} stroke={1.5} />
+            ) : (
+              <IconFile size={28} stroke={1.5} />
+            )}
+          </div>
+
+          <Stack gap={6} className={classes.body}>
+            <Group gap="xs" wrap="wrap" align="center">
+              <Text className={classes.title} fw={600} size="sm" lineClamp={2}>
+                {item.title}
+              </Text>
+              {!isFolder && pageNumber && pageNumber > 1 && (
+                <Badge variant="light" size="sm">
+                  {t("search.page_badge", {page: pageNumber})}
+                </Badge>
+              )}
+              <Badge variant="outline" size="sm" color="gray">
+                {isFolder
+                  ? t("search.filter.folders")
+                  : t("search.filter.documents")}
+              </Badge>
+            </Group>
+
+            {nodeDetails?.tags && nodeDetails.tags.length > 0 && (
+              <Tags items={nodeDetails.tags} maxItems={8} />
+            )}
+          </Stack>
+        </Group>
+      </Stack>
+    </Paper>
   )
 }

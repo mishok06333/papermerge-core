@@ -55,7 +55,9 @@ services:
       PAPERMERGE__AUTH__USERNAME: ${ADMIN_USERNAME:-admin}
       PAPERMERGE__AUTH__EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       PAPERMERGE__AUTH__PASSWORD: ${ADMIN_PASSWORD:-admin}
-      PAPERMERGE__SEARCH__URL: ${PAPERMERGE__SEARCH__URL:-solr://solr:8983/papermerge}
+      # Always use the compose service name — do not pass host .env value
+      # (127.0.0.1 works only on the host, e.g. run-dev-native.bat).
+      PAPERMERGE__SEARCH__URL: solr://solr:8983/papermerge
     volumes:
       - ./media:/var/media/pmg
     depends_on:
@@ -89,7 +91,7 @@ services:
     environment:
       PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER:-papermerge}:${POSTGRES_PASSWORD:-papermerge}@db:5432/${POSTGRES_DB:-papermerge}
       PAPERMERGE__REDIS__URL: redis://redis:6379/0
-      PAPERMERGE__SEARCH__URL: ${PAPERMERGE__SEARCH__URL:-solr://solr:8983/papermerge}
+      PAPERMERGE__SEARCH__URL: solr://solr:8983/papermerge
     depends_on:
       db:
         condition: service_healthy

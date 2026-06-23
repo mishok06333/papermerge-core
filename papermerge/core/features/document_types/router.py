@@ -14,6 +14,7 @@ from papermerge.core.features.users import schema as users_schema
 from papermerge.core.features.document_types import schema as dt_schema
 from papermerge.core.db.engine import get_db
 from .types import PaginatedQueryParams
+from papermerge.core.features.library_ts.db import api as lib_ts_api
 
 router = APIRouter(
     prefix="/document-types",
@@ -173,6 +174,16 @@ async def create_document_type(
             raise HTTPException(status_code=400, detail="Document type already exists")
         raise HTTPException(status_code=400, detail=error_msg)
 
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="document_type_create",
+        resource_type="document_type",
+        resource_id=document_type.id,
+        detail=document_type.name,
+    )
+    await db_session.commit()
+
     return document_type
 
 
@@ -203,6 +214,15 @@ async def delete_document_type(
         await dbapi.delete_document_type(db_session, document_type_id)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Document type not found")
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="document_type_delete",
+        resource_type="document_type",
+        resource_id=document_type_id,
+    )
+    await db_session.commit()
 
 
 @router.patch(
@@ -252,5 +272,14 @@ async def update_document_type(
         )
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Document type not found")
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=cur_user.id,
+        action="document_type_update",
+        resource_type="document_type",
+        resource_id=document_type_id,
+    )
+    await db_session.commit()
 
     return dtype

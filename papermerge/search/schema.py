@@ -84,3 +84,29 @@ class PaginatedResponse(BaseModel):
     items: list[Folder | DocumentPage]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+def coerce_search_item(item) -> Folder | DocumentPage:
+    """Normalize salinic or plain hits into API response models."""
+    if isinstance(item, DocumentPage):
+        return item
+    if isinstance(item, Folder):
+        return item
+
+    document_id = getattr(item, "document_id", None)
+    if document_id:
+        return DocumentPage(
+            id=item.id,
+            title=item.title,
+            lang=item.lang,
+            tags=list(getattr(item, "tags", None) or []),
+            page_number=item.page_number,
+            document_id=document_id,
+        )
+
+    return Folder(
+        id=item.id,
+        title=item.title,
+        lang=item.lang,
+        tags=list(getattr(item, "tags", None) or []),
+    )

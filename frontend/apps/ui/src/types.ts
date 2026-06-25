@@ -417,9 +417,9 @@ export interface ExtractPagesResponse {
   target: Array<NodeType>
 }
 
-export type SortMenuColumn = "title" | "ctype" | "created_at" | "updated_at"
+export type SortMenuColumn = "title" | "file_type" | "created_at" | "updated_at"
 export type SortMenuDirection = "az" | "za"
-export type ViewOption = "tile" | "list" | "document-type"
+export type ViewOption = "tile" | "list"
 
 export interface CustomFieldValueType {
   custom_field_id: string

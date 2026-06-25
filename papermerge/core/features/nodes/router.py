@@ -1,6 +1,5 @@
 import logging
 import uuid
-import json
 from typing import Annotated, Iterable, Union
 from uuid import UUID
 
@@ -12,7 +11,7 @@ from papermerge.core.exceptions import HTTP404NotFound, EntityNotFound
 from papermerge.core.constants import INDEX_REMOVE_NODE
 from papermerge.core.tasks import send_task
 from papermerge.core import utils, schema, config
-from papermerge.core.features.auth import scopes, get_current_user
+from papermerge.core.features.auth import scopes, get_current_user, require_node_tags_user
 from papermerge.core.constants import INDEX_ADD_NODE
 from papermerge.core.features.document.db import api as doc_dbapi
 from papermerge.core.features.nodes.db import api as nodes_dbapi
@@ -186,7 +185,7 @@ async def create_node(
         action="node_create",
         resource_type=created_node.ctype,
         resource_id=created_node.id,
-        detail=json.dumps({"title": created_node.title, "portal": is_portal})[:2000],
+        detail=lib_ts_api.audit_detail_json({"title": created_node.title, "portal": is_portal}),
     )
     await db_session.commit()
 
@@ -243,7 +242,7 @@ async def update_node(
         action="node_update",
         resource_type="node",
         resource_id=node_id,
-        detail=json.dumps(
+        detail=lib_ts_api.audit_detail_json(
             {
                 "title": updated_node.title,
                 "parent_id": str(updated_node.parent_id)
@@ -251,7 +250,7 @@ async def update_node(
                 else None,
                 "portal": is_portal,
             }
-        )[:2000],
+        ),
     )
     await db_session.commit()
 
@@ -426,9 +425,9 @@ async def move_nodes(
             action="node_move",
             resource_type="node",
             resource_id=sid,
-            detail=json.dumps(
+            detail=lib_ts_api.audit_detail_json(
                 {"target_id": str(params.target_id), "portal": is_portal}
-            )[:2000],
+            ),
         )
     await db_session.commit()
 
@@ -439,18 +438,17 @@ async def move_nodes(
     "/{node_id}/tags",
     responses={
         status.HTTP_403_FORBIDDEN: {
-            "description": f"User does not have `{scopes.NODE_UPDATE}` permission on the node",
+            "description": f"User does not have `{scopes.NODE_UPDATE}` or "
+            f"`{scopes.DOCUMENT_UPDATE_TAGS}` permission on the node",
             "content": OPEN_API_GENERIC_JSON_DETAIL,
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_UPDATE)
+@utils.docstring_parameter(scope=scopes.DOCUMENT_UPDATE_TAGS)
 async def assign_node_tags(
     node_id: UUID,
     tags: list[str],
-    user: Annotated[
-        schema.User, Security(get_current_user, scopes=[scopes.NODE_UPDATE])
-    ],
+    user: Annotated[schema.User, Depends(require_node_tags_user)],
     db_session: AsyncSession = Depends(get_db),
 ) -> schema.Document | schema.Folder:
     """
@@ -466,11 +464,13 @@ async def assign_node_tags(
     existing node tags** with the one from input list.
     """
     try:
-        await dbapi_common.require_node_perm(
+        await dbapi_common.require_node_perm_any(
             db_session,
-            node_id=node_id,
-            codename=scopes.NODE_UPDATE,
-            user_id=user.id,
+            node_id,
+            user.id,
+            scopes.NODE_UPDATE,
+            scopes.DOCUMENT_UPDATE_TAGS,
+            scopes.TAG_SELECT,
         )
 
         node, error = await nodes_dbapi.assign_node_tags(
@@ -488,7 +488,7 @@ async def assign_node_tags(
         action="node_tags_set",
         resource_type="node",
         resource_id=node_id,
-        detail=json.dumps({"tags": tags})[:2000],
+        detail=lib_ts_api.audit_detail_json({"tags": tags}),
     )
     await db_session.commit()
 
@@ -549,18 +549,17 @@ async def get_nodes_details(
     "/{node_id}/tags",
     responses={
         status.HTTP_403_FORBIDDEN: {
-            "description": f"User does not have `{scopes.NODE_UPDATE}` permission on the node",
+            "description": f"User does not have `{scopes.NODE_UPDATE}` or "
+            f"`{scopes.DOCUMENT_UPDATE_TAGS}` permission on the node",
             "content": OPEN_API_GENERIC_JSON_DETAIL,
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_UPDATE)
+@utils.docstring_parameter(scope=scopes.DOCUMENT_UPDATE_TAGS)
 async def update_node_tags(
     node_id: UUID,
     tags: list[str],
-    user: Annotated[
-        schema.User, Security(get_current_user, scopes=[scopes.NODE_UPDATE])
-    ],
+    user: Annotated[schema.User, Depends(require_node_tags_user)],
     db_session: AsyncSession = Depends(get_db),
 ) -> schema.Document | schema.Folder:
     """
@@ -587,11 +586,13 @@ async def update_node_tags(
         are still assigned to N1.
     """
     try:
-        await dbapi_common.require_node_perm(
+        await dbapi_common.require_node_perm_any(
             db_session,
-            node_id=node_id,
-            codename=scopes.NODE_UPDATE,
-            user_id=user.id,
+            node_id,
+            user.id,
+            scopes.NODE_UPDATE,
+            scopes.DOCUMENT_UPDATE_TAGS,
+            scopes.TAG_SELECT,
         )
 
         node, error = await nodes_dbapi.update_node_tags(
@@ -609,7 +610,7 @@ async def update_node_tags(
         action="node_tags_append",
         resource_type="node",
         resource_id=node_id,
-        detail=json.dumps({"tags": tags})[:2000],
+        detail=lib_ts_api.audit_detail_json({"tags": tags}),
     )
     await db_session.commit()
 
@@ -662,18 +663,17 @@ async def get_node_tags(
     "/{node_id}/tags",
     responses={
         status.HTTP_403_FORBIDDEN: {
-            "description": f"User does not have `{scopes.NODE_UPDATE}` permission on the node",
+            "description": f"User does not have `{scopes.NODE_UPDATE}` or "
+            f"`{scopes.DOCUMENT_UPDATE_TAGS}` permission on the node",
             "content": OPEN_API_GENERIC_JSON_DETAIL,
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_UPDATE)
+@utils.docstring_parameter(scope=scopes.DOCUMENT_UPDATE_TAGS)
 async def remove_node_tags(
     node_id: UUID,
     tags: list[str],
-    user: Annotated[
-        schema.User, Security(get_current_user, scopes=[scopes.NODE_UPDATE])
-    ],
+    user: Annotated[schema.User, Depends(require_node_tags_user)],
     db_session: AsyncSession = Depends(get_db),
 ) -> schema.Document | schema.Folder:
     """
@@ -684,11 +684,13 @@ async def remove_node_tags(
     Tags models are not deleted - just dissociated from the node.
     """
     try:
-        await dbapi_common.require_node_perm(
+        await dbapi_common.require_node_perm_any(
             db_session,
-            node_id=node_id,
-            codename=scopes.NODE_UPDATE,
-            user_id=user.id,
+            node_id,
+            user.id,
+            scopes.NODE_UPDATE,
+            scopes.DOCUMENT_UPDATE_TAGS,
+            scopes.TAG_SELECT,
         )
 
         node, error = await nodes_dbapi.remove_node_tags(
@@ -706,7 +708,7 @@ async def remove_node_tags(
         action="node_tags_remove",
         resource_type="node",
         resource_id=node_id,
-        detail=json.dumps({"tags": tags})[:2000],
+        detail=lib_ts_api.audit_detail_json({"tags": tags}),
     )
     await db_session.commit()
 
@@ -781,7 +783,7 @@ async def update_node_visibility(
         action="node_visibility_update",
         resource_type="node",
         resource_id=node_id,
-        detail=json.dumps(attrs.model_dump(mode="json"))[:2000],
+        detail=lib_ts_api.audit_detail_json(attrs.model_dump(mode="json")),
     )
     await db_session.commit()
     return result

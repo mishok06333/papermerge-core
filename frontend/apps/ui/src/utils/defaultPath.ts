@@ -1,9 +1,7 @@
 import {
-  DOCUMENT_TYPE_VIEW,
   NODE_VIEW,
   PORTAL_FEED_VIEW,
   PORTAL_VIEW,
-  canManageDocumentTypes,
   canManageTags
 } from "@/scopes"
 
@@ -20,9 +18,6 @@ export function resolveDefaultPath(scopes: string[]): string {
   }
   if (canManageTags(scopes)) {
     return "/tags"
-  }
-  if (scopes.includes(DOCUMENT_TYPE_VIEW) || canManageDocumentTypes(scopes)) {
-    return "/document-types/"
   }
   return "/portal"
 }

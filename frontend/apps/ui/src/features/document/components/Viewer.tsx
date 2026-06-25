@@ -60,8 +60,8 @@ export default function Viewer() {
   const height = useAppSelector(s => selectContentHeight(s, mode))
   const chrome = docVer ? getViewerChromeKind(docVer.file_name) : undefined
   const customPreview = Boolean(docVer && !usesNativePdfPreview(docVer.file_name))
-  /* Buffer + raster previews only for custom viewers (docx/blob), not native PDF iframe. */
-  useEnsureDocVerBuffer(customPreview ? docVer : undefined)
+  /* Native PDF iframe also needs an authenticated buffer (no Bearer token on iframe GET). */
+  useEnsureDocVerBuffer(docVer)
   const previewState = useGeneratePreviews({
     docVer: customPreview ? docVer : undefined,
     pageNumber: 1,
@@ -196,9 +196,9 @@ export default function Viewer() {
   /**
    * Preview chrome switches on `docVer.file_name` (see `getViewerChromeKind`).
    *
-   * - native-pdf: browser iframe PDF viewer (`NativePdfViewer`).
+   * - native-pdf: browser iframe preview (`NativePdfViewer`) for PDF and images.
    * - docx: `DocxScrollProvider` → `DocxPageColumn`.
-   * - blob: `BlobDocumentViewer` → `BlobMediaPage` (video/audio/text/image/…).
+   * - blob: `BlobDocumentViewer` → `BlobMediaPage` (video/audio/text/…).
    */
   if (!chrome) {
     return <Loader />

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from papermerge.core import orm, schema
 from papermerge.core.tests.types import AuthTestClient
 from papermerge.core.features.nodes.db import api as nodes_dbapi
+from papermerge.core.features.tags import schema as tags_schema
 
 
 async def test_create_tag_route(auth_api_client: AuthTestClient, db_session: AsyncSession):
@@ -179,6 +180,12 @@ async def test_delete_tag_which_has_associated_folder(
     result_tag = await db_session.execute(select(exists(q_tag)))
     assert result_tag.scalar() is False
 
+    assoc = select(orm.NodeTagsAssociation).where(
+        orm.NodeTagsAssociation.node_id == folder.id
+    )
+    result_assoc = await db_session.execute(select(exists(assoc)))
+    assert result_assoc.scalar() is False
+
 async def test_delete_tag_which_has_associated_document(
     make_document, make_tag, db_session: AsyncSession, user, auth_api_client
 ):
@@ -235,3 +242,235 @@ async def test__positive__tags_all_route_with_group_id_param(
     assert response.status_code == 200, response.json()
     dtype_names = {schema.Tag(**kw).name for kw in response.json()}
     assert dtype_names == {"tag research 1", "tag research 2"}
+
+
+async def test_get_tag_nodes_route(
+    make_document, make_tag, auth_api_client: AuthTestClient, user, db_session
+):
+    doc_a = await make_document(title="Contract A", user=user, parent=user.home_folder)
+    doc_b = await make_document(title="Contract B", user=user, parent=user.home_folder)
+    tag = await make_tag(name="important", user=user)
+
+    await nodes_dbapi.assign_node_tags(
+        db_session,
+        node_id=doc_a.id,
+        tags=["important"],
+        user_id=user.id,
+    )
+    await nodes_dbapi.assign_node_tags(
+        db_session,
+        node_id=doc_b.id,
+        tags=["important"],
+        user_id=user.id,
+    )
+
+    response = await auth_api_client.get(f"/tags/{tag.id}/nodes")
+
+    assert response.status_code == 200, response.json()
+    paginated = schema.PaginatedResponse[tags_schema.TaggedNodeOut](**response.json())
+    assert len(paginated.items) == 2
+    titles = {item.title for item in paginated.items}
+    assert titles == {"Contract A", "Contract B"}
+
+
+async def test_get_tag_nodes_route__other_user_tag_not_visible(
+    make_document, make_tag, make_api_client, db_session
+):
+    owner = await make_api_client(username="owner")
+    other = await make_api_client(username="other")
+    doc = await make_document(title="Secret", user=owner.user, parent=owner.user.home_folder)
+    tag = await make_tag(name="private", user=owner.user)
+
+    await nodes_dbapi.assign_node_tags(
+        db_session,
+        node_id=doc.id,
+        tags=["private"],
+        user_id=owner.user.id,
+    )
+
+    response = await other.get(f"/tags/{tag.id}/nodes")
+    assert response.status_code == 404, response.json()
+
+
+async def test_get_all_tags_lists_catalog_after_admin_create(
+    make_tag, auth_api_client: AuthTestClient, user
+):
+    await make_tag(name="тег", user=user)
+
+    response = await auth_api_client.get("/tags/all")
+
+    assert response.status_code == 200, response.json()
+    names = {schema.Tag(**kw).name for kw in response.json()}
+    assert "тег" in names
+
+
+async def test_assign_unknown_tag_fails(
+    make_document, auth_api_client: AuthTestClient, user, db_session
+):
+    doc = await make_document(title="Invoice", user=user, parent=user.home_folder)
+
+    response = await auth_api_client.post(
+        f"/nodes/{doc.id}/tags",
+        json=["nonexistent-tag"],
+    )
+
+    assert response.status_code == 400, response.json()
+
+
+async def test_assign_same_tag_name_reuses_single_tag_record(
+    make_document, make_tag, auth_api_client: AuthTestClient, user, db_session
+):
+    await make_tag(name="shared", user=user)
+    doc_a = await make_document(title="A", user=user, parent=user.home_folder)
+    doc_b = await make_document(title="B", user=user, parent=user.home_folder)
+
+    await nodes_dbapi.assign_node_tags(
+        db_session, node_id=doc_a.id, tags=["shared"], user_id=user.id
+    )
+    await nodes_dbapi.assign_node_tags(
+        db_session, node_id=doc_b.id, tags=["shared"], user_id=user.id
+    )
+
+    response = await auth_api_client.get("/tags/all")
+    assert response.status_code == 200, response.json()
+    items = [schema.Tag(**kw) for kw in response.json()]
+    shared = [t for t in items if t.name == "shared"]
+    assert len(shared) == 1
+
+    nodes_resp = await auth_api_client.get(f"/tags/{shared[0].id}/nodes")
+    assert nodes_resp.status_code == 200, nodes_resp.json()
+    paginated = schema.PaginatedResponse[tags_schema.TaggedNodeOut](**nodes_resp.json())
+    titles = {item.title for item in paginated.items}
+    assert titles == {"A", "B"}
+
+
+async def test_list_tags_with_tag_select_scope_only_from_db_role(
+    db_session: AsyncSession,
+    make_user,
+    make_role,
+):
+    """Tag picker catalog is available with ``tag.select`` from DB role."""
+    from httpx import ASGITransport, AsyncClient
+    from fastapi import FastAPI
+
+    from papermerge.core import dbapi, utils
+    from papermerge.core.db.engine import get_db
+    from papermerge.core.features.auth.scopes import Scopes
+    from papermerge.core.features.tags import schema as tags_schema
+    from papermerge.core.features.tags.db import api as tags_dbapi
+    from papermerge.core.features.tags.router import router as tags_router
+
+    await dbapi.sync_perms(db_session)
+    user = await make_user("tagger", is_superuser=False)
+    role = await make_role(
+        "tag_select_only",
+        scopes=[
+            Scopes.TAG_SELECT,
+            Scopes.USER_ME,
+        ],
+    )
+    user.roles.append(role)
+    await db_session.commit()
+
+    await tags_dbapi.create_tag(
+        db_session,
+        attrs=tags_schema.CreateTag(name="important", user_id=user.id),
+    )
+
+    app = FastAPI()
+    app.include_router(tags_router, prefix="")
+
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    middle_part = utils.base64.encode(
+        {
+            "sub": str(user.id),
+            "preferred_username": user.username,
+            "email": user.email,
+            "scopes": [Scopes.USER_ME],
+            "roles": [],
+        }
+    )
+    token = f"abc.{middle_part}.xyz"
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {token}"},
+    ) as client:
+        response = await client.get("/tags/all")
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 200, response.json()
+    names = {schema.Tag(**kw).name for kw in response.json()}
+    assert names == {"important"}
+
+
+async def test_list_tags_with_document_update_tags_scope_from_db_role(
+    db_session: AsyncSession,
+    make_user,
+    make_role,
+):
+    """Tag picker catalog is available with ``document.update.tags`` from DB role."""
+    from httpx import ASGITransport, AsyncClient
+    from fastapi import FastAPI
+
+    from papermerge.core import dbapi, utils
+    from papermerge.core.db.engine import get_db
+    from papermerge.core.features.auth.scopes import Scopes
+    from papermerge.core.features.tags import schema as tags_schema
+    from papermerge.core.features.tags.db import api as tags_dbapi
+    from papermerge.core.features.tags.router import router as tags_router
+
+    await dbapi.sync_perms(db_session)
+    user = await make_user("tagger", is_superuser=False)
+    role = await make_role(
+        "tagger_role",
+        scopes=[
+            Scopes.DOCUMENT_UPDATE_TAGS,
+            Scopes.USER_ME,
+        ],
+    )
+    user.roles.append(role)
+    await db_session.commit()
+
+    await tags_dbapi.create_tag(
+        db_session,
+        attrs=tags_schema.CreateTag(name="important", user_id=user.id),
+    )
+
+    app = FastAPI()
+    app.include_router(tags_router, prefix="")
+
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    middle_part = utils.base64.encode(
+        {
+            "sub": str(user.id),
+            "preferred_username": user.username,
+            "email": user.email,
+            "scopes": [Scopes.USER_ME],
+            "roles": [],
+        }
+    )
+    token = f"abc.{middle_part}.xyz"
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {token}"},
+    ) as client:
+        response = await client.get("/tags/all")
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 200, response.json()
+    names = {schema.Tag(**kw).name for kw in response.json()}
+    assert names == {"important"}

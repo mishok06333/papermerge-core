@@ -1,4 +1,8 @@
 import QuickFilter from "@/components/QuickFilter"
+import {useAppSelector} from "@/app/hooks"
+import {TAG_CREATE, TAG_DELETE, TAG_UPDATE} from "@/scopes"
+import {selectCurrentUser} from "@/slices/currentUser"
+import type {User} from "@/types"
 import {selectFilterText, selectSelectedIds} from "@/features/tags/tagsSlice"
 import {Group, Loader} from "@mantine/core"
 import {useSelector} from "react-redux"
@@ -19,13 +23,20 @@ export default function ActionButtons({
 }: Args) {
   const selectedIds = useSelector(selectSelectedIds)
   const filterText = useSelector(selectFilterText)
+  const user = useAppSelector(selectCurrentUser) as User | null
+  const scopes = user?.scopes ?? []
+  const canCreate = scopes.includes(TAG_CREATE)
+  const canUpdate = scopes.includes(TAG_UPDATE)
+  const canDelete = scopes.includes(TAG_DELETE)
 
   return (
-    <Group justify="space-between">
+    <Group justify="space-between" style={{flex: 1}}>
       <Group>
-        <NewButton />
-        {selectedIds.length == 1 ? <EditButton tagId={selectedIds[0]} /> : ""}
-        {selectedIds.length >= 1 ? <DeleteTagsButton /> : ""}
+        {canCreate ? <NewButton /> : null}
+        {canUpdate && selectedIds.length === 1 ? (
+          <EditButton tagId={selectedIds[0]} />
+        ) : null}
+        {canDelete && selectedIds.length >= 1 ? <DeleteTagsButton /> : null}
         {isFetching && <Loader size={"sm"} />}
       </Group>
       <Group>

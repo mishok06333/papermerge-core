@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -24,6 +25,10 @@ oauth2_scheme = OAuth2PasswordBearer(
 logger = logging.getLogger(__name__)
 
 BASELINE_AUTHENTICATED_SCOPES = [scopes.NODE_VIEW]
+
+NODE_TAGS_SCOPES = frozenset(
+    {scopes.NODE_UPDATE, scopes.DOCUMENT_UPDATE_TAGS, scopes.TAG_SELECT}
+)
 
 
 def extract_token_data(token: str = Depends(oauth2_scheme)) -> types.TokenData | None:
@@ -116,9 +121,24 @@ async def get_current_user(
             db_session, user_id=user.id, roles=token_data.roles
         )
 
+    total_scopes.extend(
+        await usr_dbapi.get_user_scopes_from_db_roles(
+            db_session, user_id=user.id
+        )
+    )
+
     for scope in security_scopes.scopes:
         if scope not in total_scopes:
             raise exc.HTTP403Forbidden()
 
-    user.scopes = total_scopes
+    user.scopes = sorted(set(total_scopes))
+    return user
+
+
+async def require_node_tags_user(
+    user: Annotated[users_schema.User, Depends(get_current_user)],
+) -> users_schema.User:
+    """Authenticated user with ``node.update``, ``document.update.tags``, or ``tag.select``."""
+    if not set(user.scopes or []).intersection(NODE_TAGS_SCOPES):
+        raise exc.HTTP403Forbidden()
     return user

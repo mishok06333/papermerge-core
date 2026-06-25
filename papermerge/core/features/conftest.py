@@ -21,7 +21,6 @@ from papermerge.core import constants
 from papermerge.core.features.auth.scopes import SCOPES
 from papermerge.core.db.base import Base
 from papermerge.core.db.engine import engine, get_db
-from papermerge.core.features.custom_fields import router as cf_router
 from papermerge.core.features.document.db import api as doc_dbapi
 from papermerge.core.features.document import schema as doc_schema
 from papermerge.core.features.custom_fields.db import api as cf_dbapi
@@ -36,8 +35,6 @@ from papermerge.core.features.nodes import \
     router_thumbnails as thumbnails_router
 from papermerge.core.features.nodes import router_public as public_nodes_router
 from papermerge.core.features.custom_fields.schema import CustomFieldType
-from papermerge.core.features.document_types import \
-    router as document_types_router
 from papermerge.core.features.groups import router as groups_router
 from papermerge.core.features.roles import router as roles_router
 from papermerge.core.features.tags import router as tags_router
@@ -291,10 +288,8 @@ async def my_documents_folder(db_session: AsyncSession, user, make_folder):
 def get_app_with_routes():
     app = FastAPI()
 
-    app.include_router(document_types_router.router, prefix="")
-    app.include_router(groups_router.router, prefix="")
     app.include_router(roles_router.router, prefix="")
-    app.include_router(cf_router.router, prefix="")
+    app.include_router(groups_router.router, prefix="")
     app.include_router(nodes_router.router, prefix="")
     app.include_router(public_nodes_router.router, prefix="")
     app.include_router(shared_nodes_router, prefix="")

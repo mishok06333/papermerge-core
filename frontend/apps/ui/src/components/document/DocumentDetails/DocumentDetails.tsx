@@ -12,6 +12,8 @@ import classes from "./DocumentDetails.module.css"
 
 import {EditNodeTagsModal} from "@/components/EditNodeTags"
 import type {DocumentType} from "@/features/document/types"
+import {canAssignNodeTags} from "@/scopes"
+import {selectCurrentUser} from "@/slices/currentUser"
 import {
   selectCurrentNodeID,
   selectDocumentDetailsPanelOpen
@@ -53,7 +55,7 @@ export default function DocumentDetails({doc, docID, isLoading}: Args) {
         <Stack className={classes.documentDetailsContent} justify="flex-start">
           <Group>
             <TagsInput
-              rightSection={<EditTagsButton />}
+              rightSection={<EditTagsButton doc={doc} />}
               label={t("common.tags")}
               readOnly
               value={doc?.tags?.map(t => t.name) || []}
@@ -69,11 +71,19 @@ export default function DocumentDetails({doc, docID, isLoading}: Args) {
   return <></>
 }
 
-function EditTagsButton() {
+function EditTagsButton({doc}: {doc?: DocumentType}) {
   const [opened, {open, close}] = useDisclosure(false)
   const mode: PanelMode = useContext(PanelContext)
   const docID = useAppSelector(s => selectCurrentNodeID(s, mode))
-  const {currentData: doc} = useGetDocumentQuery(docID ?? skipToken)
+  const user = useAppSelector(selectCurrentUser)
+  const scopes = user?.scopes ?? []
+  const canEdit = canAssignNodeTags(scopes)
+  const {currentData: liveDoc} = useGetDocumentQuery(docID ?? skipToken)
+  const node = liveDoc ?? doc
+
+  if (!canEdit) {
+    return null
+  }
 
   const onClick = () => {
     open()
@@ -92,10 +102,10 @@ function EditTagsButton() {
       <ActionIcon variant="default" onClick={onClick}>
         <IconEdit stroke={1.4} />
       </ActionIcon>
-      {doc && (
+      {node && (
         <EditNodeTagsModal
           opened={opened}
-          node={doc}
+          node={node}
           onSubmit={onSubmit}
           onCancel={onCancel}
         />

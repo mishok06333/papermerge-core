@@ -30,7 +30,10 @@ async def create_admin(exists_ok: bool = True):
         existing = (await db_session.execute(stmt)).scalar_one_or_none()
         if existing:
             attrs = schema.UpdateRole(name="admin", scopes=all_scopes)
-            await roles_dbapi.update_role(db_session, existing.id, attrs)
+            _, error = await roles_dbapi.update_role(db_session, existing.id, attrs)
+            if error:
+                console.print(error, style="red")
+                raise typer.Exit(1)
             rid = existing.id
         else:
             role, error = await roles_dbapi.create_role(

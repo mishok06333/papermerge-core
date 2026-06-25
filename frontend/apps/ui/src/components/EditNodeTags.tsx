@@ -1,14 +1,15 @@
 import {useAppSelector} from "@/app/hooks"
-import {Button, Group, Loader, Modal, TagsInput} from "@mantine/core"
-import {useEffect, useState} from "react"
+import {Button, Group, Loader, Modal, MultiSelect} from "@mantine/core"
+import {useEffect, useMemo, useState} from "react"
 
 import Error from "@/components/Error"
 import {
   useGetNodeTagsQuery,
   useUpdateNodeTagsMutation
 } from "@/features/nodes/apiSlice"
-import {selectNodeById} from "@/features/nodes/nodesSlice"
 import {useGetTagsQuery} from "@/features/tags/apiSlice"
+import {canAssignNodeTags, canSelectTags} from "@/scopes"
+import {selectCurrentUser} from "@/slices/currentUser"
 import type {EntityWithTags} from "@/types"
 import {useTranslation} from "react-i18next"
 
@@ -21,27 +22,37 @@ interface Args {
 
 export const EditNodeTagsModal = ({node, onSubmit, onCancel, opened}: Args) => {
   const {t} = useTranslation()
-  /*
-  Edit Tags Modal
-  */
-  const {data, isLoading: isLoadingTags} = useGetNodeTagsQuery(node.id)
-  const nodeDetails = useAppSelector(s => selectNodeById(s, node.id))
+  const user = useAppSelector(selectCurrentUser)
+  const scopes = user?.scopes ?? []
+  const canEdit = canAssignNodeTags(scopes)
+  const canListCatalog = canSelectTags(scopes)
 
+  const {data, isLoading: isLoadingTags} = useGetNodeTagsQuery(node.id)
   const [updateNodeTags, {isLoading, isSuccess}] = useUpdateNodeTagsMutation()
-  const {data: allTagsData, isLoading: isLoadingAllTagsData} = useGetTagsQuery(
-    nodeDetails?.group_id
-  )
-  const [allTagNames, setAllTagNames] = useState<string[]>([])
+  const {
+    data: allTagsData,
+    isLoading: isLoadingAllTagsData,
+    isError: isCatalogError
+  } = useGetTagsQuery(undefined, {skip: !canListCatalog})
   const [tags, setTags] = useState<string[]>(node.tags.map(t => t.name))
   const [error, setError] = useState("")
 
+  const catalogOptions = useMemo(() => {
+    const names = new Set<string>()
+    for (const tag of allTagsData ?? []) {
+      names.add(tag.name)
+    }
+    for (const tag of data ?? []) {
+      names.add(tag.name)
+    }
+    return [...names].sort((a, b) => a.localeCompare(b))
+  }, [allTagsData, data])
+
   useEffect(() => {
-    // close dialog as soon as we have
-    // "success" status from the mutation
     if (isSuccess) {
       onSubmit()
     }
-  }, [isSuccess])
+  }, [isSuccess, onSubmit])
 
   useEffect(() => {
     if (data) {
@@ -49,48 +60,67 @@ export const EditNodeTagsModal = ({node, onSubmit, onCancel, opened}: Args) => {
     }
   }, [data, isLoadingTags])
 
-  useEffect(() => {
-    if (allTagsData) {
-      setAllTagNames(allTagsData.map(t => t.name))
-    }
-  }, [allTagsData, isLoadingAllTagsData])
-
   const onLocalSubmit = async () => {
+    if (!canEdit) {
+      setError(t("pages.error.access_forbidden.message"))
+      return
+    }
+
+    const allowed = new Set(catalogOptions.map(name => name.toLowerCase()))
+    const invalid = tags.filter(name => !allowed.has(name.toLowerCase()))
+    if (invalid.length > 0) {
+      setError(t("edit_tags.unknown_tags", {names: invalid.join(", ")}))
+      return
+    }
+
     try {
-      await updateNodeTags({id: node.id, tags: tags})
-    } catch (error: any) {
-      // @ts-ignore
-      setError(err.data.detail)
+      await updateNodeTags({id: node.id, tags}).unwrap()
+    } catch (err: unknown) {
+      const detail = (err as {data?: {detail?: unknown}})?.data?.detail
+      setError(
+        typeof detail === "string"
+          ? detail
+          : detail
+            ? JSON.stringify(detail)
+            : String(err)
+      )
     }
   }
 
   const onLocalCancel = () => {
     onCancel()
-    reset()
-  }
-
-  const reset = () => {
     setError("")
   }
 
+  const catalogLoading = isLoadingAllTagsData || isLoadingTags
+  const formDisabled = !canEdit || catalogLoading || !canListCatalog
+  const catalogError = isCatalogError
+    ? t("pages.error.access_forbidden.message")
+    : ""
+
   return (
     <Modal title={t("edit_tags.title")} opened={opened} onClose={onLocalCancel}>
-      <TagsInput
+      <MultiSelect
         data-autofocus
         onChange={setTags}
         value={tags}
         label={t("tags.name")}
-        data={allTagNames}
+        description={t("edit_tags.catalog_only")}
+        data={catalogOptions}
+        searchable
+        clearable
+        nothingFoundMessage={t("edit_tags.catalog_empty")}
+        disabled={formDisabled}
         mt="md"
       />
-      {error && <Error message={error} />}
+      {(catalogError || error) && <Error message={catalogError || error} />}
       <Group justify="space-between" mt="md">
         <Button variant="default" onClick={onLocalCancel}>
           {t("common.cancel")}
         </Button>
         <Group>
-          {isLoading && <Loader size="sm" />}
-          <Button disabled={isLoading} onClick={onLocalSubmit}>
+          {(isLoading || catalogLoading) && <Loader size="sm" />}
+          <Button disabled={formDisabled || isLoading} onClick={onLocalSubmit}>
             {t("common.submit")}
           </Button>
         </Group>

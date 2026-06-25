@@ -40,8 +40,8 @@ export default function DocumentLibraryPanel({documentId}: Props) {
   const user = useAppSelector(selectCurrentUser) as User | null
   const scopes = user?.scopes ?? []
   const canCreateComments = scopes.includes(COMMENT_CREATE)
-  const canEditComments = scopes.includes(COMMENT_UPDATE)
-  const canDeleteComments = scopes.includes(COMMENT_DELETE)
+  const canModerateCommentsEdit = scopes.includes(COMMENT_UPDATE)
+  const canModerateCommentsDelete = scopes.includes(COMMENT_DELETE)
   const canEditPrivateNote = scopes.includes(NODE_UPDATE)
   const {data: note, isLoading: noteLoading} = useGetLibraryNoteQuery(
     documentId,
@@ -139,7 +139,12 @@ export default function DocumentLibraryPanel({documentId}: Props) {
         {t("library.comments")}
       </Text>
       <Stack gap="xs">
-        {(comments ?? []).map(c => (
+        {(comments ?? []).map(c => {
+          const isOwnComment = user?.id === c.user_id
+          const canEditComment = isOwnComment || canModerateCommentsEdit
+          const canDeleteComment = isOwnComment || canModerateCommentsDelete
+
+          return (
           <Stack
             key={c.id}
             gap={2}
@@ -161,9 +166,9 @@ export default function DocumentLibraryPanel({documentId}: Props) {
             <Text size="xs" c="dimmed">
               {c.author} - {new Date(c.created_at).toLocaleString()}
             </Text>
-            {canEditComments || canDeleteComments ? (
+            {canEditComment || canDeleteComment ? (
               <Group gap="xs">
-                {canEditComments && editingCommentId !== c.id ? (
+                {canEditComment && editingCommentId !== c.id ? (
                   <Button
                     size="compact-xs"
                     variant="subtle"
@@ -175,7 +180,7 @@ export default function DocumentLibraryPanel({documentId}: Props) {
                     {t("common.edit")}
                   </Button>
                 ) : null}
-                {canEditComments && editingCommentId === c.id ? (
+                {canEditComment && editingCommentId === c.id ? (
                   <>
                     <Button
                       size="compact-xs"
@@ -220,7 +225,7 @@ export default function DocumentLibraryPanel({documentId}: Props) {
                     </Button>
                   </>
                 ) : null}
-                {canDeleteComments ? (
+                {canDeleteComment ? (
                   <Button
                     size="compact-xs"
                     color="red"
@@ -255,7 +260,8 @@ export default function DocumentLibraryPanel({documentId}: Props) {
               </Group>
             ) : null}
           </Stack>
-        ))}
+          )
+        })}
       </Stack>
       <TextInput
         placeholder={t("library.comment_placeholder")}

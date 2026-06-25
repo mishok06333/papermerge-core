@@ -3,6 +3,7 @@ import {IconDownload} from "@tabler/icons-react"
 import {useTranslation} from "react-i18next"
 
 import PublicBreadcrumbs from "@/features/public/components/PublicBreadcrumbs"
+import PublicDocumentPreviewBody from "@/features/public/components/PublicDocumentPreviewBody"
 import type {BreadcrumbType} from "@/types"
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
   title: string
   previewUrl: string | null
   downloadUrl: string | null
+  fileName?: string | null
   folderHref?: (folderId: string) => string
   isLoading?: boolean
   isError?: boolean
@@ -21,6 +23,7 @@ export default function SimpleDocumentPreview({
   title,
   previewUrl,
   downloadUrl,
+  fileName,
   folderHref,
   isLoading = false,
   isError = false,
@@ -55,11 +58,15 @@ export default function SimpleDocumentPreview({
           {t("public.document.download")}
         </Button>
       </Group>
-      <iframe
-        title={t("public.document.preview")}
-        src={previewUrl}
-        style={{width: "100%", height: "75vh", border: "1px solid #ccc"}}
-      />
+      {fileName ? (
+        <PublicDocumentPreviewBody downloadUrl={previewUrl} fileName={fileName} />
+      ) : (
+        <iframe
+          title={t("public.document.preview")}
+          src={previewUrl}
+          style={{width: "100%", height: "75vh", border: "1px solid #ccc"}}
+        />
+      )}
     </Stack>
   )
 }

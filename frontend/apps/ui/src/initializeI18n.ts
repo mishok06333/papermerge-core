@@ -5,7 +5,9 @@ import LocalStorageBackend from "i18next-localstorage-backend"
 import XHR from "i18next-xhr-backend"
 import {initReactI18next} from "react-i18next"
 
-const localizationPath = "/localization/{{lng}}/{{ns}}.json"
+/** Bump when UI translation JSON changes so clients skip stale HTTP/local caches. */
+const I18N_BUNDLE_REVISION = "2025062501"
+const localizationPath = `/localization/{{lng}}/{{ns}}.json?v=${I18N_BUNDLE_REVISION}`
 
 export function initializeI18n(): Promise<void> {
   return i18n
@@ -35,7 +37,7 @@ export function initializeI18n(): Promise<void> {
         backends: [LocalStorageBackend, XHR],
         backendOptions: [
           {
-            prefix: "i18next_papermerge",
+            prefix: `i18next_papermerge_${I18N_BUNDLE_REVISION}`,
             expirationTime: 5 * 1000,
             store: window.localStorage
           },

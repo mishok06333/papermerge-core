@@ -4,14 +4,13 @@ import {getBaseURL, getDefaultHeaders} from "@/utils"
 import axios from "axios"
 
 const baseUrl = getBaseURL()
-const defaultHeaders = getDefaultHeaders()
 
 const client = axios.create({
   baseURL: baseUrl,
   timeout: 15000
 })
 
-client.defaults.headers.common = defaultHeaders
+client.defaults.headers.common = getDefaultHeaders()
 
 client.interceptors.request.use(config => {
   const requestID =
@@ -20,6 +19,12 @@ client.interceptors.request.use(config => {
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`
   config.headers = config.headers ?? {}
   config.headers["X-Correlation-ID"] = requestID
+
+  const authHeaders = getDefaultHeaders()
+  if (authHeaders.Authorization) {
+    config.headers.Authorization = authHeaders.Authorization
+  }
+
   return config
 })
 

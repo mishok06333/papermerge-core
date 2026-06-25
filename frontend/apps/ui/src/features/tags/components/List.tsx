@@ -1,207 +1,200 @@
-import Th from "@/components/TableSort/Th"
-import {useGetPaginatedTagsQuery} from "@/features/tags/apiSlice"
+import {useGetTagsQuery} from "@/features/tags/apiSlice"
 import {
-  clearSelection,
   filterUpdated,
-  lastPageSizeUpdate,
-  selectLastPageSize,
-  selectReverseSortedByDescription,
-  selectReverseSortedByID,
-  selectReverseSortedByName,
-  selectReverseSortedByOwner,
-  selectReverseSortedByPinned,
-  selectSelectedIds,
-  selectSortedByDescription,
-  selectSortedByID,
-  selectSortedByName,
-  selectSortedByOwner,
-  selectSortedByPinned,
-  selectTableSortColumns,
-  selectionAddMany,
-  sortByUpdated
+  selectFilterText,
+  selectionAdd,
+  selectionRemove,
+  selectSelectedIds
 } from "@/features/tags/tagsSlice"
-import {Center, Checkbox, Loader, Stack, Table} from "@mantine/core"
-import {useState} from "react"
+import {
+  canManageTags,
+  TAG_CREATE,
+  TAG_DELETE,
+  TAG_SELECT,
+  TAG_UPDATE,
+  TAG_VIEW
+} from "@/scopes"
+import {useAppSelector} from "@/app/hooks"
+import {selectCurrentUser} from "@/slices/currentUser"
+import type {ColoredTag, User} from "@/types"
+import {
+  Anchor,
+  Center,
+  Checkbox,
+  Group,
+  Loader,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title
+} from "@mantine/core"
+import {useMemo} from "react"
 import {useDispatch, useSelector} from "react-redux"
-
-import Pagination from "@/components/Pagination"
-import type {TagsListColumnName} from "../types"
-import ActionButtons from "./ActionButtons"
-import TagRow from "./TagRow"
+import {Link} from "react-router-dom"
 import {useTranslation} from "react-i18next"
+
+import ActionButtons from "./ActionButtons"
+
+function canListTags(scopes: string[]): boolean {
+  return (
+    scopes.includes(TAG_VIEW) ||
+    scopes.includes(TAG_SELECT) ||
+    scopes.includes(TAG_CREATE) ||
+    canManageTags(scopes)
+  )
+}
 
 export default function TagsList() {
   const {t} = useTranslation()
-  const selectedIds = useSelector(selectSelectedIds)
   const dispatch = useDispatch()
-  const tableSortCols = useSelector(selectTableSortColumns)
-  const lastPageSize = useSelector(selectLastPageSize)
-  const sortedByName = useSelector(selectSortedByName)
-  const sortedByPinned = useSelector(selectSortedByPinned)
-  const sortedByDescription = useSelector(selectSortedByDescription)
-  const sortedByID = useSelector(selectSortedByID)
-  const sortedByOwner = useSelector(selectSortedByOwner)
-  const reverseSortedByName = useSelector(selectReverseSortedByName)
-  const reverseSortedByPinned = useSelector(selectReverseSortedByPinned)
-  const reverseSortedByDescription = useSelector(
-    selectReverseSortedByDescription
-  )
-  const reverseSortedByID = useSelector(selectReverseSortedByID)
-  const reverseSortedByOwner = useSelector(selectReverseSortedByOwner)
+  const filterText = useSelector(selectFilterText)
+  const user = useAppSelector(selectCurrentUser) as User | null
+  const scopes = user?.scopes ?? []
+  const selectedIds = useSelector(selectSelectedIds)
+  const canSelectForManage =
+    scopes.includes(TAG_UPDATE) || scopes.includes(TAG_DELETE)
 
-  const [page, setPage] = useState<number>(1)
-  const [pageSize, setPageSize] = useState<number>(lastPageSize)
-
-  const {data, isLoading, isFetching} = useGetPaginatedTagsQuery({
-    page_number: page,
-    page_size: pageSize,
-    sort_by: tableSortCols.sortBy,
-    filter: tableSortCols.filter
+  const {data, isLoading, isFetching, isError} = useGetTagsQuery(undefined, {
+    skip: !canListTags(scopes)
   })
 
-  const onCheckAll = (checked: boolean) => {
-    if (!data) {
-      console.log(`undefined data`)
-      return
+  const tags = useMemo(() => {
+    const byName = new Map<string, ColoredTag>()
+    for (const tag of data ?? []) {
+      const key = tag.name.toLowerCase()
+      if (!byName.has(key)) {
+        byName.set(key, tag)
+      }
     }
-
-    if (checked) {
-      dispatch(selectionAddMany(data.items.map(i => i.id)))
-    } else {
-      dispatch(clearSelection())
+    const items = [...byName.values()]
+    const needle = (filterText ?? "").trim().toLowerCase()
+    if (!needle) {
+      return [...items].sort((a, b) => a.name.localeCompare(b.name))
     }
-  }
-
-  const onPageNumberChange = (page: number) => {
-    setPage(page)
-  }
-
-  const onPageSizeChange = (value: string | null) => {
-    if (value) {
-      const pageSize = parseInt(value)
-
-      dispatch(lastPageSizeUpdate(pageSize))
-      setPageSize(pageSize)
-    }
-  }
-
-  const onSortBy = (columnName: TagsListColumnName) => {
-    dispatch(sortByUpdated(columnName))
-  }
+    return items
+      .filter(
+        tag =>
+          tag.name.toLowerCase().includes(needle) ||
+          (tag.description ?? "").toLowerCase().includes(needle)
+      )
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [data, filterText])
 
   const onQuickFilterChange = (value: string) => {
     dispatch(filterUpdated(value))
-    setPage(1)
   }
 
   const onQuickFilterClear = () => {
     dispatch(filterUpdated(undefined))
-    setPage(1)
   }
 
-  if (isLoading || !data) {
+  if (!canListTags(scopes)) {
     return (
-      <Stack>
-        <ActionButtons
-          onQuickFilterChange={onQuickFilterChange}
-          onQuickFilterClear={onQuickFilterClear}
-        />
-        <Center>
-          <Loader type="bars" />
-        </Center>
-      </Stack>
+      <Center py="xl">
+        <Text c="dimmed">{t("tags.list.no_access")}</Text>
+      </Center>
     )
   }
-
-  if (data.items.length == 0) {
-    return (
-      <div>
-        <ActionButtons
-          onQuickFilterChange={onQuickFilterChange}
-          onQuickFilterClear={onQuickFilterClear}
-        />
-        <Empty />
-      </div>
-    )
-  }
-
-  const tagRows = data?.items.map(t => <TagRow key={t.id} tag={t} />)
 
   return (
-    <Stack>
-      <ActionButtons
-        isFetching={isFetching}
-        onQuickFilterChange={onQuickFilterChange}
-        onQuickFilterClear={onQuickFilterClear}
-      />
-      <Table>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>
-              <Checkbox
-                checked={data.items.length == selectedIds.length}
-                onChange={e => onCheckAll(e.currentTarget.checked)}
+    <Stack gap="md">
+      <Group justify="space-between" align="flex-end">
+        <Title order={3}>{t("tags.name")}</Title>
+        <ActionButtons
+          isFetching={isFetching}
+          onQuickFilterChange={onQuickFilterChange}
+          onQuickFilterClear={onQuickFilterClear}
+        />
+      </Group>
+
+      {isLoading ? (
+        <Center py="xl">
+          <Loader type="bars" />
+        </Center>
+      ) : isError ? (
+        <Center py="xl">
+          <Text c="red">{t("tags.list.load_error")}</Text>
+        </Center>
+      ) : tags.length === 0 ? (
+        <Empty hasFilter={Boolean(filterText)} />
+      ) : (
+        <Paper withBorder p="md">
+          <SimpleGrid cols={{base: 1, xs: 2, sm: 3, md: 4}} spacing="sm">
+            {tags.map(tag => (
+              <TagCard
+                key={tag.id}
+                tag={tag}
+                selectable={canSelectForManage}
+                selected={selectedIds.includes(tag.id)}
+                onToggleSelect={checked => {
+                  if (checked) {
+                    dispatch(selectionAdd(tag.id))
+                  } else {
+                    dispatch(selectionRemove(tag.id))
+                  }
+                }}
               />
-            </Table.Th>
-            <Th
-              sorted={sortedByName}
-              reversed={reverseSortedByName}
-              onSort={() => onSortBy("name")}
-            >
-              {t("common.table.columns.name")}
-            </Th>
-            <Th
-              sorted={sortedByPinned}
-              reversed={reverseSortedByPinned}
-              onSort={() => onSortBy("pinned")}
-            >
-              {t("common.table.columns.pinned")}?
-            </Th>
-            <Th
-              sorted={sortedByDescription}
-              reversed={reverseSortedByDescription}
-              onSort={() => onSortBy("description")}
-            >
-              {t("common.table.columns.description")}
-            </Th>
-            <Th
-              sorted={sortedByOwner}
-              reversed={reverseSortedByOwner}
-              onSort={() => onSortBy("group_name")}
-            >
-              Owner
-            </Th>
-            <Th
-              sorted={sortedByID}
-              reversed={reverseSortedByID}
-              onSort={() => onSortBy("ID")}
-            >
-              ID
-            </Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>{tagRows}</Table.Tbody>
-      </Table>
-      <Pagination
-        pagination={{
-          pageNumber: page,
-          pageSize: pageSize,
-          numPages: data.num_pages
-        }}
-        onPageNumberChange={onPageNumberChange}
-        onPageSizeChange={onPageSizeChange}
-        lastPageSize={lastPageSize}
-      />
+            ))}
+          </SimpleGrid>
+        </Paper>
+      )}
     </Stack>
   )
 }
 
-function Empty() {
+function TagCard({
+  tag,
+  selectable,
+  selected,
+  onToggleSelect
+}: {
+  tag: ColoredTag
+  selectable: boolean
+  selected: boolean
+  onToggleSelect: (checked: boolean) => void
+}) {
+  return (
+    <Paper withBorder p="sm" radius="md">
+      <Group justify="space-between" wrap="nowrap" align="flex-start">
+        {selectable ? (
+          <Checkbox
+            checked={selected}
+            onChange={e => onToggleSelect(e.currentTarget.checked)}
+            mt={2}
+          />
+        ) : null}
+        <Anchor
+          component={Link}
+          to={`/tags/${tag.id}`}
+          underline="never"
+          style={{flex: 1}}
+        >
+          <Text fw={500}>{tag.name}</Text>
+          {tag.description ? (
+            <Text size="xs" c="dimmed" lineClamp={2} mt={4}>
+              {tag.description}
+            </Text>
+          ) : null}
+        </Anchor>
+      </Group>
+    </Paper>
+  )
+}
+
+function Empty({hasFilter}: {hasFilter: boolean}) {
   const {t} = useTranslation()
   return (
-    <Center>
-      <Stack align="center">
-        <div>{t("tags.list.empty")}</div>
+    <Center py="xl">
+      <Stack align="center" gap="xs">
+        <Text c="dimmed">
+          {hasFilter ? t("tags.list.empty_filter") : t("tags.list.empty")}
+        </Text>
+        {!hasFilter ? (
+          <Text size="sm" c="dimmed" ta="center" maw={420}>
+            {t("tags.list.empty_hint")}
+          </Text>
+        ) : null}
       </Stack>
     </Center>
   )

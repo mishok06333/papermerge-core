@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Union, Tuple, Iterable
 from uuid import UUID
 
-from sqlalchemy import func, select, delete, update, exists
+from sqlalchemy import func, literal, select, delete, update, exists
 from sqlalchemy.orm import selectin_polymorphic, selectinload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +19,7 @@ from papermerge.core.features.nodes.schema import DeleteDocumentsData
 from papermerge.core import orm
 from papermerge.core.config import get_settings
 from papermerge.core.features.library_ts.db import api as lib_ts_api
+from papermerge.core.features.tags.db import api as tags_dbapi
 from .orm import Folder
 
 logger = logging.getLogger(__name__)
@@ -44,11 +45,24 @@ async def load_folder(db_session: AsyncSession, folder: orm.Folder) -> orm.Folde
     return result.scalar_one()
 
 
+def _node_file_extension_expr():
+    """Lower-case file extension from title; nodes without one sort as empty."""
+    return func.lower(
+        func.coalesce(
+            func.substring(orm.Node.title, r"\.([^.]+)$"),
+            literal(""),
+        )
+    )
+
+
 def str2colexpr(keys: list[str]):
     result = []
+    file_ext = _node_file_extension_expr()
     ORDER_BY_MAP = {
         "ctype": orm.Node.ctype,
         "-ctype": orm.Node.ctype.desc(),
+        "file_type": (file_ext.asc(), orm.Node.title.asc()),
+        "-file_type": (file_ext.desc(), orm.Node.title.desc()),
         "title": orm.Node.title,
         "-title": orm.Node.title.desc(),
         "created_at": orm.Node.created_at,
@@ -60,7 +74,10 @@ def str2colexpr(keys: list[str]):
 
     for key in keys:
         item = ORDER_BY_MAP.get(key, orm.Node.title)
-        result.append(item)
+        if isinstance(item, tuple):
+            result.extend(item)
+        else:
+            result.append(item)
 
     return result
 
@@ -248,24 +265,17 @@ async def assign_node_tags(
     if node is None:
         raise EntityNotFound(f"Node {node_id} not found")
 
-    existing_db_tags = (await db_session.execute(
-        select(orm.Tag).where(orm.Tag.name.in_(tags))
-    )).scalars()
-    existing_db_tags_names = [t.name for t in existing_db_tags.all()]
-    # create new tags if they don't exist
-    new_db_tags = [
-        orm.Tag(name=name, user_id=node.user_id, group_id=node.group_id)
-        for name in tags
-        if name not in existing_db_tags_names
-    ]
-    db_session.add_all(new_db_tags)
-    await db_session.commit()
-    db_tags = (await db_session.execute(
-        select(orm.Tag).where(orm.Tag.name.in_(tags))
-    )).scalars()
+    tag_objs = []
+    for name in tags:
+        tag = await tags_dbapi.find_catalog_tag_by_name(
+            db_session, user_id=user_id, name=name
+        )
+        if tag is None:
+            return None, schema.Error(messages=[f"Unknown tag: {name}"])
+        tag_objs.append(tag)
 
     try:
-        node.tags = db_tags.all()
+        node.tags = tag_objs
         await db_session.commit()
     except Exception as e:
         error = schema.Error(messages=[str(e)])
@@ -289,10 +299,14 @@ async def update_node_tags(
     if node is None:
         raise EntityNotFound(f"Node {node_id} not found")
 
-    if node.group_id:
-        db_tags = [orm.Tag(name=name, group_id=node.group_id) for name in tags]
-    else:
-        db_tags = [orm.Tag(name=name, user_id=user_id) for name in tags]
+    db_tags = []
+    for name in tags:
+        tag = await tags_dbapi.find_catalog_tag_by_name(
+            db_session, user_id=user_id, name=name
+        )
+        if tag is None:
+            return None, schema.Error(messages=[f"Unknown tag: {name}"])
+        db_tags.append(tag)
 
     db_session.add_all(db_tags)
 

@@ -142,21 +142,26 @@ EOF
             sed -i "s|Papermerge DMS|${AUTH_BRAND_TITLE_SED}|g" "$file"
             sed -i "s|Open Source Document Management System for Digital Archives|${AUTH_LOGIN_SUBTITLE_SED}|g" "$file"
 
+            # Auth errors first — label replacements below turn "Username" in
+            # "Username or password incorrect" into a mixed RU/EN message.
+            sed -i "s|Invalid credentials|Неверные учетные данные|g" "$file"
+            sed -i "s|Invalid username or password|Неверное имя пользователя или пароль|g" "$file"
+            sed -i "s|Username or password incorrect|Неверное имя пользователя или пароль|g" "$file"
+            sed -i "s|username or password incorrect|Неверное имя пользователя или пароль|g" "$file"
+            sed -i "s|Имя пользователя or password incorrect|Неверное имя пользователя или пароль|g" "$file"
+            sed -i "s|or password incorrect|или пароль неверный|g" "$file"
+            sed -i "s|User is not active|Пользователь не активирован|g" "$file"
+            sed -i "s|Account is disabled|Учетная запись отключена|g" "$file"
+            sed -i "s|Unauthorized|Не авторизован|g" "$file"
+            sed -i "s|Forbidden|Доступ запрещен|g" "$file"
+            sed -i "s|Something went wrong|Произошла ошибка|g" "$file"
+
             # Generic auth form labels.
             sed -i "s|Username|Имя пользователя|g" "$file"
             sed -i "s|Password|Пароль|g" "$file"
             sed -i "s|Your password|Введите пароль|g" "$file"
             sed -i "s|Sign in|Войти|g" "$file"
             sed -i "s|Login|Войти|g" "$file"
-
-            # Common auth errors.
-            sed -i "s|Invalid credentials|Неверные учетные данные|g" "$file"
-            sed -i "s|Invalid username or password|Неверное имя пользователя или пароль|g" "$file"
-            sed -i "s|User is not active|Пользователь не активирован|g" "$file"
-            sed -i "s|Account is disabled|Учетная запись отключена|g" "$file"
-            sed -i "s|Unauthorized|Не авторизован|g" "$file"
-            sed -i "s|Forbidden|Доступ запрещен|g" "$file"
-            sed -i "s|Something went wrong|Произошла ошибка|g" "$file"
         done
 
     # Some auth UI builds only ship de/en locales. If the browser asks for ru,
@@ -183,6 +188,16 @@ EOF
 EOF
     cp -f "${AUTH_I18N_DIR}/en.json" "${AUTH_I18N_DIR}/ru.json"
     cp -f "${AUTH_I18N_DIR}/en.json" "${AUTH_I18N_DIR}/de.json"
+
+    # Auth-server login SPA sometimes keeps the login form after a successful
+    # POST /token (client-side navigation without a full reload). Poll for the
+    # access_token cookie and hard-navigate to the UI bundle on /home.
+    AUTH_HTML="/usr/share/nginx/html/auth_server/index.html"
+    AUTH_POST_LOGIN_SNIPPET="/etc/papermerge/post-login-redirect.snippet.html"
+    if [ -f "$AUTH_HTML" ] && [ -f "$AUTH_POST_LOGIN_SNIPPET" ] \
+        && ! grep -q 'id="post-login-redirect"' "$AUTH_HTML"; then
+        sed -i "/<\\/body>/r ${AUTH_POST_LOGIN_SNIPPET}" "$AUTH_HTML"
+    fi
 }
 
 case "$CMD" in

@@ -17,6 +17,8 @@ class OrderBy(str, Enum):
     title_desc = "-title"
     ctype_asc = "ctype"
     ctype_desc = "-ctype"
+    file_type_asc = "file_type"
+    file_type_desc = "-file_type"
     created_at_asc = "created_at"
     created_at_desc = "-created_at"
     updated_at_asc = "updated_at"
@@ -195,4 +197,5 @@ class PublicDocumentMeta(BaseModel):
     id: UUID
     title: str
     parent_id: UUID
+    file_name: str
     breadcrumb: List[Tuple[UUID, str]] = []

@@ -12,6 +12,7 @@ export type PublicDocumentMeta = {
   id: string
   title: string
   parent_id: string
+  file_name: string
   breadcrumb: BreadcrumbType
 }
 

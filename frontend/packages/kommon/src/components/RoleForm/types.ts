@@ -15,6 +15,10 @@ export interface I18NPermissionTree {
   portal_document_update?: string
   portal_document_delete?: string
   comments: string
+  /** Moderate (edit) other users' comments */
+  comment_moderate_edit?: string
+  /** Moderate (delete) other users' comments */
+  comment_moderate_delete?: string
   users: string
   roles: string
   groups: string

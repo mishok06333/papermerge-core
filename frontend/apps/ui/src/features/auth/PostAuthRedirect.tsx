@@ -1,14 +1,20 @@
 import {Loader, Center} from "@mantine/core"
-import {useEffect} from "react"
+import {useEffect, useRef, useState} from "react"
 import {useDispatch, useSelector} from "react-redux"
 import {Navigate} from "react-router-dom"
 
+import {
+  clearAuthCookie,
+  usesNginxAuthGate
+} from "@/features/public/guestMode"
 import {
   fetchCurrentUser,
   selectCurrentUser,
   selectCurrentUserStatus
 } from "@/slices/currentUser"
 import {resolveDefaultPath} from "@/utils/defaultPath"
+
+const RETRY_DELAY_MS = 400
 
 /**
  * Used after auth-server login (/home). Waits for /api/users/me, then routes
@@ -18,14 +24,46 @@ export default function PostAuthRedirect() {
   const dispatch = useDispatch()
   const status = useSelector(selectCurrentUserStatus)
   const user = useSelector(selectCurrentUser)
+  const retried = useRef(false)
+  const authHandoffStarted = useRef(false)
+  const [retrying, setRetrying] = useState(false)
 
   useEffect(() => {
-    if (status === "idle") {
-      dispatch(fetchCurrentUser())
+    dispatch(fetchCurrentUser())
+  }, [dispatch])
+
+  useEffect(() => {
+    if (status !== "failed" || retried.current) {
+      return
     }
+    retried.current = true
+    setRetrying(true)
+    const timer = window.setTimeout(() => {
+      dispatch(fetchCurrentUser())
+    }, RETRY_DELAY_MS)
+    return () => window.clearTimeout(timer)
   }, [dispatch, status])
 
-  if (status === "idle" || status === "loading") {
+  useEffect(() => {
+    if (status === "loading" || status === "succeeded") {
+      setRetrying(false)
+    }
+  }, [status])
+
+  useEffect(() => {
+    if (status !== "failed" || retrying || authHandoffStarted.current) {
+      return
+    }
+    if (!usesNginxAuthGate()) {
+      return
+    }
+    authHandoffStarted.current = true
+    clearAuthCookie()
+    // /home runs this component again; send guests to the public landing.
+    window.location.replace("/")
+  }, [status, retrying])
+
+  if (status === "idle" || status === "loading" || retrying) {
     return (
       <Center mih="50vh">
         <Loader />
@@ -34,6 +72,13 @@ export default function PostAuthRedirect() {
   }
 
   if (status === "failed" || !user) {
+    if (usesNginxAuthGate()) {
+      return (
+        <Center mih="50vh">
+          <Loader />
+        </Center>
+      )
+    }
     return <Navigate to="/" replace />
   }
 

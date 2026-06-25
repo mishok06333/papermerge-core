@@ -4,7 +4,7 @@ import uuid
 from typing import Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -131,10 +131,16 @@ async def get_public_document(
     if db_doc is None:
         raise HTTP404NotFound()
 
+    try:
+        doc_ver = await doc_dbapi.get_last_doc_ver(db_session, doc_id=document_id)
+    except NoResultFound:
+        raise HTTP404NotFound()
+
     return PublicDocumentMeta(
         id=db_doc.id,
         title=db_doc.title,
         parent_id=db_doc.parent_id,
+        file_name=doc_ver.file_name,
         breadcrumb=await _public_breadcrumb(db_session, document_id),
     )
 
@@ -190,6 +196,7 @@ async def get_public_document_thumbnail(
 )
 async def download_public_document(
     document_id: uuid.UUID,
+    inline: bool = Query(default=True),
     db_session: AsyncSession = Depends(get_db),
 ):
     if not await can_view_node(db_session, node_id=document_id, user_id=None):
@@ -207,5 +214,5 @@ async def download_public_document(
     return DocumentFileResponse(
         str(file_path),
         filename=doc_ver.file_name,
-        content_disposition_type="inline",
+        content_disposition_type="inline" if inline else "attachment",
     )

@@ -1,6 +1,6 @@
 import {Box, Group, Stack} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
-import {useContext, useMemo, useState} from "react"
+import {useContext, useEffect, useMemo, useState} from "react"
 import {createRoot} from "react-dom/client"
 
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
@@ -131,6 +131,10 @@ export default function Commander() {
   const filter = useAppSelector(s => selectFilterText(s, mode))
   const sortDir = useAppSelector(s => selectCommanderSortMenuDir(s, mode))
   const sortColumn = useAppSelector(s => selectCommanderSortMenuColumn(s, mode))
+
+  useEffect(() => {
+    setPage(1)
+  }, [sortColumn, sortDir])
 
   const {data, isLoading, isFetching, isError, refetch, error} =
     useGetPaginatedNodesQuery(

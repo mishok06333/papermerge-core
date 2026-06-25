@@ -110,6 +110,23 @@ async def require_node_perm(
         raise exc.HTTP403Forbidden()
 
 
+async def require_node_perm_any(
+    db_session: AsyncSession,
+    node_id: UUID,
+    user_id: UUID,
+    *codenames: str,
+) -> None:
+    """Raise HTTP 403 unless `user_id` has any of `codenames` on `node_id`."""
+    from papermerge.core import exceptions as exc
+
+    for codename in codenames:
+        if await has_node_perm(
+            db_session, node_id=node_id, codename=codename, user_id=user_id
+        ):
+            return
+    raise exc.HTTP403Forbidden()
+
+
 async def _user_has_any_portal_perm_via_account_roles(
     db_session: AsyncSession, user_id: UUID, *portal_codenames: str
 ) -> bool:
@@ -251,11 +268,17 @@ async def has_node_perm(
                     db_session, user_id, auth_scopes.PORTAL_DOCUMENT_DELETE
                 ):
                     return True
-        elif codename in (auth_scopes.NODE_UPDATE, auth_scopes.NODE_MOVE):
+        elif codename in (
+            auth_scopes.NODE_UPDATE,
+            auth_scopes.NODE_MOVE,
+            auth_scopes.DOCUMENT_UPDATE_TAGS,
+        ):
             ctype = await db_session.scalar(
                 select(orm.Node.ctype).where(orm.Node.id == node_id)
             )
             if ctype == "folder":
+                if codename == auth_scopes.DOCUMENT_UPDATE_TAGS:
+                    return False
                 if await _user_has_any_portal_perm_via_account_roles(
                     db_session, user_id, auth_scopes.PORTAL_SECTION_UPDATE
                 ):
@@ -308,6 +331,9 @@ async def has_node_perm(
     from papermerge.core.features.nodes.visibility import can_view_node
 
     if codename == auth_scopes.NODE_VIEW:
+        return await can_view_node(db_session, node_id=node_id, user_id=user_id)
+
+    if codename == auth_scopes.TAG_SELECT:
         return await can_view_node(db_session, node_id=node_id, user_id=user_id)
 
     return False

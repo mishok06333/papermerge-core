@@ -57,6 +57,18 @@ async def get_roles_without_pagination(db_session: AsyncSession) -> list[schema.
     return items
 
 
+async def _permissions_for_scopes(
+    db_session: AsyncSession, scopes: list[str]
+) -> Tuple[list[orm.Permission], str | None]:
+    stmt = select(orm.Permission).where(orm.Permission.codename.in_(scopes))
+    perms = (await db_session.execute(stmt)).scalars().all()
+    found_codenames = {p.codename for p in perms}
+    missing = set(scopes) - found_codenames
+    if missing:
+        return [], f"Unknown permission scopes: {', '.join(sorted(missing))}"
+    return list(perms), None
+
+
 async def create_role(
     db_session: AsyncSession, name: str, scopes: list[str], exists_ok: bool = False
 ) -> Tuple[schema.Role | None, str | None]:
@@ -78,13 +90,8 @@ async def create_role(
             logger.info(f"Role {name} already exists")
             return schema.Role.model_validate(result[0]), None
 
-    stmt = select(orm.Permission).where(orm.Permission.codename.in_(scopes))
-    perms = (await db_session.execute(stmt)).scalars().all()
-
-    found_codenames = {p.codename for p in perms}
-    missing = set(scopes) - found_codenames
-    if missing:
-        error = f"Unknown permission scopes: {', '.join(missing)}"
+    perms, error = await _permissions_for_scopes(db_session, scopes)
+    if error:
         return None, error
 
     role = orm.Role(name=name, permissions=perms)
@@ -112,9 +119,10 @@ async def create_role(
 
 async def update_role(
     db_session: AsyncSession, role_id: uuid.UUID, attrs: schema.UpdateRole
-) -> schema.RoleDetails:
-    stmt = select(orm.Permission).where(orm.Permission.codename.in_(attrs.scopes))
-    perms = (await db_session.execute(stmt)).scalars().all()
+) -> Tuple[schema.RoleDetails | None, str | None]:
+    perms, error = await _permissions_for_scopes(db_session, attrs.scopes)
+    if error:
+        return None, error
 
     stmt = select(orm.Role).options(selectinload(orm.Role.permissions)).where(orm.Role.id == role_id)
     role = (await db_session.execute(stmt, params={"id": role_id})).scalars().one()
@@ -125,10 +133,10 @@ async def update_role(
     await db_session.commit()
 
     result = schema.RoleDetails(
-        id=role.id, name=role.name, scopes=[p.codename for p in perms]
+        id=role.id, name=role.name, scopes=sorted(p.codename for p in perms)
     )
 
-    return result
+    return result, None
 
 
 async def delete_role(

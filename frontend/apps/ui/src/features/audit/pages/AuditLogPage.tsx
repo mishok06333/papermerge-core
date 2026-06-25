@@ -1,3 +1,4 @@
+import {formatAuditDetail} from "@/features/audit/formatAuditDetail"
 import {useGetLibraryAuditLogQuery} from "@/features/library/libraryApiSlice"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {UserDetails} from "@/types"
@@ -94,7 +95,7 @@ export default function AuditLogPage() {
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" style={{wordBreak: "break-all"}}>
-                      {row.detail ?? "—"}
+                      {formatAuditDetail(row.detail)}
                     </Text>
                   </Table.Td>
                 </Table.Tr>

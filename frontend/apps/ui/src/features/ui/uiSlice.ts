@@ -26,7 +26,6 @@ import type {
   SortMenuDirection
 } from "@/types"
 
-import type {CategoryColumn} from "@/features/nodes/components/Commander/DocumentsByTypeCommander/types"
 import {DialogVisiblity} from "@/types.d/common"
 
 const COLLAPSED_WIDTH = 55
@@ -107,11 +106,6 @@ type SortMenuDirectionUpdatedArgs = {
 type ViewOptionArgs = {
   mode: PanelMode
   viewOption: ViewOption
-}
-
-type DocumentTypeIDArgs = {
-  mode: PanelMode
-  documentTypeID?: string
 }
 
 export interface UploaderFileItemArgs {
@@ -196,18 +190,6 @@ interface SearchState {
   query: string
 }
 
-interface DocumentsByTypeColumnsArg {
-  mode: PanelMode
-  document_type_id: string
-  columns: Array<string>
-}
-
-interface DocumentsByTypeCommanderColumnToggledArg {
-  mode: PanelMode
-  name: string
-  visibility: boolean
-}
-
 export type LastHome = {
   label: string
   home_id: string
@@ -250,27 +232,20 @@ export interface UIState {
   mainCommanderSortMenuColumn?: SortMenuColumn
   mainCommanderSortMenuDir?: SortMenuDirection
   mainCommanderViewOption?: ViewOption
-  mainCommanderDocumentTypeID?: string
   /* User may choose between own and group homes
    this field indicates his/her last selection */
   mainCommanderLastHome?: LastHome
   mainCommanderLastInbox?: LastInbox
-  mainDocumentsByTypeCommanderColumns?: Record<string, Array<CategoryColumn>>
   secondaryCommanderSelectedIDs?: Array<String>
   secondaryCommanderFilter?: string
   secondaryCommanderLastPageSize?: number
   secondaryCommanderSortMenuColumn?: SortMenuColumn
   secondaryCommanderSortMenuDir?: SortMenuDirection
   secondaryCommanderViewOption?: ViewOption
-  secondaryCommanderDocumentTypeID?: string
   /* User may choose between own and group homes
    this field indicates his/her last selection */
   secondaryCommanderLastHome?: LastHome
   secondaryCommanderLastInbox?: LastInbox
-  secondaryDocumentsByTypeCommanderColumns: Record<
-    string,
-    Array<CategoryColumn>
-  >
   /* Which component should main panel display:
     commander, viewer or search results? */
   mainPanelComponent?: PanelComponent
@@ -319,8 +294,6 @@ const initialState: UIState = {
   mainViewerDocumentDetailsPanelOpen: mainDocumentDetailsPanelInitialState(),
   secondaryViewerDocumentDetailsPanelOpen:
     secondaryDocumentDetailsPanelInitialState(),
-  mainDocumentsByTypeCommanderColumns: {},
-  secondaryDocumentsByTypeCommanderColumns: {},
   homeFolderTreeOpen: homeFolderTreeOpenInitialState(),
   homeFolderTreeWidth: homeFolderTreeWidthInitialState()
 }
@@ -631,17 +604,6 @@ const uiSlice = createSlice({
         state.secondaryCommanderViewOption = viewOption
       }
     },
-    commanderDocumentTypeIDUpdated(
-      state,
-      action: PayloadAction<DocumentTypeIDArgs>
-    ) {
-      const {mode, documentTypeID} = action.payload
-      if (mode == "main") {
-        state.mainCommanderDocumentTypeID = documentTypeID
-      } else {
-        state.secondaryCommanderDocumentTypeID = documentTypeID
-      }
-    },
     lastHomeUpdated(state, action: PayloadAction<LastHomeArg>) {
       const {mode, last_home} = action.payload
       if (mode == "main") {
@@ -656,77 +618,6 @@ const uiSlice = createSlice({
         state.mainCommanderLastInbox = last_inbox
       } else {
         state.secondaryCommanderLastInbox = last_inbox
-      }
-    },
-    documentsByTypeCommanderColumnsUpdated(
-      state,
-      action: PayloadAction<DocumentsByTypeColumnsArg>
-    ) {
-      const mode = action.payload.mode
-      const document_type_id = action.payload.document_type_id
-      const columns = action.payload.columns
-
-      if (mode == "main") {
-        if (!state.mainDocumentsByTypeCommanderColumns) {
-          state.mainDocumentsByTypeCommanderColumns = {}
-        }
-        state.mainDocumentsByTypeCommanderColumns[document_type_id] =
-          columns.map(c => {
-            return {name: c, visible: true}
-          })
-      } else {
-        if (!state.secondaryDocumentsByTypeCommanderColumns) {
-          state.secondaryDocumentsByTypeCommanderColumns = {}
-        }
-        state.secondaryDocumentsByTypeCommanderColumns[document_type_id] =
-          columns.map(c => {
-            return {name: c, visible: true}
-          })
-      }
-    },
-    documentsByTypeCommanderColumnVisibilityToggled(
-      state,
-      action: PayloadAction<DocumentsByTypeCommanderColumnToggledArg>
-    ) {
-      const mode = action.payload.mode
-      const name = action.payload.name
-      const visibility = action.payload.visibility
-
-      if (mode == "main") {
-        const document_type_id = state.mainCommanderDocumentTypeID
-        if (!document_type_id) {
-          return
-        }
-        if (!state.mainDocumentsByTypeCommanderColumns) {
-          return
-        }
-        const curState =
-          state.mainDocumentsByTypeCommanderColumns[document_type_id]
-        const newState = curState.map(col => {
-          if (col.name == name) {
-            return {name, visible: visibility}
-          }
-          return col
-        })
-        state.mainDocumentsByTypeCommanderColumns[document_type_id] = newState
-      } else {
-        const document_type_id = state.secondaryCommanderDocumentTypeID
-        if (!document_type_id) {
-          return
-        }
-        if (!state.secondaryDocumentsByTypeCommanderColumns) {
-          return
-        }
-        const curState =
-          state.secondaryDocumentsByTypeCommanderColumns[document_type_id]
-        const newState = curState.map(col => {
-          if (col.name == name) {
-            return {name, visible: visibility}
-          }
-          return col
-        })
-        state.secondaryDocumentsByTypeCommanderColumns[document_type_id] =
-          newState
       }
     },
     viewerThumbnailsPanelToggled(state, action: PayloadAction<PanelMode>) {
@@ -960,7 +851,6 @@ export const {
   commanderSortMenuColumnUpdated,
   commanderSortMenuDirectionUpdated,
   commanderViewOptionUpdated,
-  commanderDocumentTypeIDUpdated,
   viewerThumbnailsPanelToggled,
   viewerDocumentDetailsPanelToggled,
   zoomFactorIncremented,
@@ -974,8 +864,6 @@ export const {
   dragPagesStarted,
   dragNodesStarted,
   dragEnded,
-  documentsByTypeCommanderColumnsUpdated,
-  documentsByTypeCommanderColumnVisibilityToggled,
   lastHomeUpdated,
   lastInboxUpdated,
   viewerPageHaveChangedDialogVisibilityChanged
@@ -1203,11 +1091,14 @@ export const selectCommanderSortMenuColumn = (
   state: RootState,
   mode: PanelMode
 ): SortMenuColumn => {
-  if (mode == "main") {
-    return state.ui.mainCommanderSortMenuColumn || "updated_at"
+  const column =
+    mode == "main"
+      ? state.ui.mainCommanderSortMenuColumn
+      : state.ui.secondaryCommanderSortMenuColumn
+  if ((column as string | undefined) === "ctype") {
+    return "file_type"
   }
-
-  return state.ui.secondaryCommanderSortMenuColumn || "updated_at"
+  return column || "updated_at"
 }
 
 export const selectCommanderSortMenuDir = (
@@ -1230,17 +1121,6 @@ export const selectCommanderViewOption = (
   }
 
   return state.ui.secondaryCommanderViewOption || "tile"
-}
-
-export const selectCommanderDocumentTypeID = (
-  state: RootState,
-  mode: PanelMode
-): string | undefined => {
-  if (mode == "main") {
-    return state.ui.mainCommanderDocumentTypeID
-  }
-
-  return state.ui.secondaryCommanderDocumentTypeID
 }
 
 export const selectZoomFactor = (state: RootState, mode: PanelMode) => {
@@ -1323,37 +1203,6 @@ export const selectDocumentCurrentPage = (
 
   return state.ui.secondaryViewerCurrentPageNumber
 }
-
-export const selectDocumentsByTypeCommanderColumns = (
-  state: RootState,
-  mode: PanelMode
-): Array<CategoryColumn> => {
-  if (mode == "main") {
-    const document_type_id = state.ui.mainCommanderDocumentTypeID
-    if (state.ui.mainDocumentsByTypeCommanderColumns && document_type_id) {
-      return (
-        state.ui.mainDocumentsByTypeCommanderColumns[document_type_id] || []
-      )
-    }
-
-    return []
-  }
-
-  const document_type_id = state.ui.secondaryCommanderDocumentTypeID
-  if (state.ui.mainDocumentsByTypeCommanderColumns && document_type_id) {
-    return state.ui.mainDocumentsByTypeCommanderColumns[document_type_id] || []
-  }
-
-  return []
-}
-
-export const selectDocumentsByTypeCommanderVisibleColumns = createSelector(
-  selectDocumentsByTypeCommanderColumns,
-  columns => {
-    const visibleColumnNames = columns.filter(c => c.visible).map(c => c.name)
-    return visibleColumnNames
-  }
-)
 
 export const selectLastHome = (state: RootState, mode: PanelMode) => {
   if (mode == "main") {

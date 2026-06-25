@@ -1,18 +1,12 @@
 import {useEffect, useState} from "react"
 
-import {OWNER_ME} from "@/cconstants"
-import OwnerSelector from "@/components/OwnerSelect/OwnerSelect"
 import {useAddNewTagMutation} from "@/features/tags/apiSlice"
 import {
-  Box,
   Button,
   Checkbox,
-  ColorInput,
-  ComboboxItem,
   Group,
   Loader,
   Modal,
-  Pill,
   Text,
   TextInput
 } from "@mantine/core"
@@ -30,58 +24,37 @@ export default function NewTagModal({onSubmit, onCancel, opened}: Args) {
   const [name, setName] = useState<string>("")
   const [description, setDescription] = useState<string>("")
   const [pinned, setPinned] = useState<boolean>(false)
-  const [bgColor, setBgColor] = useState<string>("")
   const [error, setError] = useState<string>("")
-  const [fgColor, setFgColor] = useState<string>("")
-  const [owner, setOwner] = useState<ComboboxItem>({label: OWNER_ME, value: ""})
 
   useEffect(() => {
-    // close dialog as soon as we have
-    // "success" status from the mutation
     if (isSuccess) {
       onSubmit()
       reset()
     }
-  }, [isSuccess])
-
-  const onNameChange = (value: string) => {
-    setName(value)
-  }
-
-  const onBgColorChange = (value: string) => {
-    setBgColor(value)
-  }
-
-  const onFgColorChange = (value: string) => {
-    setFgColor(value)
-  }
-
-  const onOwnerChange = (option: ComboboxItem) => {
-    setOwner(option)
-    console.log(option)
-  }
+  }, [isSuccess, onSubmit])
 
   const onLocalSubmit = async () => {
-    const newTagData = {
-      name,
-      pinned,
-      description,
-      bg_color: bgColor,
-      fg_color: fgColor
-    }
-    let tagData
-
-    if (owner.value && owner.value != "") {
-      tagData = {...newTagData, group_id: owner.value}
-    } else {
-      tagData = newTagData
+    const trimmed = name.trim()
+    if (!trimmed) {
+      setError(t("tags.form.name_required"))
+      return
     }
 
     try {
-      await addNewTag(tagData).unwrap()
+      await addNewTag({
+        name: trimmed,
+        pinned,
+        description: description.trim() || undefined
+      }).unwrap()
     } catch (err: unknown) {
-      // @ts-ignore
-      setError(err.data.detail)
+      const detail = (err as {data?: {detail?: unknown}})?.data?.detail
+      setError(
+        typeof detail === "string"
+          ? detail
+          : detail
+            ? JSON.stringify(detail)
+            : String(err)
+      )
     }
   }
 
@@ -94,8 +67,6 @@ export default function NewTagModal({onSubmit, onCancel, opened}: Args) {
     setName("")
     setDescription("")
     setPinned(false)
-    setBgColor("")
-    setFgColor("")
     setError("")
   }
 
@@ -103,38 +74,25 @@ export default function NewTagModal({onSubmit, onCancel, opened}: Args) {
     <Modal title={t("tags.new.title")} opened={opened} onClose={onLocalCancel}>
       <TextInput
         label={t("tags.form.name")}
-        onChange={e => onNameChange(e.currentTarget.value)}
+        value={name}
+        onChange={e => setName(e.currentTarget.value)}
         placeholder={t("tags.form.name")}
-      />
-      <ColorInput
-        onChange={onBgColorChange}
-        label={t("tags.form.background_color")}
-        withEyeDropper={false}
-      />
-      <ColorInput
-        onChange={onFgColorChange}
-        label={t("tags.form.foreground_color")}
-        withEyeDropper={false}
+        required
       />
       <Checkbox
         onChange={e => setPinned(e.currentTarget.checked)}
         mt="sm"
         label={t("tags.form.pinned")}
+        checked={pinned}
       />
       <TextInput
         mt="sm"
         label={t("tags.form.description")}
-        type="email"
         placeholder={t("tags.form.description.placeholder")}
+        value={description}
         onChange={e => setDescription(e.currentTarget.value)}
       />
-      <Box my="md">
-        <Pill size={"lg"} style={{backgroundColor: bgColor, color: fgColor}}>
-          {name || ""}
-        </Pill>
-      </Box>
-      <OwnerSelector value={owner} onChange={onOwnerChange} />
-      {isError && <Text c="red">{`${error}`}</Text>}
+      {isError && error ? <Text c="red" mt="sm">{error}</Text> : null}
       <Group justify="space-between" mt="md">
         <Button variant="default" onClick={onLocalCancel}>
           {t("common.cancel")}

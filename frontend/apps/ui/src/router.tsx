@@ -3,14 +3,6 @@ import {createBrowserRouter, Navigate} from "react-router-dom"
 import App from "@/app/App.tsx"
 import Folder, {loader as folderLoader} from "@/pages/Folder"
 
-import {
-  DocumentTypeDetails,
-  DocumentTypesList
-} from "@/features/document-types/pages"
-import {GroupDetails, GroupsList} from "@/features/groups/pages"
-import CategoryListView, {
-  loader as categoryLoader
-} from "@/features/nodes/pages/CategoryListView"
 import PortalFeedPage from "@/features/portal/pages/PortalFeedPage"
 import PortalFolderPage from "@/features/portal/pages/PortalFolderPage"
 import PortalHomeRedirect from "@/features/portal/pages/PortalHomeRedirect"
@@ -21,6 +13,8 @@ import Document from "@/pages/Document"
 import LibraryPage from "@/features/library/pages/LibraryPage"
 import SearchPage from "@/pages/Search"
 import AuditLogPage from "@/features/audit/pages/AuditLogPage"
+import HelpShellPicker from "@/features/help/pages/HelpShellPicker"
+import UserGuidePage from "@/features/help/pages/UserGuidePage"
 
 import {AccessForbidden, NotFound, UnprocessableContent} from "@/pages/errors"
 
@@ -39,6 +33,15 @@ import {
 } from "./cconstants"
 
 const router = createBrowserRouter([
+  {
+    element: <HelpShellPicker />,
+    children: [
+      {
+        path: "/help",
+        element: <UserGuidePage />
+      }
+    ]
+  },
   {
     element: <GuestApp />,
     children: [
@@ -97,16 +100,6 @@ const router = createBrowserRouter([
         loader: documentLoader
       },
       {
-        path: "/category",
-        element: <CategoryListView />,
-        loader: categoryLoader
-      },
-      {
-        path: "/category/:categoryId",
-        element: <CategoryListView />,
-        loader: categoryLoader
-      },
-      {
         path: "/library",
         element: <Navigate to="/library/favorites" replace />
       },
@@ -137,22 +130,6 @@ const router = createBrowserRouter([
       {
         path: "/tags/:tagId",
         element: <TagDetails />
-      },
-      {
-        path: "/document-types/",
-        element: <DocumentTypesList />
-      },
-      {
-        path: "/document-types/:documentTypeID",
-        element: <DocumentTypeDetails />
-      },
-      {
-        path: "/groups",
-        element: <GroupsList />
-      },
-      {
-        path: "/groups/:groupId",
-        element: <GroupDetails />
       },
       {
         path: "/roles",

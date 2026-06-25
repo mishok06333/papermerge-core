@@ -1,6 +1,5 @@
-import {useGetTagsQuery} from "@/features/tags/apiSlice"
-import type {ColoredTagType, NodeType} from "@/types"
-import {Pill, Stack} from "@mantine/core"
+import type {NodeType} from "@/types"
+import {Stack, Text} from "@mantine/core"
 import classes from "./Tags.module.css"
 
 type Args = {
@@ -9,36 +8,23 @@ type Args = {
   node?: NodeType
 }
 
-export default function Tags({maxItems, node, names}: Args) {
-  const {data: allTags, isLoading} = useGetTagsQuery(node?.group_id)
-
-  if (!allTags || isLoading) {
+export default function Tags({maxItems, names}: Args) {
+  if (!names.length) {
     return <Stack></Stack>
   }
 
-  if (!maxItems) {
-    maxItems = 4
-  }
-
-  let tags_list = allTags
-    .filter(t => names.includes(t.name))
-    .map((item: ColoredTagType) => (
-      <Pill
-        key={item.name}
-        style={{backgroundColor: item.bg_color, color: item.fg_color}}
-      >
-        {item.name}
-      </Pill>
-    ))
-
-  if (tags_list.length > maxItems) {
-    tags_list.splice(maxItems)
-    tags_list.push(<span>...</span>)
-  }
+  const limit = maxItems ?? 4
+  const visible = names.slice(0, limit)
+  const truncated = names.length > limit
 
   return (
     <Stack gap="xs" className={classes.tags}>
-      {tags_list}
+      {visible.map(name => (
+        <Text key={name} size="sm">
+          {name}
+        </Text>
+      ))}
+      {truncated ? <Text size="sm">...</Text> : null}
     </Stack>
   )
 }

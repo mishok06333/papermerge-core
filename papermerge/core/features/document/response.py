@@ -7,10 +7,14 @@ from fastapi.responses import FileResponse
 
 class DocumentFileResponse(FileResponse):
     def __init__(self, path, filename: str = None, content_disposition_type: str = "attachment", **kwargs):
-        # Auto-detect content type
+        # Auto-detect content type from path, then from the logical file name.
         content_type, _ = mimetypes.guess_type(path)
+        if not content_type and filename:
+            content_type, _ = mimetypes.guess_type(filename)
         if not content_type:
-            extension = Path(path).suffix.lower()
+            extension = Path(path).suffix.lower() or (
+                Path(filename).suffix.lower() if filename else ""
+            )
             content_type_map = {
                 '.pdf': 'application/pdf',
                 '.png': 'image/png',
@@ -18,6 +22,18 @@ class DocumentFileResponse(FileResponse):
                 '.jpeg': 'image/jpeg',
                 '.tiff': 'image/tiff',
                 '.tif': 'image/tiff',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp',
+                '.svg': 'image/svg+xml',
+                '.mp4': 'video/mp4',
+                '.webm': 'video/webm',
+                '.mp3': 'audio/mpeg',
+                '.wav': 'audio/wav',
+                '.txt': 'text/plain',
+                '.html': 'text/html',
+                '.htm': 'text/html',
+                '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                '.doc': 'application/msword',
             }
             content_type = content_type_map.get(extension, 'application/octet-stream')
 

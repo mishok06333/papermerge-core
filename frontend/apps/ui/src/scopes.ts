@@ -15,6 +15,7 @@ export const PORTAL_DOCUMENT_DELETE = "portal.document.delete"
 export const COMMENT_CREATE = "comment.create"
 export const COMMENT_UPDATE = "comment.update"
 export const COMMENT_DELETE = "comment.delete"
+export const DOCUMENT_UPDATE_TAGS = "document.update.tags"
 export const DOCUMENT_UPLOAD = "document.upload"
 export const DOCUMENT_DOWNLOAD = "document.download"
 export const TAG_CREATE = "tag.create"
@@ -45,31 +46,29 @@ export const PAGE_UPDATE = "page.update"
 export const PAGE_MOVE = "page.move"
 export const PAGE_EXTRACT = "page.extract"
 export const PAGE_DELETE = "page.delete"
-export const CUSTOM_FIELD_CREATE = "custom_field.create"
-export const CUSTOM_FIELD_VIEW = "custom_field.view"
-export const CUSTOM_FIELD_UPDATE = "custom_field.update"
-export const CUSTOM_FIELD_DELETE = "custom_field.delete"
-export const DOCUMENT_TYPE_CREATE = "document_type.create"
-export const DOCUMENT_TYPE_VIEW = "document_type.view"
-export const DOCUMENT_TYPE_UPDATE = "document_type.update"
-export const DOCUMENT_TYPE_DELETE = "document_type.delete"
 
-/** Navbar / admin UI for document types (not "browse by category"). */
-export function canManageDocumentTypes(scopes: string[]): boolean {
-  return (
-    scopes.includes(DOCUMENT_TYPE_CREATE) ||
-    scopes.includes(DOCUMENT_TYPE_UPDATE) ||
-    scopes.includes(DOCUMENT_TYPE_DELETE)
-  )
-}
-
-/** Tags admin list (/tags); tag assignment on nodes uses other scopes. */
+/** Tag admin: create / update / delete on /tags (moderator & admin by default). */
 export function canManageTags(scopes: string[]): boolean {
   return (
     scopes.includes(TAG_CREATE) ||
     scopes.includes(TAG_UPDATE) ||
     scopes.includes(TAG_DELETE)
   )
+}
+
+/** Assign tags on documents/folders (``document.update.tags`` or full ``node.update``). */
+export function canUpdateNodeTags(scopes: string[]): boolean {
+  return scopes.includes(NODE_UPDATE) || scopes.includes(DOCUMENT_UPDATE_TAGS)
+}
+
+/** Pick existing tags from the catalog and assign them to a node. */
+export function canAssignNodeTags(scopes: string[]): boolean {
+  return scopes.includes(TAG_SELECT) || canUpdateNodeTags(scopes)
+}
+
+/** Pick tags from the organization catalog when editing a node. */
+export function canSelectTags(scopes: string[]): boolean {
+  return scopes.includes(TAG_SELECT) || canUpdateNodeTags(scopes)
 }
 
 export const ALL_PERMS = [
@@ -94,21 +93,15 @@ export const ALL_PERMS = [
   ROLE_UPDATE,
   ROLE_DELETE,
   TAG_VIEW,
+  TAG_SELECT,
   TAG_CREATE,
   TAG_UPDATE,
   TAG_DELETE,
-  CUSTOM_FIELD_VIEW,
-  CUSTOM_FIELD_CREATE,
-  CUSTOM_FIELD_UPDATE,
-  CUSTOM_FIELD_DELETE,
-  DOCUMENT_TYPE_VIEW,
-  DOCUMENT_TYPE_CREATE,
-  DOCUMENT_TYPE_UPDATE,
-  DOCUMENT_TYPE_DELETE,
   NODE_VIEW,
   NODE_MOVE,
   NODE_CREATE,
   NODE_UPDATE,
+  DOCUMENT_UPDATE_TAGS,
   NODE_DELETE,
   COMMENT_CREATE,
   COMMENT_UPDATE,

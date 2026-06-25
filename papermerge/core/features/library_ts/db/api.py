@@ -19,6 +19,11 @@ RECENT_LIMIT = 50
 OCR_COMPLETED_KIND = "ocr_completed"
 
 
+def audit_detail_json(data: object) -> str:
+    """Serialize audit metadata with readable Unicode (not \\uXXXX escapes)."""
+    return json.dumps(data, ensure_ascii=False)[:2000]
+
+
 async def add_audit(
     db_session: AsyncSession,
     *,

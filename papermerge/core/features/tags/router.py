@@ -16,6 +16,7 @@ from papermerge.core.features.tags import schema as tags_schema
 from papermerge.core.exceptions import EntityNotFound
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
 from papermerge.core.features.library_ts.db import api as lib_ts_api
+from papermerge.core.schema import PaginatedResponse
 from .types import PaginatedQueryParams
 
 router = APIRouter(
@@ -24,6 +25,30 @@ router = APIRouter(
 )
 
 logger = logging.getLogger(__name__)
+
+TAG_LIST_SCOPES = frozenset(
+    {
+        scopes.TAG_VIEW,
+        scopes.TAG_SELECT,
+        scopes.TAG_CREATE,
+        # Users who may assign tags on nodes need the catalog in the picker.
+        scopes.NODE_UPDATE,
+        scopes.DOCUMENT_UPDATE_TAGS,
+    }
+)
+
+
+async def require_tag_list_user(
+    user: Annotated[
+        usr_schema.User, Security(get_current_user, scopes=[scopes.USER_ME])
+    ],
+) -> usr_schema.User:
+    if not set(user.scopes or []).intersection(TAG_LIST_SCOPES):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Missing tag list permission",
+        )
+    return user
 
 
 @router.get(
@@ -38,9 +63,7 @@ logger = logging.getLogger(__name__)
 )
 @utils.docstring_parameter(scope=scopes.TAG_SELECT)
 async def retrieve_tags_without_pagination(
-    user: Annotated[
-        usr_schema.User, Security(get_current_user, scopes=[scopes.TAG_SELECT])
-    ],
+    user: Annotated[usr_schema.User, Depends(require_tag_list_user)],
     group_id: UUID | None = None,
     db_session: AsyncSession = Depends(get_db),
 ):
@@ -68,9 +91,7 @@ async def retrieve_tags_without_pagination(
 @router.get("/")
 @utils.docstring_parameter(scope=scopes.TAG_VIEW)
 async def retrieve_tags(
-    user: Annotated[
-        usr_schema.User, Security(get_current_user, scopes=[scopes.TAG_VIEW])
-    ],
+    user: Annotated[usr_schema.User, Depends(require_tag_list_user)],
     params: PaginatedQueryParams = Depends(),
     db_session=Depends(get_db),
 ):
@@ -90,13 +111,39 @@ async def retrieve_tags(
     return tags
 
 
+@router.get(
+    "/{tag_id}/nodes",
+    response_model=PaginatedResponse[tags_schema.TaggedNodeOut],
+)
+@utils.docstring_parameter(scope=scopes.TAG_VIEW)
+async def get_tag_nodes(
+    tag_id: UUID,
+    user: Annotated[usr_schema.User, Depends(require_tag_list_user)],
+    params: PaginatedQueryParams = Depends(),
+    db_session: AsyncSession = Depends(get_db),
+):
+    """List nodes (documents and folders) tagged with the given tag.
+
+    Required scope: `{scope}`
+    """
+    if not await tags_dbapi.user_can_access_tag(db_session, tag_id=tag_id, user_id=user.id):
+        raise HTTPException(status_code=404, detail="Does not exists")
+
+    return await tags_dbapi.get_tag_nodes(
+        db_session,
+        tag_id=tag_id,
+        user_id=user.id,
+        page_size=params.page_size,
+        page_number=params.page_number,
+        filter=params.filter,
+    )
+
+
 @router.get("/{tag_id}", response_model=tags_schema.Tag)
 @utils.docstring_parameter(scope=scopes.TAG_VIEW)
 async def get_tag_details(
     tag_id: UUID,
-    user: Annotated[
-        usr_schema.User, Security(get_current_user, scopes=[scopes.TAG_VIEW])
-    ],
+    user: Annotated[usr_schema.User, Depends(require_tag_list_user)],
     db_session: AsyncSession=Depends(get_db),
 ):
     """Get tag details

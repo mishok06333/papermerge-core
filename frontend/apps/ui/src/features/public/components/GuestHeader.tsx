@@ -3,9 +3,11 @@ import {IconLogin} from "@tabler/icons-react"
 import {useTranslation} from "react-i18next"
 
 import {ColorSchemeToggle} from "@/components/ColorSchemeToggle/ColorSchemeToggle"
+import HelpButton from "@/components/Header/HelpButton"
 import LanguageMenu from "@/components/Header/LanguageMenu"
 import SidebarToggle from "@/components/Header/SidebarToggle"
 import classes from "@/components/Header/Header.module.css"
+import {navigateToLogin} from "@/features/public/guestMode"
 
 const APP_TITLE =
   import.meta.env.VITE_APP_TITLE?.trim() || "Электронная библиотека"
@@ -15,7 +17,7 @@ export default function GuestHeader() {
   const theme = useMantineTheme()
 
   const onLogin = () => {
-    window.location.href = "/home"
+    navigateToLogin()
   }
 
   return (
@@ -35,6 +37,7 @@ export default function GuestHeader() {
         </Group>
         <Group>
           <LanguageMenu />
+          <HelpButton />
           <ColorSchemeToggle />
           <Button
             size="compact-sm"

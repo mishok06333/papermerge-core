@@ -236,15 +236,7 @@ function getPermissionTree(txt?: I18NPermissionTree) {
           label: txt?.update || "Update",
           children: [
             {value: "document.update.title", label: txt?.title || "Title"},
-            {
-              value: "document.update.custom_fields",
-              label: txt?.custom_fields || "Custom Fields"
-            },
-            {value: "document.update.tags", label: txt?.tags || "Tags"},
-            {
-              value: "document.update.document_type",
-              label: txt?.category || "Category"
-            }
+            {value: "document.update.tags", label: txt?.tags || "Tags"}
           ]
         },
         {value: "document.move", label: txt?.move || "Move"},
@@ -274,33 +266,18 @@ function getPermissionTree(txt?: I18NPermissionTree) {
       ]
     },
     {
-      value: "custom_field",
-      label: txt?.custom_fields || "Custom Fields",
-      children: [
-        {value: "custom_field.view", label: txt?.view || "View"},
-        {value: "custom_field.create", label: txt?.create || "Create"},
-        {value: "custom_field.update", label: txt?.update || "Update"},
-        {value: "custom_field.delete", label: txt?.delete || "Delete"}
-      ]
-    },
-    {
-      value: "document_type",
-      label: txt?.categories || "Categories",
-      children: [
-        {value: "document_type.view", label: txt?.view || "View"},
-        {value: "document_type.select", label: txt?.select || "Select"},
-        {value: "document_type.create", label: txt?.create || "Create"},
-        {value: "document_type.update", label: txt?.update || "Update"},
-        {value: "document_type.delete", label: txt?.delete || "Delete"}
-      ]
-    },
-    {
       value: "comment",
       label: txt?.comments || "Comments",
       children: [
         {value: "comment.create", label: txt?.create || "Create"},
-        {value: "comment.update", label: txt?.update || "Update"},
-        {value: "comment.delete", label: txt?.delete || "Delete"}
+        {
+          value: "comment.update",
+          label: txt?.comment_moderate_edit || "Moderate (edit others)"
+        },
+        {
+          value: "comment.delete",
+          label: txt?.comment_moderate_delete || "Moderate (delete others)"
+        }
       ]
     },
     {
@@ -360,17 +337,6 @@ function getPermissionTree(txt?: I18NPermissionTree) {
         {value: "role.update", label: txt?.update || "Update"},
         {value: "role.delete", label: txt?.delete || "Delete"}
       ]
-    },
-    {
-      value: "group",
-      label: txt?.groups || "Groups",
-      children: [
-        {value: "group.view", label: txt?.view || "View"},
-        {value: "group.select", label: txt?.select || "Select"},
-        {value: "group.create", label: txt?.create || "Create"},
-        {value: "group.update", label: txt?.update || "Update"},
-        {value: "group.delete", label: txt?.delete || "Delete"}
-      ]
     }
   ]
   return PERMISSIONS_TREE
@@ -399,7 +365,6 @@ const PERMISSION_DEPENDENCIES = {
   "document.delete": ["folder.delete"],
   "document.update.title": ["folder.update"],
   "document.update.tags": ["tag.select"],
-  "document.update.document_type": ["document_type.select"],
   comment: ["document.view"],
   "comment.create": ["document.view"],
   "comment.update": ["document.view"],

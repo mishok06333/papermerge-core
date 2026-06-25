@@ -50,6 +50,12 @@ export default function useI18NText(): I18NRoleFormModal | undefined {
               "roleForm.permissionTree.portal_document_delete"
             ),
             comments: t("roleForm.permissionTree.comments"),
+            comment_moderate_edit: t(
+              "roleForm.permissionTree.comment_moderate_edit"
+            ),
+            comment_moderate_delete: t(
+              "roleForm.permissionTree.comment_moderate_delete"
+            ),
             users: t("roleForm.permissionTree.users"),
             roles: t("roleForm.permissionTree.roles"),
             groups: t("roleForm.permissionTree.groups"),

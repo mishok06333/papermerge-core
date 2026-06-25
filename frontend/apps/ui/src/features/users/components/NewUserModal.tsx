@@ -14,7 +14,6 @@ import {useForm} from "@mantine/form"
 
 import {UserEditableFields} from "@/types"
 
-import {useGetGroupsQuery} from "@/features/groups/apiSlice"
 import {useGetRolesQuery} from "@/features/roles/apiSlice"
 import {useAddNewUserMutation} from "@/features/users/apiSlice"
 import {makeRandomString} from "@/utils"
@@ -33,11 +32,9 @@ export default function NewUserModal({
   opened
 }: NewUserModalArgs) {
   const {t} = useTranslation()
-  const {data: groupsData = []} = useGetGroupsQuery()
   const {data: rolesData = []} = useGetRolesQuery()
   const [addNewUser, {isLoading, isSuccess}] = useAddNewUserMutation()
 
-  const [groups, setGroups] = useState<string[]>([])
   const [roles, setRoles] = useState<string[]>([])
 
   const form = useForm<UserEditableFields>({
@@ -49,9 +46,6 @@ export default function NewUserModal({
   })
 
   const onLocalSubmit = async (userFields: UserEditableFields) => {
-    const group_ids = groupsData
-      .filter(g => groups.includes(g.name))
-      .map(g => g.id)
     const role_ids = rolesData
       .filter(r => roles.includes(r.name))
       .map(r => r.id)
@@ -64,7 +58,7 @@ export default function NewUserModal({
       is_superuser: userFields.is_superuser || false,
       password: makeRandomString(24),
       scopes: [],
-      group_ids: group_ids,
+      group_ids: [],
       role_ids: role_ids
     }
     try {
@@ -77,7 +71,6 @@ export default function NewUserModal({
 
   const reset = () => {
     form.reset()
-    setGroups([])
     setRoles([])
   }
 
@@ -133,14 +126,6 @@ export default function NewUserModal({
           label={t("users.form.active")}
           key={form.key("is_active")}
           {...form.getInputProps("is_active", {type: "checkbox"})}
-        />
-        <MultiSelect
-          mt="sm"
-          label={t("users.form.groups")}
-          placeholder={t("users.form.groups.placeholder")}
-          onChange={setGroups}
-          value={groups}
-          data={groupsData.map(g => g.name) || []}
         />
         <MultiSelect
           mt="sm"

@@ -97,23 +97,6 @@ export function getFileExtension(fileName: string | null | undefined): string {
   return dot >= 0 ? lower.slice(dot) : ""
 }
 
-function isImageWrappedPdf(fileName: string | null | undefined): boolean {
-  if (!fileName) {
-    return false
-  }
-  const lower = fileName.toLowerCase()
-  if (!lower.endsWith(".pdf")) {
-    return false
-  }
-  const stem = lower.slice(0, -4)
-  const stemDot = stem.lastIndexOf(".")
-  if (stemDot < 0) {
-    return false
-  }
-  const innerExt = stem.slice(stemDot)
-  return IMAGE_EXTENSIONS.has(innerExt)
-}
-
 /**
  * Split on the last dot (same rule as {@link getFileExtension}).
  * `ext` includes the leading dot. For dotfiles like `.gitignore`, stem is empty
@@ -174,15 +157,12 @@ export function usesNativePdfPreview(
   return getViewerChromeKind(fileName) === "native-pdf"
 }
 
-/** Which main viewer shell to use (native PDF iframe vs docx vs blob pane). */
+/** Which main viewer shell to use (native PDF/media iframe vs docx vs blob pane). */
 export function getViewerChromeKind(
   fileName: string | null | undefined
 ): ViewerChromeKind {
   const cat = getBlobViewerCategory(fileName)
-  if (cat === "pdf-pages") {
-    if (isImageWrappedPdf(fileName)) {
-      return "blob"
-    }
+  if (cat === "pdf-pages" || cat === "image") {
     return "native-pdf"
   }
   if (cat === "docx") {

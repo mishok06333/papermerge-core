@@ -201,11 +201,16 @@ async def update_role(
     Required scope: `{scope}`
     """
     try:
-        role: schema.RoleDetails = await dbapi.update_role(
+        role, error = await dbapi.update_role(
             db_session, role_id=role_id, attrs=attrs
         )
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Role not found")
+
+    if error:
+        if "unknown permission" in error.lower():
+            raise HTTPException(status_code=400, detail=error)
+        raise HTTPException(status_code=500, detail="Failed to update role")
 
     await lib_ts_api.add_audit(
         db_session,

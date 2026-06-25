@@ -1,4 +1,3 @@
-import {OWNER_ME} from "@/cconstants"
 import {
   selectionAdd,
   selectionRemove,
@@ -7,7 +6,7 @@ import {
 import type {ColoredTag} from "@/types"
 import {Checkbox, Pill, Table} from "@mantine/core"
 import {useDispatch, useSelector} from "react-redux"
-import {Link} from "react-router-dom"
+import {Link, useNavigate} from "react-router-dom"
 
 import Check from "@/components/Check"
 
@@ -18,8 +17,10 @@ type Args = {
 export default function TagRow({tag}: Args) {
   const selectedIds = useSelector(selectSelectedIds)
   const dispatch = useDispatch()
+  const navigate = useNavigate()
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation()
     if (e.currentTarget.checked) {
       dispatch(selectionAdd(tag.id))
     } else {
@@ -27,13 +28,17 @@ export default function TagRow({tag}: Args) {
     }
   }
 
+  const onRowClick = () => {
+    navigate(`/tags/${tag.id}`)
+  }
+
   return (
-    <Table.Tr>
-      <Table.Td>
+    <Table.Tr onClick={onRowClick} style={{cursor: "pointer"}}>
+      <Table.Td onClick={e => e.stopPropagation()}>
         <Checkbox checked={selectedIds.includes(tag.id)} onChange={onChange} />
       </Table.Td>
       <Table.Td>
-        <Link to={`/tags/${tag.id}`}>
+        <Link to={`/tags/${tag.id}`} onClick={e => e.stopPropagation()}>
           <Pill style={{backgroundColor: tag.bg_color, color: tag.fg_color}}>
             {tag.name}
           </Pill>
@@ -43,7 +48,6 @@ export default function TagRow({tag}: Args) {
         <Check check={tag.pinned} />
       </Table.Td>
       <Table.Td>{tag.description}</Table.Td>
-      <Table.Td>{tag.group_name || OWNER_ME}</Table.Td>
       <Table.Td>{tag.id}</Table.Td>
     </Table.Tr>
   )

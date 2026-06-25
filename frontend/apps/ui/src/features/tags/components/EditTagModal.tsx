@@ -4,18 +4,13 @@ import {
   Box,
   Button,
   Checkbox,
-  ColorInput,
-  ComboboxItem,
   Group,
   Loader,
   LoadingOverlay,
   Modal,
-  Pill,
   TextInput
 } from "@mantine/core"
 
-import {OWNER_ME} from "@/cconstants"
-import OwnerSelector from "@/components/OwnerSelect/OwnerSelect"
 import {useEditTagMutation, useGetTagQuery} from "@/features/tags/apiSlice"
 import {useTranslation} from "react-i18next"
 
@@ -36,47 +31,25 @@ export default function EditTagModal({
   const {data} = useGetTagQuery(tagId)
   const [updateTag, {isLoading: isLoadingTagUpdate}] = useEditTagMutation()
   const [name, setName] = useState<string>("")
-
   const [description, setDescription] = useState<string>("")
   const [pinned, setPinned] = useState<boolean>(false)
-  const [bgColor, setBgColor] = useState<string>("")
-  const [fgColor, setFgColor] = useState<string>("")
-  const [owner, setOwner] = useState<ComboboxItem>({label: OWNER_ME, value: ""})
 
   useEffect(() => {
-    if (data) {
+    if (data && opened) {
       formReset()
     }
-  }, [opened])
-
-  const onNameChange = (value: string) => {
-    setName(value)
-  }
-
-  const onBgColorChange = (value: string) => {
-    setBgColor(value)
-  }
-
-  const onFgColorChange = (value: string) => {
-    setFgColor(value)
-  }
+  }, [data, opened])
 
   const onLocalSubmit = async () => {
     const updatedTagData = {
-      name,
+      name: name.trim(),
       pinned,
-      description,
-      id: data!.id!,
-      bg_color: bgColor,
-      fg_color: fgColor
+      description: description.trim() || undefined,
+      id: data!.id!
     }
-    let tagData
-
-    if (owner.value && owner.value != "") {
-      tagData = {...updatedTagData, group_id: owner.value}
-    } else {
-      tagData = updatedTagData
-    }
+    const tagData = data?.group_id
+      ? {...updatedTagData, group_id: data.group_id}
+      : updatedTagData
 
     await updateTag(tagData)
     formReset()
@@ -87,22 +60,11 @@ export default function EditTagModal({
     onCancel()
   }
 
-  const onOwnerChange = (option: ComboboxItem) => {
-    setOwner(option)
-  }
-
   const formReset = () => {
     if (data) {
       setName(data.name || "")
-      setBgColor(data.bg_color || "")
-      setFgColor(data.fg_color || "")
       setDescription(data.description || "")
       setPinned(data.pinned || false)
-      if (data.group_id && data.group_name) {
-        setOwner({value: data.group_id, label: data.group_name})
-      } else {
-        setOwner({value: "", label: OWNER_ME})
-      }
     }
   }
 
@@ -117,20 +79,8 @@ export default function EditTagModal({
         <TextInput
           label={t("tags.form.name")}
           value={name}
-          onChange={e => onNameChange(e.currentTarget.value)}
+          onChange={e => setName(e.currentTarget.value)}
           placeholder={t("tags.form.name")}
-        />
-        <ColorInput
-          onChange={onBgColorChange}
-          label={t("tags.form.background_color")}
-          value={bgColor}
-          withEyeDropper={false}
-        />
-        <ColorInput
-          onChange={onFgColorChange}
-          label={t("tags.form.foreground_color")}
-          value={fgColor}
-          withEyeDropper={false}
         />
         <Checkbox
           onChange={e => setPinned(e.currentTarget.checked)}
@@ -141,17 +91,10 @@ export default function EditTagModal({
         <TextInput
           mt="sm"
           label={t("tags.form.description")}
-          type="email"
           value={description}
           placeholder={t("tags.form.description.placeholder")}
           onChange={e => setDescription(e.currentTarget.value)}
         />
-        <Box my="md">
-          <Pill size={"lg"} style={{backgroundColor: bgColor, color: fgColor}}>
-            {name || "preview"}
-          </Pill>
-        </Box>
-        <OwnerSelector value={owner} onChange={onOwnerChange} />
         <Group justify="space-between" mt="md">
           <Button variant="default" onClick={onLocalCancel}>
             {t("common.cancel")}

@@ -16,8 +16,6 @@ class ScopeCategory(Enum):
     TASK = "task"
     OCR = "ocr"
     PAGE = "page"
-    CUSTOM_FIELD = "custom_field"
-    DOCUMENT_TYPE = "document_type"
     SHARED_NODE = "shared_node"
     PORTAL = "portal"
     COMMENT = "comment"
@@ -41,7 +39,6 @@ class Action(Enum):
     LAST_VERSION_ONLY = "download.last_version_only"
     UPDATE_TITLE = "update.title"
     UPDATE_TAGS = "update.tags"
-    UPDATE_METADATA = "update.custom_fields"
 
 
 class Scopes:
@@ -61,11 +58,9 @@ class Scopes:
     DOCUMENT_DOWNLOAD_LAST_VERSION_ONLY = "document.download.last_version_only"
     DOCUMENT_UPDATE_TITLE = "document.update.title"
     DOCUMENT_UPDATE_TAGS = "document.update.tags"
-    DOCUMENT_UPDATE_CUSTOM_FIELDS = "document.update.custom_fields"
-    DOCUMENT_UPDATE_CATEGORY = "document.update.document_type"
 
     # Tag permissions
-    TAG_SELECT = "tag.select"  # User can pick from dropdown
+    TAG_SELECT = "tag.select"  # User can assign existing tags from the catalog
     TAG_CREATE = "tag.create"
     TAG_VIEW = "tag.view"
     TAG_UPDATE = "tag.update"
@@ -108,19 +103,6 @@ class Scopes:
     PAGE_EXTRACT = "page.extract"
     PAGE_DELETE = "page.delete"
 
-    # Custom field permissions
-    CUSTOM_FIELD_CREATE = "custom_field.create"
-    CUSTOM_FIELD_VIEW = "custom_field.view"
-    CUSTOM_FIELD_UPDATE = "custom_field.update"
-    CUSTOM_FIELD_DELETE = "custom_field.delete"
-
-    # Document type permissions
-    DOCUMENT_TYPE_CREATE = "document_type.create"
-    DOCUMENT_TYPE_VIEW = "document_type.view"
-    DOCUMENT_TYPE_SELECT = "document_type.select"
-    DOCUMENT_TYPE_UPDATE = "document_type.update"
-    DOCUMENT_TYPE_DELETE = "document_type.delete"
-
     # Shared node permissions
     SHARED_NODE_CREATE = "shared_node.create"
     SHARED_NODE_VIEW = "shared_node.view"
@@ -138,7 +120,9 @@ class Scopes:
     PORTAL_DOCUMENT_UPDATE = "portal.document.update"
     PORTAL_DOCUMENT_DELETE = "portal.document.delete"
 
-    # Comment permissions (document library / collaboration)
+    # Comment permissions (document library / collaboration).
+    # Users may always edit/delete their own comments; update/delete scopes
+    # grant moderation over other users' comments.
     COMMENT_CREATE = "comment.create"
     COMMENT_UPDATE = "comment.update"
     COMMENT_DELETE = "comment.delete"

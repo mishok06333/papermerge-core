@@ -1,7 +1,5 @@
 import {apiSlice} from "@/features/api/slice"
 import authSliceReducer from "@/features/auth/slice"
-import customFieldsReducer from "@/features/custom-fields/customFieldsSlice"
-import documentTypesReducer from "@/features/document-types/documentTypesSlice"
 import {docsListenerMiddleware} from "@/features/document/middleware"
 import docsReducer from "@/features/document/store/docsSlice"
 import documentDownloadsReducer from "@/features/document/store/documentDownloadsSlice"
@@ -30,8 +28,6 @@ export const store = configureStore({
     tags: tagsReducer,
     groups: groupsReducer,
     roles: rolesReducer,
-    customFields: customFieldsReducer,
-    documentTypes: documentTypesReducer,
     users: usersReducer,
     nodes: nodesReducer,
     search: searchReducer,

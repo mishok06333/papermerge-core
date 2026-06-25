@@ -15,7 +15,6 @@ import {useForm} from "@mantine/form"
 import {useEditUserMutation, useGetUserQuery} from "@/features/users/apiSlice"
 import {UserEditableFields} from "@/types"
 
-import {useGetGroupsQuery} from "@/features/groups/apiSlice"
 import {useGetRolesQuery} from "@/features/roles/apiSlice"
 import {useTranslation} from "react-i18next"
 
@@ -33,14 +32,10 @@ export default function EditUserModal({
   opened
 }: EditUserModalArgs) {
   const {t} = useTranslation()
-  const {data: allGroups = []} = useGetGroupsQuery()
   const {data: allRoles = []} = useGetRolesQuery()
   const {data, isLoading, isSuccess} = useGetUserQuery(userId)
   const [updateUser, {isLoading: isLoadingUserUpdate}] = useEditUserMutation()
 
-  const [groups, setGroups] = useState<string[]>(
-    data?.groups.map(g => g.name) || []
-  )
   const [roles, setRoles] = useState<string[]>(
     data?.roles.map(r => r.name) || []
   )
@@ -64,20 +59,15 @@ export default function EditUserModal({
         last_name: data.last_name || "",
         is_active: data.is_active,
         is_superuser: data.is_superuser,
-        groups: data.groups.map(g => g.name),
         roles: data.roles.map(r => r.name)
       })
     }
 
-    setGroups(data?.groups.map(g => g.name) || [])
     setRoles(data?.roles.map(r => r.name) || [])
   }
 
   const onLocalSubmit = async (userFields: UserEditableFields) => {
-    const group_ids = allGroups
-      .filter(g => groups.includes(g.name))
-      .map(g => g.id)
-
+    const group_ids = data?.groups.map(g => g.id) || []
     const role_ids = allRoles.filter(r => roles.includes(r.name)).map(r => r.id)
 
     const updatedData = {
@@ -147,13 +137,6 @@ export default function EditUserModal({
           label={t("users.form.active")}
           key={form.key("is_active")}
           {...form.getInputProps("is_active", {type: "checkbox"})}
-        />
-        <MultiSelect
-          label={t("users.form.groups")}
-          placeholder={t("common.pick_value")}
-          onChange={setGroups}
-          value={groups}
-          data={allGroups.map(g => g.name) || []}
         />
         <MultiSelect
           label={t("users.form.roles")}

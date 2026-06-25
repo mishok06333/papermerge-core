@@ -351,6 +351,30 @@ async def update_user(
     return model_user, None
 
 
+async def get_user_scopes_from_db_roles(
+    db_session: AsyncSession, user_id: uuid.UUID
+) -> list[str]:
+    """Scopes from roles assigned in Papermerge (``users_roles`` table).
+
+    JWT ``roles`` claims may be stale or empty; local role links are the
+    source of truth for UI/API permission checks after admin edits.
+    """
+    stmt = (
+        select(User)
+        .options(selectinload(User.roles).selectinload(orm.Role.permissions))
+        .where(User.id == user_id)
+    )
+    db_user = (await db_session.scalars(stmt)).one_or_none()
+    if db_user is None:
+        return []
+    if db_user.is_superuser:
+        return list(scopes.SCOPES.keys())
+    result: set[str] = set()
+    for role in db_user.roles:
+        result.update(p.codename for p in role.permissions)
+    return list(result)
+
+
 async def get_user_scopes_from_roles(
     db_session: AsyncSession, user_id: uuid.UUID, roles: list[str]
 ) -> list[str]:

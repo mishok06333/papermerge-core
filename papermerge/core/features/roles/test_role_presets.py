@@ -2,8 +2,10 @@
 
 * **admin** — all scopes (handled by ``create_admin``; kept in sync on boot).
 * **moderator** — same scope set as admin; non-superusers get full app rights via this role.
-* **employee** — browse/download/view metadata, portal read, comments and ratings;
-  no node/document/tag/page edits and no private library notes (notes require ``node.update``).
+* **employee** — browse/download/view metadata, portal read, create comments and ratings;
+  may edit/delete own comments without moderation scopes; may view/select tags but not
+  create/update/delete tags; no node/document/page edits and no private library notes
+  (notes require ``node.update``).
 """
 
 from __future__ import annotations
@@ -41,16 +43,11 @@ def employee_scopes() -> list[str]:
             Scopes.TAG_SELECT,
             Scopes.USER_ME,
             Scopes.OCRLANG_VIEW,
-            Scopes.DOCUMENT_TYPE_VIEW,
-            Scopes.DOCUMENT_TYPE_SELECT,
-            Scopes.CUSTOM_FIELD_VIEW,
             Scopes.PORTAL_VIEW,
             Scopes.PORTAL_FEED_VIEW,
             Scopes.PAGE_VIEW,
             Scopes.SHARED_NODE_VIEW,
             Scopes.COMMENT_CREATE,
-            Scopes.COMMENT_UPDATE,
-            Scopes.COMMENT_DELETE,
         }
     )
 
@@ -91,7 +88,9 @@ async def ensure_preset_role(
 
     if existing:
         attrs = roles_schema.UpdateRole(name=role_name, scopes=wanted)
-        details = await roles_dbapi.update_role(db_session, existing.id, attrs)
+        details, error = await roles_dbapi.update_role(db_session, existing.id, attrs)
+        if error:
+            return None, error
         return details, None
 
     role, error = await roles_dbapi.create_role(

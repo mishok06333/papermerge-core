@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -50,3 +51,12 @@ class ColoredTag(BaseModel):
     id: UUID
     object_id: UUID
     tag: Tag
+
+
+class TaggedNodeOut(BaseModel):
+    node_id: UUID
+    title: str
+    ctype: str
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

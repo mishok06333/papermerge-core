@@ -43,13 +43,28 @@ async def test_update_role_route(auth_api_client: AuthTestClient, make_role, db_
     await dbapi.sync_perms(db_session)
     response = await auth_api_client.patch(
         f"/roles/{role.id}",
-        json={"name": "Admin", "scopes": ["user.view", "custom_field.view"]},
+        json={"name": "Admin", "scopes": ["user.view", "tag.view"]},
     )
 
     assert response.status_code == 200, response.json()
     updated_role = await dbapi.get_role(db_session, role_id=role.id)
 
-    assert set(updated_role.scopes) == {"user.view", "custom_field.view"}
+    assert set(updated_role.scopes) == {"user.view", "tag.view"}
+
+
+async def test_update_role_route_rejects_unknown_scopes(
+    auth_api_client: AuthTestClient, make_role, db_session: AsyncSession
+):
+    role = await make_role(name="demo")
+
+    await dbapi.sync_perms(db_session)
+    response = await auth_api_client.patch(
+        f"/roles/{role.id}",
+        json={"name": "demo", "scopes": ["user.view", "bogus.scope"]},
+    )
+
+    assert response.status_code == 400, response.json()
+    assert "bogus.scope" in response.json()["detail"]
 
 
 async def test_get_role_details(

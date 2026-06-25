@@ -1,19 +1,12 @@
-import {useAppDispatch, useAppSelector} from "@/app/hooks"
-import PanelContext from "@/contexts/PanelContext"
+import {selectNavBarCollapsed} from "@/features/ui/uiSlice"
 import {
-  commanderViewOptionUpdated,
-  selectCommanderDocumentTypeID,
-  selectCommanderViewOption,
-  selectNavBarCollapsed
-} from "@/features/ui/uiSlice"
-import {
-  GROUP_VIEW,
   NODE_VIEW,
   PORTAL_FEED_VIEW,
   PORTAL_VIEW,
   ROLE_VIEW,
+  TAG_SELECT,
+  TAG_VIEW,
   USER_VIEW,
-  canManageDocumentTypes,
   canManageTags
 } from "@/scopes"
 import {
@@ -23,18 +16,14 @@ import {
 } from "@/slices/currentUser.ts"
 import {Center, Group, Loader, Text} from "@mantine/core"
 import {
-  IconCategory,
   IconMasksTheater,
   IconNews,
   IconTag,
-  IconTriangleSquareCircle,
   IconUsers,
-  IconUsersGroup,
   IconBookmark,
   IconClipboardList,
   IconBook2
 } from "@tabler/icons-react"
-import {useContext} from "react"
 import {useSelector} from "react-redux"
 import {Link, NavLink, useLocation} from "react-router-dom"
 
@@ -45,33 +34,13 @@ import {useTranslation} from "react-i18next"
 function NavBarFull() {
   const {t} = useTranslation()
   const {pathname} = useLocation()
-  const mode = useContext(PanelContext)
-  const dispatch = useAppDispatch()
   const {data, isLoading} = useGetVersionQuery()
-  const viewOption = useAppSelector(s => selectCommanderViewOption(s, mode))
   const portalCatalogNavActive =
     pathname === "/portal" || pathname.startsWith("/portal/folder/")
-  const categoryID = useAppSelector(s =>
-    selectCommanderDocumentTypeID(s, "main")
-  )
-  const categoryURL = categoryID ? `/category/${categoryID}` : "/category"
 
   const user = useSelector(selectCurrentUser) as UserDetails
   const status = useSelector(selectCurrentUserStatus)
   const error = useSelector(selectCurrentUserError)
-
-  const onClick = () => {
-    if (viewOption == "document-type") {
-      /*
-        Handle situation when user is in "document-type" view mode in commander
-        when he/she clicks category / library navigation. In such case
-        it is obvious that user intends to switch to "tiles" view
-
-        TODO: instead of switching to tiles, switch to last view options mode
-      */
-      dispatch(commanderViewOptionUpdated({mode, viewOption: "tile"}))
-    }
-  }
 
   if (status == "loading" || isLoading) {
     return <>{t("common.loading")}</>
@@ -93,7 +62,6 @@ function NavBarFull() {
         {scopes.includes(PORTAL_VIEW) && (
           <Link
             to="/portal"
-            onClick={onClick}
             className={portalCatalogNavActive ? "active" : undefined}
           >
             <Group>
@@ -103,41 +71,25 @@ function NavBarFull() {
           </Link>
         )}
         {scopes.includes(PORTAL_FEED_VIEW) && (
-          <NavLink to="/portal/feed" end onClick={onClick}>
+          <NavLink to="/portal/feed" end>
             {NavLinkWithFeedback(t("portal.feed_nav"), <IconNews />)}
           </NavLink>
         )}
         {scopes.includes(NODE_VIEW) && (
-          <NavLink to="/library/favorites" onClick={onClick}>
+          <NavLink to="/library/favorites">
             {NavLinkWithFeedback(t("library.nav"), <IconBookmark />)}
           </NavLink>
         )}
-        {scopes.includes(NODE_VIEW) && (
-          <NavLink to={categoryURL} onClick={onClick}>
-            {NavLinkWithFeedback(t("by_document_type.name"), <IconCategory />)}
-          </NavLink>
-        )}
-        {canManageTags(scopes) && (
+        {(scopes.includes(TAG_VIEW) ||
+          scopes.includes(TAG_SELECT) ||
+          canManageTags(scopes)) && (
           <NavLink to="/tags">
             {NavLinkWithFeedback(t("tags.name"), <IconTag />)}
-          </NavLink>
-        )}
-        {canManageDocumentTypes(scopes) && (
-          <NavLink to="/document-types">
-            {NavLinkWithFeedback(
-              t("document_types.name"),
-              <IconTriangleSquareCircle />
-            )}
           </NavLink>
         )}
         {scopes.includes(USER_VIEW) && (
           <NavLink to="/users">
             {NavLinkWithFeedback(t("users.name"), <IconUsers />)}
-          </NavLink>
-        )}
-        {scopes.includes(GROUP_VIEW) && (
-          <NavLink to="/groups">
-            {NavLinkWithFeedback(t("groups.name"), <IconUsersGroup />)}
           </NavLink>
         )}
         {scopes.includes(ROLE_VIEW) && (
@@ -163,32 +115,13 @@ function NavBarFull() {
 function NavBarCollapsed() {
   const {t} = useTranslation()
   const {pathname} = useLocation()
-  const mode = useContext(PanelContext)
-  const dispatch = useAppDispatch()
   const {data, isLoading} = useGetVersionQuery()
-  const viewOption = useAppSelector(s => selectCommanderViewOption(s, mode))
-  const user = useSelector(selectCurrentUser) as UserDetails
-  const status = useSelector(selectCurrentUserStatus)
-  const error = useSelector(selectCurrentUserError)
-  const categoryID = useAppSelector(s =>
-    selectCommanderDocumentTypeID(s, "main")
-  )
-  const categoryURL = categoryID ? `/category/${categoryID}` : "/category"
   const portalCatalogNavActive =
     pathname === "/portal" || pathname.startsWith("/portal/folder/")
 
-  const onClick = () => {
-    if (viewOption == "document-type") {
-      /*
-        Handle situation when user is in "document-type" view mode in commander
-        when he/she clicks category / library navigation. In such case
-        it is obvious that user intends to switch to "tiles" view
-
-        TODO: instead of switching to tiles, switch to last view options mode
-      */
-      dispatch(commanderViewOptionUpdated({mode, viewOption: "tile"}))
-    }
-  }
+  const user = useSelector(selectCurrentUser) as UserDetails
+  const status = useSelector(selectCurrentUserStatus)
+  const error = useSelector(selectCurrentUserError)
 
   if (status == "loading" || isLoading) {
     return <>{t("common.loading")}</>
@@ -210,7 +143,6 @@ function NavBarCollapsed() {
         {scopes.includes(PORTAL_VIEW) && (
           <Link
             to="/portal"
-            onClick={onClick}
             className={portalCatalogNavActive ? "active" : undefined}
           >
             <Group>
@@ -219,36 +151,23 @@ function NavBarCollapsed() {
           </Link>
         )}
         {scopes.includes(PORTAL_FEED_VIEW) && (
-          <NavLink to="/portal/feed" end onClick={onClick}>
+          <NavLink to="/portal/feed" end>
             {NavLinkWithFeedbackShort(<IconNews />)}
           </NavLink>
         )}
         {scopes.includes(NODE_VIEW) && (
-          <NavLink to="/library/favorites" onClick={onClick}>
+          <NavLink to="/library/favorites">
             {NavLinkWithFeedbackShort(<IconBookmark />)}
           </NavLink>
         )}
-        {scopes.includes(NODE_VIEW) && (
-          <NavLink to={categoryURL} onClick={onClick}>
-            {NavLinkWithFeedbackShort(<IconCategory />)}
-          </NavLink>
-        )}
-        {canManageTags(scopes) && (
+        {(scopes.includes(TAG_VIEW) ||
+          scopes.includes(TAG_SELECT) ||
+          canManageTags(scopes)) && (
           <NavLink to="/tags">{NavLinkWithFeedbackShort(<IconTag />)}</NavLink>
-        )}
-        {canManageDocumentTypes(scopes) && (
-          <NavLink to="/document-types">
-            {NavLinkWithFeedbackShort(<IconTriangleSquareCircle />)}
-          </NavLink>
         )}
         {scopes.includes(USER_VIEW) && (
           <NavLink to="/users">
             {NavLinkWithFeedbackShort(<IconUsers />)}
-          </NavLink>
-        )}
-        {scopes.includes(GROUP_VIEW) && (
-          <NavLink to="/groups">
-            {NavLinkWithFeedbackShort(<IconUsersGroup />)}
           </NavLink>
         )}
         {scopes.includes(ROLE_VIEW) && (

@@ -50,14 +50,16 @@ function PublicDocumentPageGuest() {
     return <Navigate to="/" replace />
   }
 
-  const downloadUrl = `${getBaseURL()}/api/public/documents/${documentId}/download`
+  const previewUrl = `${getBaseURL()}/api/public/documents/${documentId}/download`
+  const downloadUrl = `${previewUrl}?inline=false`
 
   return (
     <SimpleDocumentPreview
       trail={trail}
       title={doc?.title ?? ""}
-      previewUrl={downloadUrl}
+      previewUrl={previewUrl}
       downloadUrl={downloadUrl}
+      fileName={doc?.file_name}
       folderHref={id => `/browse/folder/${id}`}
       isLoading={isLoading}
       isError={isError || !doc}

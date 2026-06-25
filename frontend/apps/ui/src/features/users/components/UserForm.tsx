@@ -51,11 +51,6 @@ export default function UserForm({user}: Args) {
         onChange={() => {}}
       />
       <MultiSelect
-        label={t("users.form.groups")}
-        readOnly={true}
-        value={user?.groups.map(g => g.name)}
-      />
-      <MultiSelect
         label={t("users.form.roles")}
         readOnly={true}
         value={user?.roles.map(r => r.name)}

@@ -46,10 +46,6 @@ export const apiSlice = createApi({
     "NodeTag", // tags fetched per node
     "Folder",
     "Document",
-    "CustomField", // CRUD custom field
-    "DocumentType",
-    "DocumentCustomField", // custom fields associated to specific document (via document type)
-    "DocumentCFV",
     "DocVersList",
     "DocumentVersion",
     "LibraryFavorites",

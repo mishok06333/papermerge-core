@@ -131,7 +131,7 @@ async def update_shared_node_access(
     node_id: uuid.UUID,
     access_update: schema.SharedNodeAccessUpdate,
     user: Annotated[
-        schema.User, Security(get_current_user, scopes=[scopes.SHARED_NODE_VIEW])
+        schema.User, Security(get_current_user, scopes=[scopes.SHARED_NODE_UPDATE])
     ],
     db_session: AsyncSession=Depends(get_db),
 ):

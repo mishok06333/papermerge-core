@@ -20,6 +20,17 @@ from papermerge.core.schema import PaginatedResponse
 router = APIRouter(prefix="/library", tags=["library-ts"])
 
 
+def _can_modify_comment(
+    user: schema.User, comment_author_id: uuid.UUID, moderate_scope: str
+) -> bool:
+    """Own comments are always editable; scopes apply to other users' comments only."""
+    if comment_author_id == user.id:
+        return True
+    if getattr(user, "is_superuser", False):
+        return True
+    return moderate_scope in (user.scopes or [])
+
+
 @router.get("/favorites", response_model=list[lib_schema.FavoriteRowOut])
 @router.get("/favorites/", response_model=list[lib_schema.FavoriteRowOut])
 async def list_favorites(
@@ -258,7 +269,7 @@ async def update_doc_comment(
     comment_id: uuid.UUID,
     payload: lib_schema.CommentUpdate,
     user: Annotated[
-        schema.User, Security(get_current_user, scopes=[scopes.COMMENT_UPDATE])
+        schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])
     ],
     db_session: AsyncSession = Depends(get_db),
 ):
@@ -268,6 +279,8 @@ async def update_doc_comment(
     row = await lib_api.get_comment(db_session, comment_id)
     if row is None or row.document_id != document_id:
         raise HTTPException(status_code=404, detail="Comment not found")
+    if not _can_modify_comment(user, row.user_id, scopes.COMMENT_UPDATE):
+        raise exc.HTTP403Forbidden()
     row = await lib_api.update_comment(db_session, comment_id, payload.body)
     author_info = await lib_api.get_user_display_fields_by_id(db_session, row.user_id)
     if author_info:
@@ -298,7 +311,7 @@ async def delete_doc_comment(
     document_id: uuid.UUID,
     comment_id: uuid.UUID,
     user: Annotated[
-        schema.User, Security(get_current_user, scopes=[scopes.COMMENT_DELETE])
+        schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])
     ],
     db_session: AsyncSession = Depends(get_db),
 ):
@@ -308,6 +321,8 @@ async def delete_doc_comment(
     row = await lib_api.get_comment(db_session, comment_id)
     if row is None or row.document_id != document_id:
         raise HTTPException(status_code=404, detail="Comment not found")
+    if not _can_modify_comment(user, row.user_id, scopes.COMMENT_DELETE):
+        raise exc.HTTP403Forbidden()
     await lib_api.delete_comment(db_session, comment_id)
     await lib_api.add_audit(
         db_session,

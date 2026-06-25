@@ -1,5 +1,3 @@
-import {customFieldCRUDListeners} from "@/features/custom-fields/customFieldsSlice"
-import {documentTypeCRUDListeners} from "@/features/document-types/documentTypesSlice"
 import {moveNodesListeners} from "@/features/nodes/nodesSlice"
 import {roleCRUDListeners} from "@/features/roles/rolesSlice"
 
@@ -19,5 +17,3 @@ export type AppAddListener = typeof addAppListener
 
 moveNodesListeners(startAppListening)
 roleCRUDListeners(startAppListening)
-documentTypeCRUDListeners(startAppListening)
-customFieldCRUDListeners(startAppListening)

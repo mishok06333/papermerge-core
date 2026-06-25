@@ -65,12 +65,15 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
         filter = undefined
       }: PaginatedArgs) => {
         const orderBy = sortDir == "az" ? sortColumn : `-${sortColumn}`
-
-        if (!filter) {
-          return `/nodes/${nodeID}?page_number=${page_number}&page_size=${page_size}&order_by=${orderBy}`
+        const params = new URLSearchParams({
+          page_number: String(page_number),
+          page_size: String(page_size),
+          order_by: orderBy
+        })
+        if (filter) {
+          params.set("filter", filter)
         }
-
-        return `/nodes/${nodeID}?page_size=${page_size}&filter=${filter}&order=${orderBy}`
+        return `/nodes/${nodeID}?${params.toString()}`
       },
       providesTags: (
         result = {page_number: 1, page_size: 1, num_pages: 1, items: []},

@@ -85,6 +85,7 @@ RUN poetry install --no-root -E pg -vvv
 
 COPY docker/app/entrypoint.sh /entrypoint.sh
 COPY docker/app/bundles/supervisor/* docker/app/logging.yaml /etc/papermerge/
+COPY docker/app/bundles/auth/post-login-redirect.snippet.html /etc/papermerge/
 COPY docker/app/bundles/nginx/* /etc/nginx/
 COPY docker/app/core.js.tmpl /etc/papermerge/
 COPY alembic.ini ${CORE_APP}/

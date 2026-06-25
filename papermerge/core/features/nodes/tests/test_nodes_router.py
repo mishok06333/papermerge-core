@@ -671,3 +671,152 @@ async def test_get_node_tags_router_when_node_is_document(
     tag_names = {schema.Tag.model_validate(t).name for t in response.json()}
 
     assert tag_names == {"tag1", "tag2"}
+
+
+async def test_assign_tags_with_document_update_tags_scope_from_db_role(
+    db_session: AsyncSession,
+    make_user,
+    make_document,
+    make_role,
+):
+    """Tag assignment works with ``document.update.tags`` from DB role, no JWT scopes."""
+    from httpx import ASGITransport, AsyncClient
+    from fastapi import FastAPI
+
+    from papermerge.core import dbapi, schema as core_schema, utils
+    from papermerge.core.db.engine import get_db
+    from papermerge.core.features.auth.scopes import Scopes
+    from papermerge.core.features.nodes.router import router as nodes_router
+    from papermerge.core.features.tags import schema as tags_schema
+    from papermerge.core.features.tags.db import api as tags_dbapi
+    from papermerge.core.features.tags.router import router as tags_router
+
+    await dbapi.sync_perms(db_session)
+    user = await make_user("tagger", is_superuser=False)
+    role = await make_role(
+        "tagger_role",
+        scopes=[
+            Scopes.NODE_VIEW,
+            Scopes.TAG_SELECT,
+            Scopes.DOCUMENT_UPDATE_TAGS,
+            Scopes.USER_ME,
+        ],
+    )
+    user.roles.append(role)
+    await db_session.commit()
+
+    doc = await make_document(
+        title="doc.pdf", user=user, parent=user.home_folder
+    )
+    await tags_dbapi.create_tag(
+        db_session,
+        attrs=tags_schema.CreateTag(name="important", user_id=user.id),
+    )
+
+    app = FastAPI()
+    app.include_router(nodes_router, prefix="")
+    app.include_router(tags_router, prefix="")
+
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    middle_part = utils.base64.encode(
+        {
+            "sub": str(user.id),
+            "preferred_username": user.username,
+            "email": user.email,
+            "scopes": [Scopes.USER_ME],
+            "roles": [],
+        }
+    )
+    token = f"abc.{middle_part}.xyz"
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {token}"},
+    ) as client:
+        response = await client.post(
+            f"/nodes/{doc.id}/tags", json=["important"]
+        )
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 200, response.json()
+    updated = core_schema.Document.model_validate(response.json())
+    assert {t.name for t in updated.tags} == {"important"}
+
+
+async def test_assign_tags_with_tag_select_scope_only_from_db_role(
+    db_session: AsyncSession,
+    make_user,
+    make_document,
+    make_role,
+):
+    """``tag.select`` alone is enough to assign catalog tags on a viewable document."""
+    from httpx import ASGITransport, AsyncClient
+    from fastapi import FastAPI
+
+    from papermerge.core import dbapi, schema as core_schema, utils
+    from papermerge.core.db.engine import get_db
+    from papermerge.core.features.auth.scopes import Scopes
+    from papermerge.core.features.nodes.router import router as nodes_router
+    from papermerge.core.features.tags import schema as tags_schema
+    from papermerge.core.features.tags.db import api as tags_dbapi
+
+    await dbapi.sync_perms(db_session)
+    user = await make_user("tagger", is_superuser=False)
+    role = await make_role(
+        "tag_select_only",
+        scopes=[
+            Scopes.NODE_VIEW,
+            Scopes.TAG_SELECT,
+            Scopes.USER_ME,
+        ],
+    )
+    user.roles.append(role)
+    await db_session.commit()
+
+    doc = await make_document(
+        title="doc.pdf", user=user, parent=user.home_folder
+    )
+    await tags_dbapi.create_tag(
+        db_session,
+        attrs=tags_schema.CreateTag(name="important", user_id=user.id),
+    )
+
+    app = FastAPI()
+    app.include_router(nodes_router, prefix="")
+
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    middle_part = utils.base64.encode(
+        {
+            "sub": str(user.id),
+            "preferred_username": user.username,
+            "email": user.email,
+            "scopes": [Scopes.USER_ME],
+            "roles": [],
+        }
+    )
+    token = f"abc.{middle_part}.xyz"
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {token}"},
+    ) as client:
+        response = await client.post(
+            f"/nodes/{doc.id}/tags", json=["important"]
+        )
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 200, response.json()
+    updated = core_schema.Document.model_validate(response.json())
+    assert {t.name for t in updated.tags} == {"important"}

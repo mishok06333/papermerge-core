@@ -42,8 +42,8 @@ export default function SortMenu() {
           {t("common.sort.title")}
         </Menu.Item>
         <Menu.Item
-          onClick={() => onSortColumnChanged("ctype")}
-          rightSection={sortColumn == "ctype" && <IconCheck />}
+          onClick={() => onSortColumnChanged("file_type")}
+          rightSection={sortColumn == "file_type" && <IconCheck />}
         >
           {t("common.sort.type")}
         </Menu.Item>
@@ -64,13 +64,13 @@ export default function SortMenu() {
           onClick={() => onSortDirChanged("az")}
           rightSection={sortDir == "az" && <IconCheck />}
         >
-          A-Z
+          {t("common.sort.ascending")}
         </Menu.Item>
         <Menu.Item
           onClick={() => onSortDirChanged("za")}
           rightSection={sortDir == "za" && <IconCheck />}
         >
-          Z-A
+          {t("common.sort.descending")}
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

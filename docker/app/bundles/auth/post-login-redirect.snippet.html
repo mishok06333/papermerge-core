@@ -1,0 +1,28 @@
+    <script id="post-login-redirect">
+(function () {
+  function hasToken() {
+    return document.cookie.split(";").some(function (c) {
+      return c.trim().indexOf("access_token=") === 0;
+    });
+  }
+  function enterApp() {
+    if (!hasToken()) {
+      return;
+    }
+    var path = window.location.pathname;
+    if (path === "/home" || path.indexOf("/home/") === 0) {
+      window.location.reload();
+      return;
+    }
+    window.location.replace("/home");
+  }
+  enterApp();
+  var attempts = 0;
+  var timer = setInterval(function () {
+    enterApp();
+    if (hasToken() || ++attempts > 40) {
+      clearInterval(timer);
+    }
+  }, 250);
+})();
+    </script>

@@ -1,7 +1,6 @@
 import CopyButton from "@/components/CopyButton"
 import {Box, Checkbox, Pill, TextInput} from "@mantine/core"
 
-import {OWNER_ME} from "@/cconstants"
 import {ColoredTagType} from "@/types"
 import {useTranslation} from "react-i18next"
 
@@ -37,13 +36,6 @@ export default function TagForm({tag}: Args) {
         value={tag?.description || ""}
         onChange={() => {}}
         rightSection={<CopyButton value={tag?.description || ""} />}
-      />
-      <TextInput
-        my="md"
-        label={t("common.owner")}
-        value={tag?.group_name || t("me")}
-        onChange={() => {}}
-        rightSection={<CopyButton value={tag?.group_name || OWNER_ME} />}
       />
     </Box>
   )

@@ -85,11 +85,13 @@ async def test_update_role_twice(db_session: AsyncSession):
 
     role, _ = await dbapi.create_role(db_session, "G1", scopes=list(scopes))
     # this method SHOULD NOT raise an exception
-    await dbapi.update_role(
+    updated, error = await dbapi.update_role(
         db_session,
         role_id=role.id,
         attrs=schema.UpdateRole(name=role.name, scopes=list(scopes)),
     )
+    assert error is None
+    assert updated is not None
 
     await dbapi.delete_role(db_session, role_id=role.id)
 
@@ -105,7 +107,7 @@ async def test_remove_permissions_from_role(db_session: AsyncSession):
     role_details = await dbapi.get_role(db_session, role_id=role.id)
     assert set(role_details.scopes) == scopes
 
-    await dbapi.update_role(
+    updated, error = await dbapi.update_role(
         db_session,
         role_id=role.id,
         attrs=schema.UpdateRole(
@@ -113,6 +115,8 @@ async def test_remove_permissions_from_role(db_session: AsyncSession):
             scopes=["tag.update"],  # role will have only one perm
         ),
     )
+    assert error is None
+    assert updated is not None
 
     role_details = await dbapi.get_role(db_session, role_id=role.id)
     # Indeed? Only one scope?

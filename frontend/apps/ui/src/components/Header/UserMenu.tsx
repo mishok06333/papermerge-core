@@ -7,9 +7,9 @@ import {
   IconLogout,
   IconUser
 } from "@tabler/icons-react"
-import Cookies from "js-cookie"
 import {useSelector} from "react-redux"
 
+import {clearAuthCookie} from "@/features/public/guestMode"
 import {
   selectCurrentUser,
   selectCurrentUserError,
@@ -24,7 +24,7 @@ export default function UserMenu() {
   const {t} = useTranslation()
 
   const onSignOutClicked = () => {
-    Cookies.remove("access_token")
+    clearAuthCookie()
     window.location.href = "/"
   }
   if (status == "loading") {

@@ -9,6 +9,20 @@ import type {
 
 import {PAGINATION_DEFAULT_ITEMS_PER_PAGES} from "@/cconstants"
 
+export type TaggedNode = {
+  node_id: string
+  title: string
+  ctype: string
+  updated_at: string
+}
+
+export type TagNodesArgs = {
+  tagId: string
+  page_number?: number
+  page_size?: number
+  filter?: string | null
+}
+
 export const apiSliceWithTags = apiSlice.injectEndpoints({
   endpoints: builder => ({
     getPaginatedTags: builder.query<
@@ -54,6 +68,27 @@ export const apiSliceWithTags = apiSlice.injectEndpoints({
       query: tagID => `/tags/${tagID}`,
       providesTags: (_result, _error, arg) => [{type: "Tag", id: arg}]
     }),
+    getTagNodes: builder.query<Paginated<TaggedNode>, TagNodesArgs>({
+      query: ({
+        tagId,
+        page_number = 1,
+        page_size = PAGINATION_DEFAULT_ITEMS_PER_PAGES,
+        filter = undefined
+      }: TagNodesArgs) => {
+        const params = new URLSearchParams({
+          page_number: String(page_number),
+          page_size: String(page_size)
+        })
+        if (filter) {
+          params.set("filter", filter)
+        }
+        return `/tags/${tagId}/nodes?${params.toString()}`
+      },
+      providesTags: (_result, _error, arg) => [
+        {type: "Tag", id: arg.tagId},
+        "Node"
+      ]
+    }),
     addNewTag: builder.mutation<ColoredTag, NewColoredTag>({
       query: tag => ({
         url: "/tags/",
@@ -75,7 +110,13 @@ export const apiSliceWithTags = apiSlice.injectEndpoints({
         url: `tags/${tagID}`,
         method: "DELETE"
       }),
-      invalidatesTags: (_result, _error, id) => [{type: "Tag", id: id}]
+      invalidatesTags: (_result, _error, id) => [
+        {type: "Tag", id},
+        "Tag",
+        "Node",
+        "NodeTag",
+        "Document"
+      ]
     })
   })
 })
@@ -84,6 +125,7 @@ export const {
   useGetPaginatedTagsQuery,
   useGetTagsQuery,
   useGetTagQuery,
+  useGetTagNodesQuery,
   useEditTagMutation,
   useAddNewTagMutation,
   useDeleteTagMutation

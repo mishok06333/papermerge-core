@@ -2,12 +2,13 @@ import {Button, Group, Title} from "@mantine/core"
 import {IconLogin} from "@tabler/icons-react"
 import {useTranslation} from "react-i18next"
 
+import {navigateToLogin} from "@/features/public/guestMode"
+
 export default function PublicHeader() {
   const {t} = useTranslation()
 
   const onLogin = () => {
-    // Protected route → nginx auth_request 401 → auth-server login SPA.
-    window.location.href = "/home"
+    navigateToLogin()
   }
 
   return (

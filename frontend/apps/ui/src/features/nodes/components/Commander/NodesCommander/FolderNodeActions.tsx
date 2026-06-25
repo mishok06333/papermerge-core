@@ -17,7 +17,6 @@ import PanelContext from "@/contexts/PanelContext"
 
 import DuplicatePanelButton from "@/components/DualPanel/DuplicatePanelButton"
 import QuickFilter from "@/components/QuickFilter"
-import ViewOptionsMenu from "@/features/nodes/components/Commander/ViewOptionsMenu"
 import {filterUpdated} from "@/features/ui/uiSlice"
 import DeleteButton from "./DeleteButton"
 import EditNodeTagsButton from "./EditNodeTagsButton"
@@ -26,7 +25,7 @@ import EditNodeVisibilityButton from "./EditNodeVisibilityButton"
 import NewFolderButton from "./NewFolderButton"
 import SortMenu from "./SortMenu"
 import UploadButton from "./UploadButton"
-import {NODE_UPDATE} from "@/scopes"
+import {canAssignNodeTags, NODE_UPDATE} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 
 type FolderNodeActionsProps = {
@@ -48,7 +47,9 @@ export default function FolderNodeActions({
   const selectedCount = useAppSelector(s => selectSelectedNodesCount(s, mode))
   const homeFolderTreeOpen = useAppSelector(selectHomeFolderTreeOpen)
   const user = useAppSelector(selectCurrentUser)
-  const canUpdateNodes = (user?.scopes ?? []).includes(NODE_UPDATE)
+  const scopes = user?.scopes ?? []
+  const canUpdateNodes = scopes.includes(NODE_UPDATE)
+  const canEditTags = canAssignNodeTags(scopes)
 
   const onQuickFilterClear = () => {
     selectFilterText(undefined)
@@ -81,7 +82,7 @@ export default function FolderNodeActions({
         {portalCommanderWriteEnabled && selectedCount == 1 && (
           <EditNodeTitleButton />
         )}
-        {portalCommanderWriteEnabled && selectedCount == 1 && (
+        {portalCommanderWriteEnabled && selectedCount == 1 && canEditTags && (
           <EditNodeTagsButton />
         )}
         {portalCommanderWriteEnabled &&
@@ -98,7 +99,6 @@ export default function FolderNodeActions({
             onChange={() => dispatch(homeFolderTreeToggled())}
           />
         )}
-        <ViewOptionsMenu />
         <SortMenu />
         <QuickFilter
           onChange={onQuickFilterChange}

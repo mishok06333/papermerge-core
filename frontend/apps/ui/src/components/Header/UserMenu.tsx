@@ -2,14 +2,15 @@ import type {User} from "@/types.ts"
 import {Group, Menu, UnstyledButton} from "@mantine/core"
 import {displayName} from "@/utils/userDisplay"
 import {
-  IconApi,
   IconChevronRight,
   IconLogout,
-  IconUser
+  IconUser,
+  IconUserCircle
 } from "@tabler/icons-react"
 import {useSelector} from "react-redux"
+import {Link} from "react-router-dom"
 
-import {clearAuthCookie} from "@/features/public/guestMode"
+import {navigateToLogout} from "@/features/public/guestMode"
 import {
   selectCurrentUser,
   selectCurrentUserError,
@@ -24,8 +25,7 @@ export default function UserMenu() {
   const {t} = useTranslation()
 
   const onSignOutClicked = () => {
-    clearAuthCookie()
-    window.location.href = "/"
+    navigateToLogout()
   }
   if (status == "loading") {
     return <>{t("common.loading")}</>
@@ -47,18 +47,19 @@ export default function UserMenu() {
         </UnstyledButton>
       </Menu.Target>
       <Menu.Dropdown>
-        <Menu.Item>
-          <Group>
-            <IconApi />
-            <a href="/docs">{t("extra.rest_api")}</a>
-          </Group>
+        <Menu.Item
+          component={Link}
+          to="/profile"
+          leftSection={<IconUserCircle size={14} />}
+        >
+          {t("extra.profile")}
         </Menu.Item>
         <Menu.Divider />
-        <Menu.Item>
-          <Group>
-            <IconLogout />
-            <a onClick={onSignOutClicked}>{t("extra.logout")}</a>
-          </Group>
+        <Menu.Item
+          leftSection={<IconLogout size={14} />}
+          onClick={onSignOutClicked}
+        >
+          {t("extra.logout")}
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

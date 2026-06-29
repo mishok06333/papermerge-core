@@ -13,10 +13,3 @@ def if_redis_present(orig_func):
 
     return inner
 
-
-def docstring_parameter(**kwargs):
-    def dec(obj):
-        obj.__doc__ = obj.__doc__.format(**kwargs)
-        return obj
-
-    return dec

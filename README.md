@@ -19,7 +19,7 @@ Supported input formats: PDF, TIFF, JPEG, PNG.
 ## Feature highlights
 
 - Web UI with desktop-like experience (dual panel, drag and drop, tags)
-- OpenAPI-compliant REST API
+- REST API
 - Document versioning, OCR text overlay, full-text search
 - Document types with custom fields (metadata)
 - Multi-user, groups, role-based access control
@@ -134,8 +134,7 @@ poetry run paper-cli roles create-admin
 poetry run task server
 ```
 
-The server listens on `http://localhost:8000`; Swagger UI at
-`http://localhost:8000/docs`.
+The server listens on `http://localhost:8000`.
 
 ### Frontend
 

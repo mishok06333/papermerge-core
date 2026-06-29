@@ -19,9 +19,11 @@ export function hasAuthCookie(): boolean {
 
 /** Remove the JWT cookie from all paths the auth-server may have used. */
 export function clearAuthCookie(): void {
-  Cookies.remove(ACCESS_TOKEN_COOKIE, {path: "/"})
-  Cookies.remove(ACCESS_TOKEN_COOKIE)
+  for (const path of ["/", "/home", ""]) {
+    Cookies.remove(ACCESS_TOKEN_COOKIE, {path: path || undefined})
+  }
   document.cookie = `${ACCESS_TOKEN_COOKIE}=; Max-Age=0; path=/`
+  document.cookie = `${ACCESS_TOKEN_COOKIE}=; Max-Age=0; path=/home`
 }
 
 /**
@@ -39,12 +41,14 @@ export function usesNginxAuthGate(): boolean {
  * through PostAuthRedirect back to the guest landing.
  */
 export function navigateToLogin(): void {
-  if (hasAuthCookie()) {
-    window.location.href = "/home"
-    return
-  }
   clearAuthCookie()
-  window.location.href = "/home"
+  window.location.replace("/home")
+}
+
+/** End the session and return to the public landing (full page navigation). */
+export function navigateToLogout(): void {
+  clearAuthCookie()
+  window.location.replace("/")
 }
 
 /** Routes where PostAuthRedirect owns the /api/users/me fetch after login. */

@@ -39,6 +39,10 @@ services:
     build:
       context: .
       dockerfile: docker/app/Dockerfile
+      # Attestation export can crash BuildKit on Docker Desktop (Windows)
+      # with "rpc error: Unavailable ... EOF" after a long multi-stage build.
+      provenance: false
+      sbom: false
     restart: unless-stopped
     ports:
       - "${APP_PORT:-12000}:80"
@@ -87,6 +91,8 @@ services:
     build:
       context: .
       dockerfile: docker/indexworker/Dockerfile
+      provenance: false
+      sbom: false
     restart: unless-stopped
     environment:
       PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER:-papermerge}:${POSTGRES_PASSWORD:-papermerge}@db:5432/${POSTGRES_DB:-papermerge}

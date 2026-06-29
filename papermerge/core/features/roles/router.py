@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Security
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from papermerge.core import utils, schema
+from papermerge.core import schema
 from papermerge.core.features.auth import get_current_user
 from papermerge.core.features.auth import scopes
 from papermerge.core.features.roles.db import api as dbapi
@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/all")
-@utils.docstring_parameter(scope=scopes.ROLE_SELECT)
 async def get_roles_without_pagination(
     user: Annotated[
         schema.User, Security(get_current_user, scopes=[scopes.ROLE_SELECT])
@@ -34,7 +33,6 @@ async def get_roles_without_pagination(
 ) -> list[schema.Role]:
     """Get all roles without pagination/filtering/sorting
 
-    Required scope: `{scope}`
     """
     result = await dbapi.get_roles_without_pagination(db_session)
 
@@ -42,7 +40,6 @@ async def get_roles_without_pagination(
 
 
 @router.get("/")
-@utils.docstring_parameter(scope=scopes.ROLE_VIEW)
 async def get_roles(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.ROLE_VIEW])],
     params: CommonQueryParams = Depends(),
@@ -50,7 +47,6 @@ async def get_roles(
 ):
     """Get all (paginated) roles
 
-    Required scope: `{scope}`
     """
     result = await dbapi.get_roles(
         db_session, page_size=params.page_size, page_number=params.page_number
@@ -60,7 +56,6 @@ async def get_roles(
 
 
 @router.get("/{role_id}", response_model=schema.RoleDetails)
-@utils.docstring_parameter(scope=scopes.ROLE_VIEW)
 async def get_role(
     role_id: uuid.UUID,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.ROLE_VIEW])],
@@ -68,7 +63,6 @@ async def get_role(
 ):
     """Get role details
 
-    Required scope: `{scope}`
     """
     try:
         result = await dbapi.get_role(db_session, role_id=role_id)
@@ -87,7 +81,6 @@ async def get_role(
         500: {"model": ErrorResponse, "description": "System configuration error or server error"}
     }
 )
-@utils.docstring_parameter(scope=scopes.ROLE_CREATE)
 async def create_role(
     pyrole: schema.CreateRole,
     user: Annotated[
@@ -97,7 +90,6 @@ async def create_role(
 ) -> schema.Role:
     """Creates role
 
-    Required scope: `{scope}`
 
     **Error Cases:**
     - **400**: Invalid permission scopes provided
@@ -159,7 +151,6 @@ async def create_role(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.ROLE_DELETE)
 async def delete_role(
     role_id: uuid.UUID,
     user: Annotated[
@@ -169,7 +160,6 @@ async def delete_role(
 ) -> None:
     """Deletes role
 
-    Required scope: `{scope}`
     """
     try:
         await dbapi.delete_role(db_session, role_id)
@@ -187,7 +177,6 @@ async def delete_role(
 
 
 @router.patch("/{role_id}", status_code=200, response_model=schema.Role)
-@utils.docstring_parameter(scope=scopes.ROLE_UPDATE)
 async def update_role(
     role_id: uuid.UUID,
     attrs: schema.UpdateRole,
@@ -198,7 +187,6 @@ async def update_role(
 ) -> schema.RoleDetails:
     """Updates role
 
-    Required scope: `{scope}`
     """
     try:
         role, error = await dbapi.update_role(

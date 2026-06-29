@@ -13,6 +13,7 @@ import Document from "@/pages/Document"
 import LibraryPage from "@/features/library/pages/LibraryPage"
 import SearchPage from "@/pages/Search"
 import AuditLogPage from "@/features/audit/pages/AuditLogPage"
+import ProfilePage from "@/features/profile/pages/ProfilePage"
 import HelpShellPicker from "@/features/help/pages/HelpShellPicker"
 import UserGuidePage from "@/features/help/pages/UserGuidePage"
 
@@ -150,6 +151,10 @@ const router = createBrowserRouter([
       {
         path: "/audit-log",
         element: <AuditLogPage />
+      },
+      {
+        path: "/profile",
+        element: <ProfilePage />
       },
       {
         path: ERRORS_403_ACCESS_FORBIDDEN,

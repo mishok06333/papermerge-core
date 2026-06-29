@@ -1,8 +1,13 @@
 import {createSlice, createAsyncThunk, PayloadAction} from "@reduxjs/toolkit"
 import axios from "@/httpClient"
-import type {SliceState, SliceStateStatus, User, UserDetails} from "@/types"
+import type {
+  SliceState,
+  SliceStateStatus,
+  UpdateUserProfile,
+  UserDetails
+} from "@/types"
 
-const initialState: SliceState<User> = {
+const initialState: SliceState<UserDetails> = {
   data: null,
   status: "idle",
   error: null
@@ -14,6 +19,14 @@ export const fetchCurrentUser = createAsyncThunk(
     const response = await axios.get("/api/users/me")
     const userDetails = response.data as UserDetails
     return userDetails
+  }
+)
+
+export const updateCurrentUserProfile = createAsyncThunk(
+  "user/updateCurrentUserProfile",
+  async (attrs: UpdateUserProfile) => {
+    const response = await axios.patch("/api/users/me", attrs)
+    return response.data as UserDetails
   }
 )
 
@@ -41,13 +54,19 @@ const currentUserSlice = createSlice({
           ` Ax code: ${action.error.code}.`
         state.error = message
       })
+      .addCase(
+        updateCurrentUserProfile.fulfilled,
+        (state, action: PayloadAction<UserDetails>) => {
+          state.data = action.payload
+        }
+      )
   }
 })
 
 export default currentUserSlice.reducer
 
-export const selectCurrentUser = (state: any): User =>
-  state.currentUser.data as User
+export const selectCurrentUser = (state: any): UserDetails | null =>
+  state.currentUser.data as UserDetails | null
 export const selectCurrentUserStatus = (state: any): SliceStateStatus =>
   state.currentUser.status as SliceStateStatus
 export const selectCurrentUserError = (state: any): string =>

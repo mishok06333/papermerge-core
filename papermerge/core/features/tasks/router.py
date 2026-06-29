@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Security
 
-from papermerge.core import constants, schema, utils
+from papermerge.core import constants, schema
 from papermerge.core import config
 from papermerge.core.features.auth import get_current_user, scopes
 from papermerge.core import tasks
@@ -17,14 +17,12 @@ settings = config.get_settings()
 
 
 @router.post("/ocr")
-@utils.docstring_parameter(scope=scopes.TASK_OCR)
 def start_ocr(
     ocr_task: OCRTaskIn,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.TASK_OCR])],
 ):
     """Triggers OCR for specific document
 
-    Required scope: `{scope}`
     """
     if not settings.papermerge__ocr__enabled:
         from fastapi import HTTPException

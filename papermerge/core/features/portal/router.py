@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, Security
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core import exceptions as exc
-from papermerge.core import schema, utils
+from papermerge.core import schema
 from papermerge.core.db import common as dbapi_common
 from papermerge.core.db.engine import get_db
 from papermerge.core.features.auth import get_current_user, scopes
@@ -21,7 +21,6 @@ router = APIRouter(prefix="/portal", tags=["portal"])
 
 
 @router.get("/root", response_model=portal_schema.PortalRootOut)
-@utils.docstring_parameter(scope=scopes.PORTAL_VIEW)
 async def get_portal_root(
     user: Annotated[
         schema.User, Security(get_current_user, scopes=[scopes.PORTAL_VIEW])
@@ -30,7 +29,6 @@ async def get_portal_root(
 ) -> portal_schema.PortalRootOut:
     """Return portal root folder metadata.
 
-    Required scope: `{scope}`
     """
     root_id = await portal_dbapi.get_portal_root_id(db_session)
     if root_id is None:
@@ -51,7 +49,6 @@ async def get_portal_root(
     "/nodes/{parent_id}",
     response_model=PaginatedResponse[Union[schema.DocumentNode, schema.Folder]],
 )
-@utils.docstring_parameter(scope=scopes.PORTAL_VIEW)
 async def list_portal_children(
     parent_id: UUID,
     user: Annotated[
@@ -62,7 +59,6 @@ async def list_portal_children(
 ) -> PaginatedResponse[Union[schema.DocumentNode, schema.Folder]]:
     """Paginated direct children of a folder inside the portal tree.
 
-    Required scope: `{scope}`
     """
     root_id = await portal_dbapi.get_portal_root_id(db_session)
     if root_id is None:
@@ -96,7 +92,6 @@ async def list_portal_children(
 
 
 @router.get("/feed", response_model=PaginatedResponse[portal_schema.PortalNewsOut])
-@utils.docstring_parameter(scope=scopes.PORTAL_FEED_VIEW)
 async def get_portal_feed(
     user: Annotated[
         schema.User, Security(get_current_user, scopes=[scopes.PORTAL_FEED_VIEW])
@@ -107,7 +102,6 @@ async def get_portal_feed(
 ) -> PaginatedResponse[portal_schema.PortalNewsOut]:
     """News feed for the legal portal (editorial posts).
 
-    Required scope: `{scope}`
     """
     _ = user
     rows, total = await portal_dbapi.list_portal_news(
@@ -125,7 +119,6 @@ async def get_portal_feed(
 
 
 @router.post("/feed", response_model=portal_schema.PortalNewsOut)
-@utils.docstring_parameter(scope=scopes.PORTAL_FEED_MANAGE)
 async def create_portal_feed_item(
     payload: portal_schema.PortalNewsCreateIn,
     user: Annotated[
@@ -135,7 +128,6 @@ async def create_portal_feed_item(
 ) -> portal_schema.PortalNewsOut:
     """Publish a news item on the portal feed.
 
-    Required scope: `{scope}`
     """
     try:
         attachment_ids = await portal_dbapi.validate_portal_news_attachment_nodes(
@@ -163,7 +155,6 @@ async def create_portal_feed_item(
 
 
 @router.patch("/feed/{news_id}", response_model=portal_schema.PortalNewsOut)
-@utils.docstring_parameter(scope=scopes.PORTAL_FEED_MANAGE)
 async def update_portal_feed_item(
     news_id: UUID,
     payload: portal_schema.PortalNewsUpdateIn,
@@ -174,7 +165,6 @@ async def update_portal_feed_item(
 ) -> portal_schema.PortalNewsOut:
     """Update a portal news item.
 
-    Required scope: `{scope}`
     """
     replace_attachments = payload.attachment_node_ids is not None
     attachment_ids: list[UUID] | None = None
@@ -207,7 +197,6 @@ async def update_portal_feed_item(
 
 
 @router.delete("/feed/{news_id}", status_code=204, response_class=Response)
-@utils.docstring_parameter(scope=scopes.PORTAL_FEED_MANAGE)
 async def delete_portal_feed_item(
     news_id: UUID,
     user: Annotated[
@@ -217,7 +206,6 @@ async def delete_portal_feed_item(
 ) -> Response:
     """Delete a portal news item.
 
-    Required scope: `{scope}`
     """
     _ = user
     ok = await portal_dbapi.delete_portal_news(db_session, news_id)

@@ -4,7 +4,6 @@ import {useTranslation} from "react-i18next"
 
 import {ColorSchemeToggle} from "@/components/ColorSchemeToggle/ColorSchemeToggle"
 import HelpButton from "@/components/Header/HelpButton"
-import LanguageMenu from "@/components/Header/LanguageMenu"
 import SidebarToggle from "@/components/Header/SidebarToggle"
 import classes from "@/components/Header/Header.module.css"
 import {navigateToLogin} from "@/features/public/guestMode"
@@ -36,7 +35,6 @@ export default function GuestHeader() {
           </Text>
         </Group>
         <Group>
-          <LanguageMenu />
           <HelpButton />
           <ColorSchemeToggle />
           <Button

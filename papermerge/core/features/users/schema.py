@@ -114,6 +114,12 @@ class UpdateUser(BaseModel):
     role_ids: list[UUID] | None = None
 
 
+class UpdateUserProfile(BaseModel):
+    email: str
+    first_name: str | None = None
+    last_name: str | None = None
+
+
 class ChangeUserPassword(BaseModel):
     userId: str
     password: str

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from papermerge.core.exceptions import HTTP404NotFound, EntityNotFound
 from papermerge.core.constants import INDEX_REMOVE_NODE
 from papermerge.core.tasks import send_task
-from papermerge.core import utils, schema, config
+from papermerge.core import schema, config
 from papermerge.core.features.auth import scopes, get_current_user, require_node_tags_user
 from papermerge.core.constants import INDEX_ADD_NODE
 from papermerge.core.features.document.db import api as doc_dbapi
@@ -40,7 +40,6 @@ settings = config.get_settings()
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_node(
     parent_id: UUID,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
@@ -49,7 +48,6 @@ async def get_node(
 ) -> PaginatedResponse[Union[schema.DocumentNode, schema.Folder]]:
     """Returns list of *paginated* direct descendants of `parent_id` node
 
-    Required scope: `{scope}`
     """
     order_by = ["ctype", "title", "created_at", "updated_at"]
 
@@ -89,9 +87,6 @@ async def get_node(
         }
     },
 )
-@utils.docstring_parameter(
-    scope=scopes.NODE_CREATE,
-)
 async def create_node(
     pynode: schema.NewFolder | schema.NewDocument,
     user: Annotated[
@@ -101,7 +96,6 @@ async def create_node(
 ) -> schema.Folder | schema.Document | None:
     """Creates a node
 
-    Required scope: `{scope}`
 
     Node's `ctype` may be either `folder` or `document`.
     Optionally you may pass ID attribute. If ID is present and has
@@ -202,7 +196,6 @@ async def create_node(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_UPDATE)
 async def update_node(
     node_id: UUID,
     node: schema.UpdateNode,
@@ -213,7 +206,6 @@ async def update_node(
 ) -> schema.Node:
     """Updates node
 
-    Required scope: `{scope}`
 
     parent_id is optional field. However, when present, parent_id
     should be not empty string (UUID).
@@ -269,7 +261,6 @@ async def update_node(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_DELETE)
 async def delete_nodes(
     list_of_uuids: list[UUID],
     user: Annotated[
@@ -279,7 +270,6 @@ async def delete_nodes(
 ):
     """Deletes nodes with specified UUIDs
 
-    Required scope: `{scope}`
 
     Returns a list of UUIDs of actually deleted nodes.
     In case nothing was deleted (e.g. no nodes with specified UUIDs
@@ -335,7 +325,6 @@ async def delete_nodes(
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_MOVE)
 async def move_nodes(
     params: schema.MoveNode,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_MOVE])],
@@ -348,7 +337,6 @@ async def move_nodes(
         * `node.update` permission for the target node
         * `node.move` permission for each source node
 
-    Required scope: `{scope}`
 
     In other words, after successful completion of this action
     all source nodes will have target node as their parent.
@@ -444,7 +432,6 @@ async def move_nodes(
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_UPDATE_TAGS)
 async def assign_node_tags(
     node_id: UUID,
     tags: list[str],
@@ -454,7 +441,6 @@ async def assign_node_tags(
     """
     Assigns given list of tag names to the node.
 
-    Required scope: `{scope}`
 
     All tags not present in given list of tags names
     will be disassociated from the node; in other words upon
@@ -507,7 +493,6 @@ async def assign_node_tags(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_nodes_details(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     node_ids: list[uuid.UUID] | None = Query(default=None),
@@ -519,7 +504,6 @@ async def get_nodes_details(
     Dev note: this API endpoint is used by UI to fetch tags and breadcrumbs
     for the *search results*, as search index does not store these attributes.
 
-    Required scope: `{scope}`
     """
     if node_ids is None:
         return []
@@ -555,7 +539,6 @@ async def get_nodes_details(
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_UPDATE_TAGS)
 async def update_node_tags(
     node_id: UUID,
     tags: list[str],
@@ -565,7 +548,6 @@ async def update_node_tags(
     """
     Appends given list of tag names to the node.
 
-    Required scope: `{scope}`
 
     Retains all previously associated node tags.
     Yet another way of thinking about http PATCH method is as it
@@ -628,7 +610,6 @@ async def update_node_tags(
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_node_tags(
     node_id: UUID,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
@@ -637,7 +618,6 @@ async def get_node_tags(
     """
     Retrieves nodes tags
 
-    Required scope: `{scope}`
     """
     try:
         await dbapi_common.require_node_perm(
@@ -669,7 +649,6 @@ async def get_node_tags(
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_UPDATE_TAGS)
 async def remove_node_tags(
     node_id: UUID,
     tags: list[str],
@@ -679,7 +658,6 @@ async def remove_node_tags(
     """
     Dissociate given tags the node.
 
-    Required scope: `{scope}`
 
     Tags models are not deleted - just dissociated from the node.
     """
@@ -726,7 +704,6 @@ async def remove_node_tags(
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_node_visibility(
     node_id: UUID,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
@@ -753,7 +730,6 @@ async def get_node_visibility(
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_UPDATE)
 async def update_node_visibility(
     node_id: UUID,
     attrs: schema.UpdateNodeVisibility,

@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException, Security, status
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from papermerge.core import utils
 from papermerge.core.features.auth import get_current_user
 from papermerge.core.features.auth import scopes
 from papermerge.core.features.custom_fields import schema as cf_schema
@@ -36,7 +35,6 @@ logger = logging.getLogger(__name__)
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.CUSTOM_FIELD_VIEW)
 async def get_custom_fields_without_pagination(
     user: Annotated[
         User, Security(get_current_user, scopes=[scopes.CUSTOM_FIELD_VIEW])
@@ -55,7 +53,6 @@ async def get_custom_fields_without_pagination(
     If `group_id` parameter is not provided (empty) then
     will return all custom fields of the current user.
 
-    Required scope: `{scope}`
     """
     if group_id:
         ok = await user_dbapi.user_belongs_to(db_session, user_id=user.id, group_id=group_id)
@@ -70,7 +67,6 @@ async def get_custom_fields_without_pagination(
 
 
 @router.get("/")
-@utils.docstring_parameter(scope=scopes.CUSTOM_FIELD_VIEW)
 async def get_custom_fields(
     user: Annotated[
         User, Security(get_current_user, scopes=[scopes.CUSTOM_FIELD_VIEW])
@@ -80,7 +76,6 @@ async def get_custom_fields(
 ):
     """Get paginated list of custom fields
 
-    Required scope: `{scope}`
     """
     result = await dbapi.get_custom_fields(
         db_session,
@@ -95,7 +90,6 @@ async def get_custom_fields(
 
 
 @router.get("/{custom_field_id}", response_model=cf_schema.CustomField)
-@utils.docstring_parameter(scope=scopes.CUSTOM_FIELD_VIEW)
 async def get_custom_field(
     custom_field_id: uuid.UUID,
     user: Annotated[
@@ -105,7 +99,6 @@ async def get_custom_field(
 ):
     """Get custom field
 
-    Required scope: `{scope}`
     """
     try:
         result = await dbapi.get_custom_field(db_session, custom_field_id=custom_field_id)
@@ -125,7 +118,6 @@ async def get_custom_field(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.CUSTOM_FIELD_CREATE)
 async def create_custom_field(
     cfield: cf_schema.CreateCustomField,
     user: Annotated[
@@ -141,7 +133,6 @@ async def create_custom_field(
     belong to that group, otherwise http status 403 (Forbidden) will
     be raised.
 
-    Required scope: `{scope}`
     """
     kwargs = {
         "name": cfield.name,
@@ -188,7 +179,6 @@ async def create_custom_field(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.CUSTOM_FIELD_DELETE)
 async def delete_custom_field(
     custom_field_id: uuid.UUID,
     user: Annotated[
@@ -198,7 +188,6 @@ async def delete_custom_field(
 ) -> None:
     """Deletes custom field
 
-    Required scope: `{scope}`
     """
     try:
         await dbapi.delete_custom_field(db_session, custom_field_id)
@@ -226,7 +215,6 @@ async def delete_custom_field(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.CUSTOM_FIELD_UPDATE)
 async def update_custom_field(
     custom_field_id: uuid.UUID,
     attrs: cf_schema.UpdateCustomField,
@@ -237,7 +225,6 @@ async def update_custom_field(
 ) -> cf_schema.CustomField:
     """Updates custom field
 
-    Required scope: `{scope}`
     """
     if attrs.group_id:
         group_id = attrs.group_id

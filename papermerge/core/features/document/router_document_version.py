@@ -6,7 +6,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, HTTPException, Security, Depends, status, Request, Query
 
-from papermerge.core import schema, utils, dbapi, orm
+from papermerge.core import schema, dbapi, orm
 from papermerge.core.features.auth import get_current_user
 from papermerge.core.features.auth import scopes
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
@@ -43,7 +43,6 @@ router = APIRouter(prefix="/document-versions", tags=["document-versions"])
         }
     }
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_DOWNLOAD)
 async def download_document_version(
     document_version_id: uuid.UUID,
     request: Request,
@@ -55,7 +54,6 @@ async def download_document_version(
 ):
     """Downloads given document version
 
-    Required scope: `{scope}`
     """
     try:
         doc_id, file_name = await dbapi.get_doc_ver_download_meta(
@@ -107,7 +105,6 @@ async def download_document_version(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_DOWNLOAD)
 async def get_doc_ver_download_url(
     doc_ver_id: uuid.UUID,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.DOCUMENT_DOWNLOAD])],
@@ -116,7 +113,6 @@ async def get_doc_ver_download_url(
     """
     Returns URL for downloading given document version
 
-    Required scope: `{scope}`
     """
     try:
         doc_id = await dbapi.get_doc_id_from_doc_ver_id(
@@ -144,7 +140,6 @@ async def get_doc_ver_download_url(
     "/{document_version_id}",
     response_model=schema.DocumentVersion
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def document_version_details(
     document_version_id: uuid.UUID,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
@@ -152,7 +147,6 @@ async def document_version_details(
 ):
     """Get document version details
 
-    Required scope: `{scope}`
     """
     try:
         doc_id = await dbapi.get_doc_id_from_doc_ver_id(

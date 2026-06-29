@@ -59,8 +59,8 @@ export default function PostAuthRedirect() {
     }
     authHandoffStarted.current = true
     clearAuthCookie()
-    // /home runs this component again; send guests to the public landing.
-    window.location.replace("/")
+    // Full reload so nginx serves auth-server login (not this UI route).
+    window.location.replace("/home")
   }, [status, retrying])
 
   if (status === "idle" || status === "loading" || retrying) {

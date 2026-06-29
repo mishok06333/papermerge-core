@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core import exceptions as exc
 from papermerge.core import constants as const
-from papermerge.core import utils, dbapi, schema
+from papermerge.core import dbapi, schema
 from papermerge.core.features.auth import get_current_user, scopes
 from papermerge.core.config import get_settings, FileServer
 from papermerge.core.tasks import send_task
@@ -48,7 +48,6 @@ config = get_settings()
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_UPLOAD)
 async def upload_file(
     document_id: uuid.UUID,
     file: UploadFile,
@@ -60,7 +59,6 @@ async def upload_file(
     """
     Uploads document's file.
 
-    Required scope: `{scope}`
 
     Document model must be created beforehand via `POST /nodes` endpoint
     provided with `ctype` = `document`.
@@ -79,8 +77,6 @@ async def upload_file(
     '--form "data=@booking.pdf..." won't work.
     The uploaded file is encoded as `multipart/form-data` and is sent
     in POST request body.
-
-    Obviously you can upload files directly via swagger UI.
     """
     content = await file.read()
 
@@ -139,7 +135,6 @@ async def upload_file(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_document_last_version(
     doc_id: uuid.UUID,
     request: Request,
@@ -149,7 +144,6 @@ async def get_document_last_version(
     """
     Returns document's last version
 
-    Required scope: `{scope}`
     """
     started = asyncio.get_running_loop().time()
     try:
@@ -190,7 +184,6 @@ async def get_document_last_version(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_doc_versions_list(
     doc_id: uuid.UUID,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
@@ -201,7 +194,6 @@ async def get_doc_versions_list(
 
     Returned versions are sorted descending by version number.
 
-    Required scope: `{scope}`
     """
     try:
         await dbapi_common.require_node_perm(
@@ -233,7 +225,6 @@ async def get_doc_versions_list(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_document_details(
     document_id: uuid.UUID,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
@@ -242,7 +233,6 @@ async def get_document_details(
     """
     Get document details
 
-    Required scope: `{scope}`
     """
     try:
         await dbapi_common.require_node_perm(
@@ -280,7 +270,6 @@ async def get_document_details(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_document_doc_thumbnail_status(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     doc_ids: list[uuid.UUID] = Query(),
@@ -295,7 +284,6 @@ async def get_document_doc_thumbnail_status(
     field - one `S3worker` task will be scheduled for generating respective
     document thumbnail.
 
-    Required scope: `{scope}`
     """
 
     started = asyncio.get_running_loop().time()

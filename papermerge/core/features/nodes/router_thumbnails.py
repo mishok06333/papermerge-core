@@ -10,7 +10,6 @@ from fastapi import APIRouter, HTTPException, Security, Depends
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from papermerge.core import utils
 from papermerge.core.features.users import schema as usr_schema
 from papermerge.core.features.auth import get_current_user
 from papermerge.core.features.auth import scopes
@@ -88,7 +87,6 @@ class JPEGFileResponse(FileResponse):
         },
     },
 )
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_document_thumbnail(
     document_id: uuid.UUID,
     user: Annotated[
@@ -98,7 +96,6 @@ async def get_document_thumbnail(
 ):
     """Retrieves thumbnail of the document last version's first page
 
-    Required scope: `{scope}`
     """
 
     await require_node_perm(

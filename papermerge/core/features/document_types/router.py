@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Security, status
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from papermerge.core import utils, schema, dbapi
+from papermerge.core import schema, dbapi
 from papermerge.core.features.auth import get_current_user
 from papermerge.core.features.auth import scopes
 from papermerge.core.routers.common import OPEN_API_GENERIC_JSON_DETAIL
@@ -34,7 +34,6 @@ logger = logging.getLogger(__name__)
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_TYPE_VIEW)
 async def get_document_types_without_pagination(
     user: Annotated[
         users_schema.User,
@@ -54,7 +53,6 @@ async def get_document_types_without_pagination(
     If `group_id` parameter is not provided (empty) then
     will return all document types of the current user.
 
-    Required scope: `{scope}`
     """
     result = await dbapi.get_document_types_without_pagination(
         db_session, user_id=user.id, group_id=group_id
@@ -73,7 +71,6 @@ async def get_document_types_without_pagination(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_TYPE_VIEW)
 async def get_document_types_without_pagination(
     user: Annotated[
         users_schema.User,
@@ -84,7 +81,6 @@ async def get_document_types_without_pagination(
     """Returns all document types to which user has access to, grouped
     by owner. Results are not paginated.
 
-    Required scope: `{scope}`
     """
     result = await dbapi.get_document_types_grouped_by_owner_without_pagination(
         db_session, user_id=user.id
@@ -94,7 +90,6 @@ async def get_document_types_without_pagination(
 
 
 @router.get("/")
-@utils.docstring_parameter(scope=scopes.DOCUMENT_TYPE_VIEW)
 async def get_document_types(
     user: Annotated[
         users_schema.User, Security(get_current_user, scopes=[scopes.CUSTOM_FIELD_VIEW])
@@ -104,7 +99,6 @@ async def get_document_types(
 ) -> schema.PaginatedResponse[schema.DocumentType]:
     """Get all (paginated) document types
 
-    Required scope: `{scope}`
     """
     paginated_response = await dbapi.get_document_types(
         db_session,
@@ -119,7 +113,6 @@ async def get_document_types(
 
 
 @router.get("/{document_type_id}", response_model=schema.DocumentType)
-@utils.docstring_parameter(scope=scopes.DOCUMENT_TYPE_VIEW)
 async def get_document_type(
     document_type_id: uuid.UUID,
     user: Annotated[
@@ -130,7 +123,6 @@ async def get_document_type(
 ):
     """Get document type
 
-    Required scope: `{scope}`
     """
     try:
         result = await dbapi.get_document_type(db_session, document_type_id=document_type_id)
@@ -140,7 +132,6 @@ async def get_document_type(
 
 
 @router.post("/", status_code=201)
-@utils.docstring_parameter(scope=scopes.DOCUMENT_TYPE_CREATE)
 async def create_document_type(
     dtype: schema.CreateDocumentType,
     user: Annotated[
@@ -154,7 +145,6 @@ async def create_document_type(
     If attribute `group_id` is present, document type will be owned
     by respective group, otherwise ownership is set to current user.
 
-    Required scope: `{scope}`
     """
     kwargs = {
         "name": dtype.name,
@@ -197,7 +187,6 @@ async def create_document_type(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_TYPE_DELETE)
 async def delete_document_type(
     document_type_id: uuid.UUID,
     user: Annotated[
@@ -208,7 +197,6 @@ async def delete_document_type(
 ) -> None:
     """Deletes document type
 
-    Required scope: `{scope}`
     """
     try:
         await dbapi.delete_document_type(db_session, document_type_id)
@@ -236,7 +224,6 @@ async def delete_document_type(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.DOCUMENT_TYPE_UPDATE)
 async def update_document_type(
     document_type_id: uuid.UUID,
     attrs: schema.UpdateDocumentType,
@@ -248,7 +235,6 @@ async def update_document_type(
 ) -> schema.DocumentType:
     """Updates document type
 
-    Required scope: `{scope}`
     """
     try:
         if attrs.group_id:

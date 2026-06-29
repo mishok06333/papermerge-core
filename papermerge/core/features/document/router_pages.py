@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core.features.document.db import api as doc_dbapi
 from papermerge.core.config import get_settings
-from papermerge.core import utils, schema, orm
+from papermerge.core import schema, orm
 from papermerge.core.features.auth import get_current_user
 from papermerge.core.features.auth import scopes
 from papermerge.core.features.page_mngm.db.api import apply_pages_op
@@ -28,7 +28,6 @@ router = APIRouter(
 )
 
 @router.post("/")
-@utils.docstring_parameter(scope=scopes.PAGE_UPDATE)
 async def apply_page_operations(
     items: List[schema.PageAndRotOp],
     user: Annotated[
@@ -38,7 +37,6 @@ async def apply_page_operations(
 ) -> schema.Document:
     """Applies reorder, delete and/or rotate operation(s) on a set of pages.
 
-    Required scope: `{scope}`
 
     Creates a new document version which will contain
     only the pages provided as input in given order and with
@@ -71,7 +69,6 @@ async def apply_page_operations(
 
 
 @router.post("/move")
-@utils.docstring_parameter(scope=scopes.PAGE_MOVE)
 async def move_pages(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.PAGE_MOVE])],
     arg: schema.MovePagesIn,
@@ -79,7 +76,6 @@ async def move_pages(
 ) -> schema.MovePagesOut:
     """Moves pages between documents.
 
-    Required scope: `{scope}`
 
     Source IDs are IDs of the pages to move.
     Target is the ID of the page before/after which to insert source pages.
@@ -116,7 +112,6 @@ async def move_pages(
 
 
 @router.post("/extract")
-@utils.docstring_parameter(scope=scopes.PAGE_EXTRACT)
 async def extract_pages(
     user: Annotated[
         schema.User, Security(get_current_user, scopes=[scopes.PAGE_EXTRACT])
@@ -126,7 +121,6 @@ async def extract_pages(
 ) -> schema.ExtractPagesOut:
     """Extract pages from one document into a folder.
 
-    Required scope: `{scope}`
 
     Source IDs are IDs of the pages to move.
     Target is the ID of the folder where to extract pages into.

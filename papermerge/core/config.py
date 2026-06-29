@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     papermerge__main__prefix: str = ''
     papermerge__main__app_title: str = Field(
         default="Электронная библиотека Хабаровского центра социальной поддержки населения",
-        description="Display title for API docs and optional UI branding.",
+        description="Display title for optional UI branding.",
     )
     papermerge__main__cors_origins: str = Field(
         default="*",
@@ -66,6 +66,15 @@ class Settings(BaseSettings):
     #   scheduler OCR later on any document.
     papermerge__ocr__automatic: bool = False
     papermerge__search__url: str | None = None
+    papermerge__security__secret_key: str = Field(
+        default="",
+        description="Shared JWT signing secret; must match auth-server "
+        "(PAPERMERGE__SECURITY__SECRET_KEY).",
+    )
+    papermerge__security__token_algorithm: str = Field(
+        default="HS256",
+        description="JWT signing algorithm; must match auth-server.",
+    )
     # Development-only switch: when enabled, API requests without token
     # are treated as authenticated as `papermerge__dev__auth_bypass_username`.
     papermerge__dev__auth_bypass_enabled: bool = False

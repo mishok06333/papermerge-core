@@ -1,9 +1,11 @@
 import {uploaderFileItemUpdated} from "@/features/ui/uiSlice"
 import type {FolderType, NodeType} from "@/types"
 import type {UUID} from "@/types.d/common"
+import {formatApiErrorDetail} from "@/utils/apiError"
 import {getBaseURL, getDefaultHeaders} from "@/utils"
 import {createAsyncThunk, createSlice, PayloadAction} from "@reduxjs/toolkit"
 import axios from "axios"
+import {t} from "i18next"
 import {UploadFileOutput} from "../nodes/types"
 import {fileManager} from "./fileManager"
 
@@ -80,7 +82,7 @@ export const uploadFile = createAsyncThunk<UploadFileOutput, UploadFileInput>(
             file_name: args.file.name
           },
           status: "failure",
-          error: "Node creation error. See console for details"
+          error: t("upload.error.node_creation")
         })
       )
       return {
@@ -99,7 +101,7 @@ export const uploadFile = createAsyncThunk<UploadFileOutput, UploadFileInput>(
             file_name: args.file.name
           },
           status: "failure",
-          error: `${response1.status} ${response1.statusText}: ${response1.data?.detail}`
+          error: formatApiErrorDetail(response1.data?.detail)
         })
       )
       return {
@@ -152,7 +154,7 @@ export const uploadFile = createAsyncThunk<UploadFileOutput, UploadFileInput>(
             file_name: args.file.name
           },
           status: "failure",
-          error: "Upload file error. See console for details"
+          error: t("upload.error.file_upload")
         })
       )
       return {
@@ -197,7 +199,7 @@ export const uploadFile = createAsyncThunk<UploadFileOutput, UploadFileInput>(
             file_name: args.file.name
           },
           status: "failure",
-          error: `${response2.status} ${response2.statusText} ${response2.data?.detail}`
+          error: formatApiErrorDetail(response2.data?.detail)
         })
       )
       return {

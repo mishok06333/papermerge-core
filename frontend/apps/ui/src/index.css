@@ -48,12 +48,6 @@ body {
   overflow: hidden;
 }
 
-.navbar > a.active {
-  background-color: var(--mantine-color-pmg-9);
-  color: light-dark(var(--mantine-color-pmg-1), var(--mantine-color-pmg-1));
-  padding: 0.75rem;
-}
-
 .navbar a {
   color: light-dark(var(--mantine-color-pmg-9), var(--mantine-color-pmg-2));
   padding: 0.75rem;
@@ -66,19 +60,32 @@ body {
   padding-top: 1rem;
   display: flex;
   flex-direction: column;
-  background-color: light-dark(#f9f9f9, black);
+  background-color: light-dark(
+    #f9f9f9,
+    color-mix(in srgb, var(--mantine-color-body), black 20%)
+  );
   flex-grow: 1;
 }
 
 .navbar-bg-color {
-  background-color: light-dark(#f9f9f9, black);
+  background-color: light-dark(
+    #f9f9f9,
+    color-mix(in srgb, var(--mantine-color-body), black 20%)
+  );
 }
 
-a {
+a:not(.mantine-Menu-item):not(.mantine-Button-root) {
   text-decoration: none;
   color: light-dark(var(--mantine-color-pmg-9), var(--mantine-color-pmg-2));
 }
 
-a:hover {
+a:not(.mantine-Menu-item):not(.mantine-Button-root):hover {
   color: light-dark(var(--mantine-color-pmg-6), var(--mantine-color-pmg-4));
+}
+
+.navbar > a.active,
+.navbar > a.active:hover {
+  background-color: var(--mantine-color-pmg-9);
+  color: var(--mantine-color-white);
+  padding: 0.75rem;
 }

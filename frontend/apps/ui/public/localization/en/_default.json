@@ -228,6 +228,10 @@
   "nodes.upload.title": "Upload Files",
   "nodes.upload.confirm_lead": "Are you sure you want to upload to",
   "nodes.upload.file_name": "File name",
+  "upload.error.duplicate_title": "A file with this name already exists in this folder",
+  "upload.error.generic": "Upload failed",
+  "upload.error.node_creation": "Failed to create document",
+  "upload.error.file_upload": "Failed to upload file",
   "document_types.name": "Document Types",
   "document_types.name.by": "By Document Type",
   "document_types.new.title": "New Document Type",
@@ -334,12 +338,193 @@
   "roles.delete.one.description": "Are you sure you want to delete this role?",
   "roles.delete.many.title": "Delete Roles",
   "roles.delete.many.description": "Are you sure you want to delete selected roles?",
-  "extra.rest_api": "REST API",
+  "extra.profile": "Profile",
   "extra.logout": "Log out",
+  "profile.title": "Profile",
+  "profile.saved": "Profile saved",
+  "profile.save_error": "Could not save profile",
   "user_guide": {
-    "tooltip": "User guide",
-    "title": "User guide",
-    "placeholder": "Guide content will be added later."
+    "tooltip": "Help",
+    "title": "Help",
+    "tab_user": "User guide",
+    "tab_admin": "Administrator guide",
+    "toc": "Contents",
+    "guest": {
+      "title": "Guest help",
+      "sections": {
+        "intro": {
+          "title": "1. About the system",
+          "items": [
+            "The digital library provides access to the organization's document catalog.",
+            "Without signing in you can only browse public materials."
+          ]
+        },
+        "browse": {
+          "title": "2. Browsing the catalog",
+          "items": [
+            "The home page shows the section tree and a list of documents.",
+            "Open a section to see subfolders and files.",
+            "Click a document to view it in the built-in viewer."
+          ]
+        },
+        "login": {
+          "title": "3. Signing in",
+          "items": [
+            "Click Sign in in the header to open the login form.",
+            "After a successful login, additional sections appear depending on your assigned role.",
+            "If you do not have an account, contact a system administrator."
+          ]
+        }
+      }
+    },
+    "user": {
+      "sections": {
+        "intro": {
+          "title": "1. Getting started",
+          "items": [
+            "Sign in using the Sign in button on the landing page or go to /home.",
+            "After login you see the main UI: section menu on the left, search bar, notifications, theme toggle, and user menu on top.",
+            "The ? icon in the header opens this help page at any time.",
+            "Use the sidebar toggle in the header to collapse or expand the navigation menu."
+          ]
+        },
+        "portal": {
+          "title": "2. Portal and document catalog",
+          "items": [
+            "The Home item in the menu opens the portal catalog with a section tree and material list.",
+            "Click a folder to open its contents; click a document to view it in the built-in viewer.",
+            "The Feed section contains official portal news. Attachments open like regular documents.",
+            "Navigate using the tree on the left or the list in the main area."
+          ]
+        },
+        "library": {
+          "title": "3. Library",
+          "items": [
+            "The Library menu item combines personal lists: favorites, recent items, and trash.",
+            "Favorites — materials you starred for quick access.",
+            "Recent — folders and documents you opened recently.",
+            "Trash — deleted materials. With sufficient rights you can restore or purge them permanently."
+          ]
+        },
+        "documents": {
+          "title": "4. Viewing documents",
+          "items": [
+            "Documents open in a viewer with page navigation. PDF, images, and other common formats are supported.",
+            "For PDFs you can select and copy recognized text when OCR has been run.",
+            "Download is available from the viewer toolbar when you have the download permission.",
+            "Use the viewer controls to change zoom.",
+            "Dual-panel mode lets you browse different folders or documents side by side."
+          ]
+        },
+        "search": {
+          "title": "5. Search",
+          "items": [
+            "Enter a query in the header search field.",
+            "Press Enter or the search button to open the results page.",
+            "Results list documents found in the full-text index when search is enabled by the administrator."
+          ]
+        },
+        "tags": {
+          "title": "6. Tags",
+          "items": [
+            "Tags help group documents by topic.",
+            "The Tags menu item shows the tag catalog available in the system.",
+            "You can assign tags to documents and folders from the file manager when you have the required permission.",
+            "Creating and editing tags in the catalog is limited to administrators and moderators."
+          ]
+        },
+        "profile": {
+          "title": "7. Profile and notifications",
+          "items": [
+            "The user menu in the top-right corner includes Profile.",
+            "In your profile you can change email, first name, and last name.",
+            "The bell icon shows notifications about system events.",
+            "Choose Log out in the user menu to end your session."
+          ]
+        },
+        "comments": {
+          "title": "8. Comments",
+          "items": [
+            "You can leave comments on documents when your role allows it.",
+            "You may edit and delete your own comments.",
+            "Other users' comments are read-only unless you have moderator rights."
+          ]
+        }
+      }
+    },
+    "admin": {
+      "sections": {
+        "users": {
+          "title": "1. User management",
+          "items": [
+            "The Users item in the sidebar opens the account list.",
+            "Create a user with username, email, and initial password (per your policy).",
+            "Assign one or more roles and groups — they define access rights.",
+            "Disable an account with the Active flag to block login without deleting data.",
+            "Edit other users on their detail page."
+          ]
+        },
+        "roles": {
+          "title": "2. Roles and permissions",
+          "items": [
+            "The Roles section lists roles and their permission scopes.",
+            "Built-in roles: Administrator, Moderator, and Employee.",
+            "The Employee role is for browsing, downloading, and commenting without changing catalog content.",
+            "Administrator and Moderator roles grant extended rights to manage the catalog, users, and settings.",
+            "When creating a custom role, grant only the permissions that are truly needed.",
+            "After permission changes in code, run paper-cli perms sync on the server."
+          ]
+        },
+        "tags": {
+          "title": "3. Tag catalog",
+          "items": [
+            "Create, rename, and delete tags centrally in the Tags section.",
+            "Users with tag-select permission assign tags from the catalog but cannot create new tags themselves.",
+            "Before deleting a tag, check that it is no longer used on important documents."
+          ]
+        },
+        "portal": {
+          "title": "4. Portal and news feed",
+          "items": [
+            "Edit the portal catalog structure (folders and documents) in the file manager under Home.",
+            "Upload files with Upload and create folders with New folder.",
+            "The Feed section publishes news with title, body, and attachments from the portal catalog.",
+            "Use the Documents… dialog to pick attachments from the portal tree.",
+            "On first deploy, initialize the portal catalog with paper-cli portal init on the server."
+          ]
+        },
+        "commander": {
+          "title": "5. File manager",
+          "items": [
+            "The file manager opens when you enter a catalog or portal folder.",
+            "Upload: use Upload and select one or more files from your computer.",
+            "Move: drag selected items onto a target folder.",
+            "Rename: select one item and click Rename.",
+            "Delete: select items and click Delete — with soft delete enabled they go to trash.",
+            "Sorting and quick filter are on the toolbar above the list.",
+            "Page operations (extract, rotate, delete pages) are available in the viewer when permitted."
+          ]
+        },
+        "visibility": {
+          "title": "6. Document and folder visibility",
+          "items": [
+            "Each document or folder can be public, restricted, or visible only to the owner and moderators.",
+            "A visibility icon appears next to the name in the file manager.",
+            "Change visibility with the Visibility button when one item is selected and you have node.update.",
+            "Public materials are available to guests at /browse without signing in."
+          ]
+        },
+        "audit": {
+          "title": "7. Audit log",
+          "items": [
+            "The Audit log menu item is available only to superusers.",
+            "The log records user actions: views, downloads, catalog changes, and other events.",
+            "Use pagination to browse a long history.",
+            "The audit log helps investigate incidents and monitor system usage."
+          ]
+        }
+      }
+    }
   },
   "by_document_type.name": "By Document Type",
   "pages.error.access_forbidden.title": "Access Forbidden",

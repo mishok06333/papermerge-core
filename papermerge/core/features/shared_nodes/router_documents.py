@@ -5,7 +5,6 @@ from fastapi import APIRouter, Security, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import NoResultFound
 
-from papermerge.core import utils
 from papermerge.core.features.auth import get_current_user
 from papermerge.core.features.auth import scopes
 from papermerge.core.db import common as dbapi_common
@@ -18,7 +17,6 @@ router = APIRouter(prefix="/shared-documents", tags=["shared-documents"])
 
 
 @router.get("/{document_id}")
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_shared_document_details(
     document_id: uuid.UUID,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
@@ -28,7 +26,6 @@ async def get_shared_document_details(
     """
     Get shared document details
 
-    Required scope: `{scope}`
     """
     try:
         await dbapi_common.require_node_perm(

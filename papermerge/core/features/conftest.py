@@ -45,8 +45,37 @@ from papermerge.core import utils
 from papermerge.core.tests.types import AuthTestClient
 from papermerge.core import config
 from papermerge.core.constants import ContentType
+from papermerge.core.features.auth.jwt_tokens import sign_access_token
 from papermerge.core.features.shared_nodes.router import \
     router as shared_nodes_router
+
+TEST_JWT_SECRET = "test-secret-for-pytest-only"
+
+
+@pytest.fixture(autouse=True)
+def _jwt_test_secret():
+    """Tests use signed JWTs; pin a known secret on the shared settings object."""
+    config.settings.papermerge__security__secret_key = TEST_JWT_SECRET
+    config.settings.papermerge__security__token_algorithm = "HS256"
+    yield
+
+
+def access_token_for_user(
+    user: orm.User,
+    *,
+    scopes: list[str] | None = None,
+    roles: list[str] | None = None,
+) -> str:
+    return sign_access_token(
+        {
+            "sub": str(user.id),
+            "preferred_username": user.username,
+            "email": user.email,
+            "scopes": scopes if scopes is not None else list(SCOPES.keys()),
+            "groups": [],
+            "roles": roles or [],
+        }
+    )
 
 DIR_ABS_PATH = os.path.abspath(os.path.dirname(__file__))
 RESOURCES = Path(DIR_ABS_PATH) / "document" / "tests" / "resources"
@@ -355,15 +384,7 @@ async def auth_api_client(db_session, user: orm.User):
     def override_get_db():
         yield db_session
 
-    middle_part = utils.base64.encode(
-        {
-            "sub": str(user.id),
-            "preferred_username": user.username,
-            "email": user.email,
-            "scopes": list(SCOPES.keys()),
-        }
-    )
-    token = f"abc.{middle_part}.xyz"
+    token = access_token_for_user(user)
 
     app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
@@ -390,15 +411,7 @@ async def make_api_client(make_user, db_session):
         user = await make_user(username=username)  # Await the make_user call
         app = get_app_with_routes()
 
-        middle_part = utils.base64.encode(
-            {
-                "sub": str(user.id),
-                "preferred_username": user.username,
-                "email": user.email,
-                "scopes": list(SCOPES.keys()),
-            }
-        )
-        token = f"abc.{middle_part}.xyz"
+        token = access_token_for_user(user)
         app.dependency_overrides[get_db] = override_get_db
         transport = ASGITransport(app=app)
         async_client = AsyncClient(
@@ -420,15 +433,7 @@ async def login_as(db_session):
         app = get_app_with_routes()
         app.dependency_overrides[get_db] = override_get_db
 
-        middle_part = utils.base64.encode(
-            {
-                "sub": str(user.id),
-                "preferred_username": user.username,
-                "email": user.email,
-                "scopes": list(SCOPES.keys()),
-            }
-        )
-        token = f"abc.{middle_part}.xyz"
+        token = access_token_for_user(user)
         transport = ASGITransport(app=app)
 
         async_client = AsyncClient(
@@ -604,16 +609,13 @@ def b64e(s):
 
 @pytest.fixture
 def token():
-    data = {
-        "sub": "100",
-        "preferred_username": "montaigne",
-        "email": "montaingne@mail.com",
-    }
-    json_str = json.dumps(data)
-
-    payload = b64e(json_str)
-
-    return f"ignore_me.{payload}.ignore_me_too"
+    return sign_access_token(
+        {
+            "sub": "100",
+            "preferred_username": "montaigne",
+            "email": "montaingne@mail.com",
+        }
+    )
 
 
 @pytest.fixture

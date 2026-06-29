@@ -13,7 +13,7 @@ from papermerge.core.features.users import schema as users_schema
 from papermerge.core.features.auth import scopes
 from papermerge.core.db import exceptions as db_exc
 from papermerge.core.config import get_settings
-from papermerge.core.utils import base64
+from papermerge.core.features.auth.jwt_tokens import verify_access_token
 from papermerge.core.db.engine import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(
@@ -32,10 +32,13 @@ NODE_TAGS_SCOPES = frozenset(
 
 
 def extract_token_data(token: str = Depends(oauth2_scheme)) -> types.TokenData | None:
-    if not token or "." not in token:
+    if not token:
         return None
-    _, payload, _ = token.split(".")
-    data = base64.decode(payload)
+
+    data = verify_access_token(token)
+    if data is None:
+        return None
+
     user_id: str = data.get("sub")
     if user_id is None:
         raise HTTPException(

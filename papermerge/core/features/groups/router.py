@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Security
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from papermerge.core import utils, schema
+from papermerge.core import schema
 from papermerge.core.features.auth import get_current_user
 from papermerge.core.features.auth import scopes
 from papermerge.core.features.groups.db import api as dbapi
@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/all")
-@utils.docstring_parameter(scope=scopes.GROUP_SELECT)
 async def get_groups_without_pagination(
     user: Annotated[
         schema.User, Security(get_current_user, scopes=[scopes.GROUP_SELECT])
@@ -33,7 +32,6 @@ async def get_groups_without_pagination(
 ) -> list[schema.Group]:
     """Get all groups without pagination/filtering/sorting
 
-    Required scope: `{scope}`
     """
     result = await dbapi.get_groups_without_pagination(db_session)
 
@@ -41,7 +39,6 @@ async def get_groups_without_pagination(
 
 
 @router.get("/")
-@utils.docstring_parameter(scope=scopes.GROUP_VIEW)
 async def get_groups(
     user: Annotated[
         schema.User, Security(get_current_user, scopes=[scopes.GROUP_VIEW])
@@ -51,7 +48,6 @@ async def get_groups(
 ):
     """Get all (paginated) groups
 
-    Required scope: `{scope}`
     """
     result = await dbapi.get_groups(
         db_session, page_size=params.page_size, page_number=params.page_number
@@ -61,7 +57,6 @@ async def get_groups(
 
 
 @router.get("/{group_id}", response_model=schema.GroupDetails)
-@utils.docstring_parameter(scope=scopes.GROUP_VIEW)
 async def get_group(
     group_id: uuid.UUID,
     user: Annotated[
@@ -71,7 +66,6 @@ async def get_group(
 ):
     """Get group details
 
-    Required scope: `{scope}`
     """
     try:
         result = await dbapi.get_group(db_session, group_id=group_id)
@@ -82,7 +76,6 @@ async def get_group(
 
 
 @router.post("/", status_code=201)
-@utils.docstring_parameter(scope=scopes.GROUP_CREATE)
 async def create_group(
     pygroup: schema.CreateGroup,
     user: Annotated[
@@ -92,7 +85,6 @@ async def create_group(
 ) -> schema.Group:
     """Creates group
 
-    Required scope: `{scope}`
     """
     try:
         group = await dbapi.create_group(
@@ -129,7 +121,6 @@ async def create_group(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.GROUP_DELETE)
 async def delete_group(
     group_id: uuid.UUID,
     user: Annotated[
@@ -139,7 +130,6 @@ async def delete_group(
 ) -> None:
     """Deletes group
 
-    Required scope: `{scope}`
     """
     try:
         await dbapi.delete_group(db_session, group_id)
@@ -157,7 +147,6 @@ async def delete_group(
 
 
 @router.patch("/{group_id}", status_code=200, response_model=schema.Group)
-@utils.docstring_parameter(scope=scopes.GROUP_UPDATE)
 async def update_group(
     group_id: uuid.UUID,
     attrs: schema.UpdateGroup,
@@ -194,7 +183,6 @@ async def update_group(
         NULL. In other words, it may take a while until group's special folders
         are cleanup and set to NULL.
 
-    Required scope: `{scope}`
     """
     try:
         group: schema.Group = await dbapi.update_group(

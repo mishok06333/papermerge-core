@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from papermerge.core import schema, utils
+from papermerge.core import schema
 from papermerge.core.db.common import get_ancestors
 from papermerge.core.db.engine import get_db
 from papermerge.core.exceptions import HTTP403Forbidden, HTTP404NotFound

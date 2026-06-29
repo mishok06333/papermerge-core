@@ -1,6 +1,9 @@
+import {useSelector} from "react-redux"
+
 import App from "@/app/App"
 import GuestApp from "@/features/public/GuestApp"
 import {hasAuthCookie} from "@/features/public/guestMode"
+import {selectCurrentUserStatus} from "@/slices/currentUser"
 
 /**
  * Picks the authenticated or guest chrome for /help. A single /help path is
@@ -8,5 +11,9 @@ import {hasAuthCookie} from "@/features/public/guestMode"
  * guest tree first.
  */
 export default function HelpShellPicker() {
-  return hasAuthCookie() ? <App /> : <GuestApp />
+  const status = useSelector(selectCurrentUserStatus)
+  const authenticated =
+    hasAuthCookie() || status === "loading" || status === "succeeded"
+
+  return authenticated ? <App /> : <GuestApp />
 }

@@ -7,6 +7,45 @@ from papermerge.core.tests.types import AuthTestClient
 from .utils import verify_password
 
 
+async def test_get_current_user_me_includes_roles(
+    db_session: AsyncSession,
+    user: orm.User,
+    make_role,
+    auth_api_client: AuthTestClient,
+):
+    role = await make_role(name="admin")
+    user.roles.append(role)
+    db_session.add(user)
+    await db_session.commit()
+
+    response = await auth_api_client.get("/users/me")
+
+    assert response.status_code == 200, response.json()
+    payload = schema.UserDetails(**response.json())
+    assert [r.name for r in payload.roles] == ["admin"]
+
+
+async def test_update_current_user_profile(
+    user: orm.User,
+    auth_api_client: AuthTestClient,
+):
+    response = await auth_api_client.patch(
+        "/users/me",
+        json={
+            "email": "new@example.com",
+            "first_name": "Ada",
+            "last_name": "Lovelace",
+        },
+    )
+
+    assert response.status_code == 200, response.json()
+    payload = schema.UserDetails(**response.json())
+    assert payload.id == user.id
+    assert payload.email == "new@example.com"
+    assert payload.first_name == "Ada"
+    assert payload.last_name == "Lovelace"
+
+
 async def test_list_users(make_user, auth_api_client: AuthTestClient):
     for i in range(3):
         await make_user(username=f"user {i}")

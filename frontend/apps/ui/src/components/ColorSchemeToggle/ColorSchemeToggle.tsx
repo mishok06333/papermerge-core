@@ -1,6 +1,6 @@
-import {useState} from "react"
 import {
   Switch,
+  useComputedColorScheme,
   useMantineColorScheme,
   useMantineTheme,
   rem
@@ -9,8 +9,8 @@ import {IconSun, IconMoonStars} from "@tabler/icons-react"
 
 export function ColorSchemeToggle() {
   const theme = useMantineTheme()
-  const {setColorScheme} = useMantineColorScheme()
-  const [checked, setChecked] = useState(false)
+  const {toggleColorScheme} = useMantineColorScheme()
+  const computedColorScheme = useComputedColorScheme("light")
 
   const sunIcon = (
     <IconSun
@@ -28,19 +28,10 @@ export function ColorSchemeToggle() {
     />
   )
 
-  const onToggleColorScheme = () => {
-    if (checked) {
-      setColorScheme("light")
-    } else {
-      setColorScheme("dark")
-    }
-    setChecked(!checked)
-  }
-
   return (
     <Switch
-      checked={checked}
-      onChange={onToggleColorScheme}
+      checked={computedColorScheme === "light"}
+      onChange={() => toggleColorScheme()}
       color="dark.4"
       onLabel={sunIcon}
       offLabel={moonIcon}

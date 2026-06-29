@@ -7,7 +7,6 @@ import HelpButton from "./HelpButton"
 import Search from "./Search"
 import SidebarToggle from "./SidebarToggle"
 import UserMenu from "./UserMenu"
-import LanguageMenu from "./LanguageMenu"
 import NotificationsMenu from "./NotificationsMenu"
 
 const APP_TITLE =
@@ -35,7 +34,6 @@ function Header() {
           <Search />
         </Group>
         <Group>
-          <LanguageMenu />
           <HelpButton />
           <NotificationsMenu />
           <ColorSchemeToggle />

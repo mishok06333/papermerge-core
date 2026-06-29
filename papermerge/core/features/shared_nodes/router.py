@@ -5,7 +5,7 @@ from fastapi import APIRouter, Security, Depends, Response, status, HTTPExceptio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core.db.engine import get_db
-from papermerge.core import utils, schema, dbapi
+from papermerge.core import schema, dbapi
 from papermerge.core.routers.params import CommonQueryParams
 from papermerge.core.features.auth import scopes, get_current_user
 from papermerge.core.types import PaginatedResponse
@@ -18,7 +18,6 @@ router = APIRouter(
 
 
 @router.get("/")
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_shared_nodes(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
     params: CommonQueryParams = Depends(),
@@ -26,7 +25,6 @@ async def get_shared_nodes(
 ) -> PaginatedResponse[Union[schema.Document, schema.Folder]]:
     """Returns a list of top level nodes shared with current user
 
-    Required scope: `{scope}`
     """
     order_by = ["ctype", "title", "created_at", "updated_at"]
 
@@ -46,7 +44,6 @@ async def get_shared_nodes(
 
 
 @router.get("/folder/{parent_id}")
-@utils.docstring_parameter(scope=scopes.NODE_VIEW)
 async def get_node(
     parent_id,
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
@@ -55,7 +52,6 @@ async def get_node(
 ) -> PaginatedResponse[Union[schema.Document, schema.Folder]]:
     """Returns a list of top level nodes shared with current user
 
-    Required scope: `{scope}`
     """
     order_by = ["ctype", "title", "created_at", "updated_at"]
 
@@ -76,7 +72,6 @@ async def get_node(
 
 
 @router.post("/", status_code=204)
-@utils.docstring_parameter(scope=scopes.SHARED_NODE_CREATE)
 async def create_shared_nodes(
     shared_node: schema.CreateSharedNode,
     user: Annotated[
@@ -86,7 +81,6 @@ async def create_shared_nodes(
 ):
     """Creates shared node
 
-    Required scope: `{scope}`
     """
 
     _created, err = await dbapi.create_shared_nodes(
@@ -105,7 +99,6 @@ async def create_shared_nodes(
 
 
 @router.get("/access/{node_id}")
-@utils.docstring_parameter(scope=scopes.SHARED_NODE_VIEW)
 async def get_shared_node_access_details(
     node_id: uuid.UUID,
     user: Annotated[
@@ -115,7 +108,6 @@ async def get_shared_node_access_details(
 ) -> schema.SharedNodeAccessDetails:
     """Get shared node access details
 
-    Required scope: `{scope}`
 
     In other words: gets info about who can access this node
     and with what roles?
@@ -126,7 +118,6 @@ async def get_shared_node_access_details(
 
 
 @router.patch("/access/{node_id}", status_code=status.HTTP_200_OK)
-@utils.docstring_parameter(scope=scopes.SHARED_NODE_UPDATE)
 async def update_shared_node_access(
     node_id: uuid.UUID,
     access_update: schema.SharedNodeAccessUpdate,
@@ -137,7 +128,6 @@ async def update_shared_node_access(
 ):
     """Update shared nodes access
 
-    Required scope: `{scope}`
 
     More appropriate name for this would be "sync" - because this is
     exactly what it does - it actually syncs content in `access_update` for

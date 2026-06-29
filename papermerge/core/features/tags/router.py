@@ -5,7 +5,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Security, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from papermerge.core import utils
 from papermerge.core.features.users import schema as usr_schema
 from papermerge.core.features.auth import get_current_user
 from papermerge.core.features.auth import scopes
@@ -61,7 +60,6 @@ async def require_tag_list_user(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.TAG_SELECT)
 async def retrieve_tags_without_pagination(
     user: Annotated[usr_schema.User, Depends(require_tag_list_user)],
     group_id: UUID | None = None,
@@ -79,7 +77,6 @@ async def retrieve_tags_without_pagination(
     will return all tags of the current user.
 
 
-    Required scope: `{scope}`
     """
     tags = await tags_dbapi.get_tags_without_pagination(
         db_session, user_id=user.id, group_id=group_id
@@ -89,7 +86,6 @@ async def retrieve_tags_without_pagination(
 
 
 @router.get("/")
-@utils.docstring_parameter(scope=scopes.TAG_VIEW)
 async def retrieve_tags(
     user: Annotated[usr_schema.User, Depends(require_tag_list_user)],
     params: PaginatedQueryParams = Depends(),
@@ -97,7 +93,6 @@ async def retrieve_tags(
 ):
     """Retrieves (paginated) list of tags
 
-    Required scope: `{scope}`
     """
     tags = await tags_dbapi.get_tags(
         db_session,
@@ -115,7 +110,6 @@ async def retrieve_tags(
     "/{tag_id}/nodes",
     response_model=PaginatedResponse[tags_schema.TaggedNodeOut],
 )
-@utils.docstring_parameter(scope=scopes.TAG_VIEW)
 async def get_tag_nodes(
     tag_id: UUID,
     user: Annotated[usr_schema.User, Depends(require_tag_list_user)],
@@ -124,7 +118,6 @@ async def get_tag_nodes(
 ):
     """List nodes (documents and folders) tagged with the given tag.
 
-    Required scope: `{scope}`
     """
     if not await tags_dbapi.user_can_access_tag(db_session, tag_id=tag_id, user_id=user.id):
         raise HTTPException(status_code=404, detail="Does not exists")
@@ -140,7 +133,6 @@ async def get_tag_nodes(
 
 
 @router.get("/{tag_id}", response_model=tags_schema.Tag)
-@utils.docstring_parameter(scope=scopes.TAG_VIEW)
 async def get_tag_details(
     tag_id: UUID,
     user: Annotated[usr_schema.User, Depends(require_tag_list_user)],
@@ -148,7 +140,6 @@ async def get_tag_details(
 ):
     """Get tag details
 
-    Required scope: `{scope}`
     """
     try:
         tag, error = await tags_dbapi.get_tag(db_session, tag_id=tag_id)
@@ -168,7 +159,6 @@ async def get_tag_details(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.TAG_CREATE)
 async def create_tag(
     attrs: tags_schema.CreateTag,
     user: Annotated[
@@ -184,7 +174,6 @@ async def create_tag(
     belong to that group, otherwise http status 403 (Forbidden) will
     be raised.
 
-    Required scope: `{scope}`
     """
     if not attrs.group_id:
         attrs.user_id = user.id
@@ -214,7 +203,6 @@ async def create_tag(
 
 
 @router.delete("/{tag_id}", status_code=204)
-@utils.docstring_parameter(scope=scopes.TAG_DELETE)
 async def delete_tag(
     tag_id: UUID,
     user: Annotated[
@@ -224,7 +212,6 @@ async def delete_tag(
 ) -> None:
     """Deletes user tag
 
-    Required scope: `{scope}`
     """
     try:
         await tags_dbapi.delete_tag(db_session, tag_id=tag_id)
@@ -251,7 +238,6 @@ async def delete_tag(
         }
     },
 )
-@utils.docstring_parameter(scope=scopes.TAG_UPDATE)
 async def update_tag(
     tag_id: UUID,
     attrs: tags_schema.UpdateTag,
@@ -262,7 +248,6 @@ async def update_tag(
 ) -> tags_schema.Tag:
     """Updates user tag
 
-    Required scope: `{scope}`
     """
     if attrs.group_id:
         group_id = attrs.group_id

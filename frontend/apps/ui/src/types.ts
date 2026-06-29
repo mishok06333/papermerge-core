@@ -79,6 +79,12 @@ export type UserUpdate = {
   role_ids: string[]
 }
 
+export type UpdateUserProfile = {
+  email: string
+  first_name?: string
+  last_name?: string
+}
+
 export type ChangePassword = {
   userId: string
   password: string

@@ -685,6 +685,7 @@ async def test_assign_tags_with_document_update_tags_scope_from_db_role(
 
     from papermerge.core import dbapi, schema as core_schema, utils
     from papermerge.core.db.engine import get_db
+    from papermerge.core.features.auth.jwt_tokens import sign_access_token
     from papermerge.core.features.auth.scopes import Scopes
     from papermerge.core.features.nodes.router import router as nodes_router
     from papermerge.core.features.tags import schema as tags_schema
@@ -721,7 +722,7 @@ async def test_assign_tags_with_document_update_tags_scope_from_db_role(
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    middle_part = utils.base64.encode(
+    token = sign_access_token(
         {
             "sub": str(user.id),
             "preferred_username": user.username,
@@ -730,7 +731,6 @@ async def test_assign_tags_with_document_update_tags_scope_from_db_role(
             "roles": [],
         }
     )
-    token = f"abc.{middle_part}.xyz"
     transport = ASGITransport(app=app)
 
     async with AsyncClient(
@@ -761,6 +761,7 @@ async def test_assign_tags_with_tag_select_scope_only_from_db_role(
 
     from papermerge.core import dbapi, schema as core_schema, utils
     from papermerge.core.db.engine import get_db
+    from papermerge.core.features.auth.jwt_tokens import sign_access_token
     from papermerge.core.features.auth.scopes import Scopes
     from papermerge.core.features.nodes.router import router as nodes_router
     from papermerge.core.features.tags import schema as tags_schema
@@ -794,7 +795,7 @@ async def test_assign_tags_with_tag_select_scope_only_from_db_role(
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    middle_part = utils.base64.encode(
+    token = sign_access_token(
         {
             "sub": str(user.id),
             "preferred_username": user.username,
@@ -803,7 +804,6 @@ async def test_assign_tags_with_tag_select_scope_only_from_db_role(
             "roles": [],
         }
     )
-    token = f"abc.{middle_part}.xyz"
     transport = ASGITransport(app=app)
 
     async with AsyncClient(

@@ -39,9 +39,31 @@ RUN set -eux; \
     [ "$attempts" -lt "$max_attempts" ] || (echo "yarn build failed"; exit 1)
 
 # ---------------------------------------------------------------------------
-# Stage 2: runtime (nginx + core API + auth-server under supervisord)
+# Stage 2: auth-server (local sources under auth-server/)
 # ---------------------------------------------------------------------------
-FROM papermerge/auth-server:1.1.5 AS auth_server
+FROM node:24.5-alpine AS auth_ui_build
+
+RUN apk update && apk upgrade && rm -rf /var/cache/apk/*
+
+ENV UI_DIR=/auth_ui
+WORKDIR ${UI_DIR}
+
+COPY auth-server/ui2/ ./
+
+RUN yarn install && yarn build
+
+# Auth-server Python sources + built UI (Poetry env created in the final stage).
+FROM alpine:3.21 AS auth_server
+
+WORKDIR /app
+COPY auth-server/poetry.lock auth-server/pyproject.toml auth-server/README.md /app/
+COPY auth-server/auth_server/ /app/auth_server/
+
+COPY --from=auth_ui_build /auth_ui/dist /usr/share/nginx/html
+
+# ---------------------------------------------------------------------------
+# Stage 3: runtime (nginx + core API + auth-server under supervisord)
+# ---------------------------------------------------------------------------
 FROM python:3.13-alpine AS papermerge_core
 
 ENV CORE_APP=/core_app
@@ -81,7 +103,7 @@ RUN pip install --upgrade poetry==2.0.1 && \
 COPY poetry.lock pyproject.toml README.md LICENSE ${CORE_APP}/
 
 WORKDIR ${CORE_APP}
-RUN poetry install --no-root -E pg -vvv
+RUN poetry install --no-root -E pg
 
 COPY docker/app/entrypoint.sh /entrypoint.sh
 COPY docker/app/bundles/supervisor/* docker/app/logging.yaml /etc/papermerge/
@@ -105,8 +127,12 @@ COPY --from=auth_server /usr/share/nginx/html/ /usr/share/nginx/html/auth_server
 # Frontend bundle (served directly by nginx).
 COPY --from=frontend_build /build_frontend_app/apps/ui/dist/ /usr/share/nginx/html/ui
 
-RUN cd /auth_server_app/ && poetry install -E pg
-RUN cd /core_app/ && poetry install -E pg -E cloud
+RUN set -eux; \
+    cd /auth_server_app/ && poetry install -E pg; \
+    cd /core_app/ && poetry install -E pg -E cloud; \
+    poetry -C /auth_server_app cache clear --all pypi; \
+    poetry -C /core_app cache clear --all pypi; \
+    rm -rf /root/.cache/pip /tmp/*
 
 EXPOSE 80
 

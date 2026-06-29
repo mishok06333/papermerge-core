@@ -41,6 +41,9 @@ prefix = settings.papermerge__main__api_prefix
 app = FastAPI(
     title=f"{settings.papermerge__main__app_title} — API",
     version=__version__,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
 
 app.add_middleware(

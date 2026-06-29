@@ -7,7 +7,6 @@ import {USER_ME} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {User} from "@/types"
 import {
-  ActionIcon,
   Button,
   Group,
   Indicator,
@@ -15,7 +14,8 @@ import {
   Paper,
   Popover,
   Stack,
-  Text
+  Text,
+  UnstyledButton
 } from "@mantine/core"
 import {notifications} from "@mantine/notifications"
 import {IconBell} from "@tabler/icons-react"
@@ -113,9 +113,9 @@ const NotificationsMenu: React.FC = () => {
           disabled={unreadCount === 0}
           size={16}
         >
-          <ActionIcon variant="subtle" color="gray">
+          <UnstyledButton aria-label={t("library.tab_notifications")}>
             <IconBell />
-          </ActionIcon>
+          </UnstyledButton>
         </Indicator>
       </Popover.Target>
       <Popover.Dropdown p="sm">

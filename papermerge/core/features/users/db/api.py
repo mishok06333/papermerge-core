@@ -461,6 +461,32 @@ async def get_users_count(db_session: AsyncSession) -> int:
     return (await db_session.execute(stmt)).scalar()
 
 
+async def change_own_password(
+    db_session: AsyncSession,
+    user_id: uuid.UUID,
+    current_password: str,
+    password: str,
+) -> Tuple[schema.User | None, err_schema.Error | None]:
+    stmt = select(orm.User).where(orm.User.id == user_id)
+    db_user = (await db_session.execute(stmt)).scalar()
+
+    if not pbkdf2_sha256.verify(current_password, db_user.password):
+        return None, err_schema.Error(messages=["Current password is incorrect"])
+
+    db_user.password = pbkdf2_sha256.hash(password)
+
+    try:
+        await db_session.commit()
+    except Exception as e:
+        error = err_schema.Error(messages=[str(e)])
+        return None, error
+
+    await db_session.refresh(db_user)
+    user = schema.User.model_validate(db_user)
+
+    return user, None
+
+
 async def change_password(
     db_session: AsyncSession, user_id: uuid.UUID, password: str
 ) -> Tuple[schema.User | None, err_schema.Error | None]:

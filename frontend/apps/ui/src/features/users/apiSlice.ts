@@ -3,6 +3,7 @@ import {apiSlice} from "@/features/api/slice"
 import {PAGINATION_DEFAULT_ITEMS_PER_PAGES} from "@/cconstants"
 
 import type {
+  ChangeOwnPassword,
   ChangePassword,
   CreateUser,
   Paginated,
@@ -84,6 +85,13 @@ export const apiSliceWithUsers = apiSlice.injectEndpoints({
         method: "POST",
         body: chPwd
       })
+    }),
+    changeOwnPassword: builder.mutation<void, ChangeOwnPassword>({
+      query: body => ({
+        url: "/users/me/change-password",
+        method: "POST",
+        body
+      })
     })
   })
 })
@@ -97,5 +105,6 @@ export const {
   useAddNewUserMutation,
   useEditUserMutation,
   useDeleteUserMutation,
-  useChangePasswordMutation
+  useChangePasswordMutation,
+  useChangeOwnPasswordMutation
 } = apiSliceWithUsers

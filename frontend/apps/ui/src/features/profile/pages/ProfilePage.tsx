@@ -1,3 +1,4 @@
+import ChangeOwnPasswordButton from "@/features/profile/components/ChangeOwnPasswordButton"
 import {updateCurrentUserProfile} from "@/slices/currentUser"
 import {
   selectCurrentUser,
@@ -104,6 +105,7 @@ export default function ProfilePage() {
           >
             {t("common.save")}
           </Button>
+          <ChangeOwnPasswordButton />
         </Stack>
       </Paper>
     </Stack>

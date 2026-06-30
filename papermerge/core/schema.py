@@ -34,7 +34,7 @@ from .features.document.schema import (
     DocVerListItem,
     DownloadURL
 )
-from .features.users.schema import User, CreateUser, UserDetails, UpdateUser, UpdateUserProfile, ChangeUserPassword, UserHomes, UserInboxes, UserHome, UserInbox
+from .features.users.schema import User, CreateUser, UserDetails, UpdateUser, UpdateUserProfile, ChangeUserPassword, ChangeOwnPassword, UserHomes, UserInboxes, UserHome, UserInbox
 from .features.custom_fields.schema import CustomField, UpdateCustomField, CustomFieldType, CustomFieldValue
 from .features.tags.schema import Tag, UpdateTag, CreateTag
 from .features.document_types.schema import DocumentType, UpdateDocumentType, CreateDocumentType
@@ -70,6 +70,7 @@ __all__ = [
     'UpdateUserProfile',
     'UserDetails',
     'ChangeUserPassword',
+    'ChangeOwnPassword',
     'UserHomes',
     'UserHome',
     'UserInboxes',

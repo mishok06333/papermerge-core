@@ -179,6 +179,47 @@ async def test_delete_user(
     assert response.status_code == 204, response.text
 
 
+async def test_change_current_user_password(
+    user: orm.User,
+    auth_api_client: AuthTestClient,
+    db_session: AsyncSession,
+    random_string,
+):
+    from passlib.hash import pbkdf2_sha256
+
+    user.password = pbkdf2_sha256.hash("oldpass")
+    await db_session.commit()
+
+    response = await auth_api_client.post(
+        "/users/me/change-password",
+        json={"current_password": "oldpass", "password": random_string},
+    )
+
+    assert response.status_code == 200, response.text
+    stmt = select(orm.User).where(orm.User.id == user.id)
+    db_user = (await db_session.execute(stmt)).scalar()
+
+    assert verify_password(random_string, db_user.password)
+
+
+async def test_change_current_user_password_wrong_current(
+    user: orm.User,
+    auth_api_client: AuthTestClient,
+    db_session: AsyncSession,
+):
+    from passlib.hash import pbkdf2_sha256
+
+    user.password = pbkdf2_sha256.hash("oldpass")
+    await db_session.commit()
+
+    response = await auth_api_client.post(
+        "/users/me/change-password",
+        json={"current_password": "wrong", "password": "newpass"},
+    )
+
+    assert response.status_code == 400, response.text
+
+
 async def test_change_user_password(
     make_user, auth_api_client: AuthTestClient, random_string, db_session: AsyncSession
 ):

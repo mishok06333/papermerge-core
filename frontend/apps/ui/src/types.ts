@@ -90,6 +90,11 @@ export type ChangePassword = {
   password: string
 }
 
+export type ChangeOwnPassword = {
+  current_password: string
+  password: string
+}
+
 export type UserFields = UserEditableFields & {
   id: string
 }

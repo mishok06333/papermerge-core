@@ -125,6 +125,11 @@ class ChangeUserPassword(BaseModel):
     password: str
 
 
+class ChangeOwnPassword(BaseModel):
+    current_password: str
+    password: str
+
+
 class UserHome(BaseModel):
     group_name: str
     group_id: uuid.UUID

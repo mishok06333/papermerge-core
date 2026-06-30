@@ -109,6 +109,44 @@ async def update_current_user_profile(
     return user_details
 
 
+@router.post("/me/change-password", status_code=200, response_model=schema.UserDetails)
+async def change_current_user_password(
+    attrs: schema.ChangeOwnPassword,
+    user: Annotated[schema.User, Depends(auth.get_current_user)],
+    db_session: AsyncSession = Depends(get_db),
+) -> schema.UserDetails:
+    """Change current user's own password (requires current password).
+
+    Available to any authenticated user without ``user.update`` scope.
+    """
+    _, error = await dbapi.change_own_password(
+        db_session,
+        user_id=user.id,
+        current_password=attrs.current_password,
+        password=attrs.password,
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error.model_dump())
+
+    user_details, error = await dbapi.get_user_details(
+        db_session, user_id=user.id
+    )
+    if error:
+        raise HTTPException(status_code=404, detail=error.model_dump())
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="user_password_change",
+        resource_type="user",
+        resource_id=user.id,
+    )
+    await db_session.commit()
+
+    user_details.scopes = user.scopes
+    return user_details
+
+
 @router.get("/")
 async def get_users(
     user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.USER_VIEW])],

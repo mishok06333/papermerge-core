@@ -6,6 +6,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Security
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from papermerge.core.constants import INDEX_ADD_NODE
+from papermerge.core.tasks import send_task
 from papermerge.core import exceptions as exc
 from papermerge.core import schema
 from papermerge.core.db import common as dbapi_common
@@ -13,11 +15,80 @@ from papermerge.core.db.engine import get_db
 from papermerge.core.features.auth import get_current_user, scopes
 from papermerge.core.features.library_ts import schema as lib_schema
 from papermerge.core.features.library_ts.db import api as lib_api
-from papermerge.core.features.users.schema import user_display_name
+from papermerge.core.features.library_ts.msp_folder_template import (
+    create_msp_folder_tree,
+)
 from papermerge.core.features.nodes.db import api as nodes_dbapi
+from papermerge.core.features.users.schema import user_display_name
+from papermerge.core.features.portal import policy as portal_policy
+from papermerge.core.features.portal.db import api as portal_dbapi
 from papermerge.core.schema import PaginatedResponse
 
 router = APIRouter(prefix="/library", tags=["library-ts"])
+
+
+@router.post(
+    "/msp-template/",
+    response_model=lib_schema.MspTemplateCreateOut,
+    status_code=201,
+)
+async def create_msp_template(
+    body: lib_schema.MspTemplateCreateIn,
+    user: Annotated[
+        schema.User, Security(get_current_user, scopes=[scopes.NODE_CREATE])
+    ],
+    db_session: AsyncSession = Depends(get_db),
+):
+    await dbapi_common.require_node_perm(
+        db_session,
+        node_id=body.parent_id,
+        codename=scopes.NODE_CREATE,
+        user_id=user.id,
+    )
+    await portal_policy.require_portal_on_create(
+        db_session,
+        user,
+        body.parent_id,
+        is_folder=True,
+    )
+    title = body.title.strip()
+    if not title:
+        raise HTTPException(status_code=422, detail="title must not be empty")
+    root, created_ids, error = await create_msp_folder_tree(
+        db_session,
+        parent_id=body.parent_id,
+        title=title,
+    )
+    if error or root is None:
+        raise HTTPException(status_code=400, detail=error.model_dump() if error else {})
+
+    root_id = await portal_dbapi.get_portal_root_id(db_session)
+    is_portal = bool(
+        root_id
+        and await portal_dbapi.is_node_under_portal_root(
+            db_session, root.id, root_id
+        )
+    )
+    await lib_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="msp_template_create",
+        resource_type="folder",
+        resource_id=root.id,
+        detail=lib_api.audit_detail_json(
+            {"title": root.title, "folder_count": len(created_ids), "portal": is_portal}
+        ),
+    )
+    await db_session.commit()
+
+    for folder_id in created_ids:
+        send_task(
+            INDEX_ADD_NODE, kwargs={"node_id": str(folder_id)}, route_name="i3"
+        )
+
+    return lib_schema.MspTemplateCreateOut(
+        root=root, folder_count=len(created_ids)
+    )
 
 
 def _can_modify_comment(
@@ -248,6 +319,7 @@ async def add_doc_comment(
         action="comment_add",
         resource_type="document",
         resource_id=document_id,
+        detail=lib_api.audit_detail_json({"comment_id": str(row.id)}),
     )
     await db_session.commit()
     return lib_schema.CommentOut(
@@ -294,6 +366,7 @@ async def update_doc_comment(
         action="comment_update",
         resource_type="document",
         resource_id=document_id,
+        detail=lib_api.audit_detail_json({"comment_id": str(comment_id)}),
     )
     await db_session.commit()
     return lib_schema.CommentOut(
@@ -330,6 +403,7 @@ async def delete_doc_comment(
         action="comment_delete",
         resource_type="document",
         resource_id=document_id,
+        detail=lib_api.audit_detail_json({"comment_id": str(comment_id)}),
     )
     await db_session.commit()
 
@@ -421,6 +495,25 @@ async def read_notification(
     db_session: AsyncSession = Depends(get_db),
 ):
     await lib_api.mark_notification_read(db_session, user.id, notif_id)
+    await db_session.commit()
+
+
+@router.post("/audit/session", status_code=204)
+@router.post("/audit/session/", status_code=204)
+async def record_session_audit(
+    body: lib_schema.SessionAuditIn,
+    user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.USER_ME])],
+    db_session: AsyncSession = Depends(get_db),
+):
+    action = "auth_login" if body.event == "login" else "auth_logout"
+    await lib_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action=action,
+        resource_type="session",
+        resource_id=user.id,
+        detail=user.username,
+    )
     await db_session.commit()
 
 

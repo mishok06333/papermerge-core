@@ -35,6 +35,7 @@ def employee_scopes() -> list[str]:
     """Read-only document tree + collaboration (comments, ratings), no content edits."""
     return sorted(
         {
+            Scopes.COMMANDER_VIEW,
             Scopes.NODE_VIEW,
             Scopes.DOCUMENT_DOWNLOAD,
             Scopes.DOCUMENT_DOWNLOAD_ALL_VERSIONS,
@@ -45,6 +46,7 @@ def employee_scopes() -> list[str]:
             Scopes.OCRLANG_VIEW,
             Scopes.PORTAL_VIEW,
             Scopes.PORTAL_FEED_VIEW,
+            Scopes.CITIZEN_CATEGORY_VIEW,
             Scopes.PAGE_VIEW,
             Scopes.SHARED_NODE_VIEW,
             Scopes.COMMENT_CREATE,

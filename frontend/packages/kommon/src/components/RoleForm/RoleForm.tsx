@@ -201,6 +201,11 @@ export default function RoleForm({
 function getPermissionTree(txt?: I18NPermissionTree) {
   const PERMISSIONS_TREE = [
     {
+      value: "commander",
+      label: txt?.commander || "File manager",
+      children: [{value: "commander.view", label: txt?.view || "View"}]
+    },
+    {
       value: "folder",
       label: txt?.folders || "Folders",
       children: [
@@ -317,6 +322,28 @@ function getPermissionTree(txt?: I18NPermissionTree) {
       ]
     },
     {
+      value: "citizen_category",
+      label: txt?.citizen_categories || "Citizen categories",
+      children: [
+        {
+          value: "citizen_category.view",
+          label: txt?.citizen_category_view || txt?.view || "View"
+        },
+        {
+          value: "citizen_category.create",
+          label: txt?.citizen_category_create || txt?.create || "Create"
+        },
+        {
+          value: "citizen_category.update",
+          label: txt?.citizen_category_update || txt?.update || "Update"
+        },
+        {
+          value: "citizen_category.delete",
+          label: txt?.citizen_category_delete || txt?.delete || "Delete"
+        }
+      ]
+    },
+    {
       value: "user",
       label: txt?.users || "Users",
       children: [
@@ -343,6 +370,8 @@ function getPermissionTree(txt?: I18NPermissionTree) {
 }
 
 const PERMISSION_DEPENDENCIES = {
+  commander: ["folder.view"],
+  "commander.view": ["folder.view", "document.view"],
   folder: [
     "document.view",
     "document.move",
@@ -379,6 +408,11 @@ const PERMISSION_DEPENDENCIES = {
   "portal.document.upload": ["portal.view", "node.create", "document.upload"],
   "portal.document.update": ["portal.view", "node.update", "document.upload"],
   "portal.document.delete": ["portal.view", "node.delete"],
+  citizen_category: ["node.view"],
+  "citizen_category.view": ["node.view"],
+  "citizen_category.create": ["citizen_category.view"],
+  "citizen_category.update": ["citizen_category.view", "node.update"],
+  "citizen_category.delete": ["citizen_category.view"],
   "tag.select": ["document.view", "folder.view"],
   tag: ["document.view", "folder.view"]
 }

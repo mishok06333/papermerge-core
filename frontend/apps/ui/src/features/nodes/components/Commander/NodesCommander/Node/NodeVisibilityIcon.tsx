@@ -12,7 +12,7 @@ export default function NodeVisibilityIcon({summary}: Props) {
   if (!summary || summary === "private") {
     return (
       <Tooltip label={t("node.visibility.level.private")}>
-        <IconLock size={14} style={{verticalAlign: "middle", marginLeft: 4}} />
+        <IconLock size={14} style={{flexShrink: 0, verticalAlign: "middle"}} />
       </Tooltip>
     )
   }
@@ -20,14 +20,14 @@ export default function NodeVisibilityIcon({summary}: Props) {
   if (summary === "public") {
     return (
       <Tooltip label={t("node.visibility.level.public")}>
-        <IconWorld size={14} style={{verticalAlign: "middle", marginLeft: 4}} />
+        <IconWorld size={14} style={{flexShrink: 0, verticalAlign: "middle"}} />
       </Tooltip>
     )
   }
 
   return (
     <Tooltip label={t("node.visibility.level.role_based")}>
-      <IconUsers size={14} style={{verticalAlign: "middle", marginLeft: 4}} />
+      <IconUsers size={14} style={{flexShrink: 0, verticalAlign: "middle"}} />
     </Tooltip>
   )
 }

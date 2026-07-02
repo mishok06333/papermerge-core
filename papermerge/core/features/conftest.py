@@ -38,6 +38,8 @@ from papermerge.core.features.custom_fields.schema import CustomFieldType
 from papermerge.core.features.groups import router as groups_router
 from papermerge.core.features.roles import router as roles_router
 from papermerge.core.features.tags import router as tags_router
+from papermerge.core.features.citizen_categories import router as citizen_categories_router
+from papermerge.core.features.citizen_categories import router_public as citizen_categories_public_router
 from papermerge.core.features.users import router as usr_router
 from papermerge.core.features.liveness_probe import router as probe_router
 from papermerge.core import orm, dbapi, schema
@@ -329,6 +331,8 @@ def get_app_with_routes():
     app.include_router(thumbnails_router.router, prefix="")
     app.include_router(usr_router.router, prefix="")
     app.include_router(tags_router.router, prefix="")
+    app.include_router(citizen_categories_router.router, prefix="")
+    app.include_router(citizen_categories_public_router.router, prefix="")
     app.include_router(probe_router.router, prefix="")
 
     return app

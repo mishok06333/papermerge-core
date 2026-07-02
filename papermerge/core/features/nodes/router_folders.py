@@ -20,7 +20,8 @@ router = APIRouter(prefix="/folders", tags=["folders"])
 async def get_node(
     folder_id: uuid.UUID,
     user: Annotated[
-        usr_schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])
+        usr_schema.User,
+        Security(get_current_user, scopes=[scopes.COMMANDER_VIEW, scopes.NODE_VIEW]),
     ],
     db_session: AsyncSession = Depends(get_db),
 ) -> Folder:

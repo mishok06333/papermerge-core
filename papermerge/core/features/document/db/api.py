@@ -15,7 +15,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core.features.document import s3
-from papermerge.core.utils.misc import copy_file
+from papermerge.core.utils.misc import copy_file, normalize_upload_file_name
 from papermerge.core import schema, orm, constants, tasks
 from papermerge.core.features.document_types.db.api import \
     document_type_cf_count
@@ -26,6 +26,10 @@ from papermerge.core.types import (
     OCRStatusEnum,
 )
 from papermerge.core.db.common import get_ancestors, get_node_owner
+from papermerge.core.features.nodes.db.node_titles import (
+    find_node_id_by_title,
+    revive_trashed_node,
+)
 from papermerge.core.utils.misc import str2date, str2float, float2str
 from papermerge.core.pathlib import (
     abs_docver_path,
@@ -339,6 +343,32 @@ async def create_document(
     doc_id = attrs.id or uuid.uuid4()
 
     owner = await get_node_owner(db_session, node_id=attrs.parent_id)
+
+    trashed_id = await find_node_id_by_title(
+        db_session,
+        parent_id=attrs.parent_id,
+        title=attrs.title,
+        user_id=owner.user_id,
+        group_id=owner.group_id,
+        ctype="document",
+        trashed=True,
+    )
+    if trashed_id is not None:
+        await revive_trashed_node(db_session, trashed_id)
+        stmt = (
+            select(orm.Document)
+            .options(
+                selectinload(orm.Document.tags),
+                selectinload(orm.Document.versions).selectinload(
+                    orm.DocumentVersion.pages
+                ),
+            )
+            .where(orm.Document.id == trashed_id)
+        )
+        doc_with_relations = (await db_session.execute(stmt)).scalar_one()
+        doc_with_relations.owner_name = owner.name
+        await db_session.commit()
+        return schema.Document.model_validate(doc_with_relations), None
 
     doc = orm.Document(
         id=doc_id,
@@ -660,110 +690,109 @@ async def upload(
     pdf_ver = None
     blob_ver = None
 
-    safe_file_name = file_name or "upload"
+    safe_file_name = normalize_upload_file_name(file_name)
     ct = normalize_upload_content_type(content_type, safe_file_name)
 
-    if ct == constants.ContentType.APPLICATION_PDF:
-        pdf_ver = await create_next_version(
-            db_session, doc=doc, file_name=safe_file_name, file_size=size
-        )
-        pdf_dst = abs_docver_path(pdf_ver.id, pdf_ver.file_name)
-        await copy_file(src=content, dst=pdf_dst)
-
-        page_count = get_pdf_page_count(content)
-
-        pdf_ver.page_count = page_count
-        for page_number in range(1, page_count + 1):
-            db_page_pdf = orm.Page(
-                number=page_number,
-                page_count=page_count,
-                lang=pdf_ver.lang,
-                document_version_id=pdf_ver.id,
-            )
-            db_session.add(db_page_pdf)
-        await populate_embedded_pdf_text(
-            db_session=db_session,
-            doc=doc,
-            doc_ver=pdf_ver,
-            pdf_path=str(pdf_dst),
-            page_count=page_count,
-        )
-        db_session.add(pdf_ver)
-
-    elif ct in IMAGE_MIMES_IMG2PDF:
-        try:
-            pdf_content = img2pdf.convert(content)
-        except img2pdf.ImageOpenError as e:
-            error = schema.Error(messages=[str(e)])
-            return None, error
-
-        orig_ver = await create_next_version(
-            db_session, doc=doc, file_name=safe_file_name, file_size=size
-        )
-
-        pdf_ver = await create_next_version(
-            db_session,
-            doc=doc,
-            file_name=f"{safe_file_name}.pdf",
-            file_size=len(pdf_content),
-            short_description=f"{file_type(ct)} -> pdf",
-        )
-        await copy_file(src=content, dst=abs_docver_path(orig_ver.id, orig_ver.file_name))
-
-        await copy_file(src=pdf_content, dst=abs_docver_path(pdf_ver.id, pdf_ver.file_name))
-
-        page_count = get_pdf_page_count(pdf_content)
-        orig_ver.page_count = page_count
-        pdf_ver.page_count = page_count
-
-        for page_number in range(1, page_count + 1):
-            db_page_orig = orm.Page(
-                number=page_number,
-                page_count=page_count,
-                lang=pdf_ver.lang,
-                document_version_id=orig_ver.id,
-            )
-            db_page_pdf = orm.Page(
-                number=page_number,
-                page_count=page_count,
-                lang=pdf_ver.lang,
-                document_version_id=pdf_ver.id,
-            )
-            db_session.add_all([db_page_orig, db_page_pdf])
-
-    else:
-        raw_content = content.getvalue() if isinstance(content, io.BytesIO) else content
-        blob_ver = await create_next_version(
-            db_session,
-            doc=doc,
-            file_name=safe_file_name,
-            file_size=size,
-            short_description=ct,
-        )
-        await copy_file(src=content, dst=abs_docver_path(blob_ver.id, blob_ver.file_name))
-        blob_ver.page_count = 1
-        extracted_text = extract_upload_text(
-            content=raw_content,
-            file_name=safe_file_name,
-            content_type=ct,
-        )
-        db_session.add(
-            orm.Page(
-                number=1,
-                page_count=1,
-                lang=blob_ver.lang,
-                document_version_id=blob_ver.id,
-                text=extracted_text,
-            )
-        )
-        if extracted_text:
-            blob_ver.text = extracted_text
-
     try:
+        if ct == constants.ContentType.APPLICATION_PDF:
+            pdf_ver = await create_next_version(
+                db_session, doc=doc, file_name=safe_file_name, file_size=size
+            )
+            pdf_dst = abs_docver_path(pdf_ver.id, pdf_ver.file_name)
+            await copy_file(src=content, dst=pdf_dst)
+
+            page_count = get_pdf_page_count(content)
+
+            pdf_ver.page_count = page_count
+            for page_number in range(1, page_count + 1):
+                db_page_pdf = orm.Page(
+                    number=page_number,
+                    page_count=page_count,
+                    lang=pdf_ver.lang,
+                    document_version_id=pdf_ver.id,
+                )
+                db_session.add(db_page_pdf)
+            await populate_embedded_pdf_text(
+                db_session=db_session,
+                doc=doc,
+                doc_ver=pdf_ver,
+                pdf_path=str(pdf_dst),
+                page_count=page_count,
+            )
+            db_session.add(pdf_ver)
+
+        elif ct in IMAGE_MIMES_IMG2PDF:
+            try:
+                pdf_content = img2pdf.convert(content)
+            except img2pdf.ImageOpenError as e:
+                return None, schema.Error(messages=[str(e)])
+
+            orig_ver = await create_next_version(
+                db_session, doc=doc, file_name=safe_file_name, file_size=size
+            )
+
+            pdf_ver = await create_next_version(
+                db_session,
+                doc=doc,
+                file_name=f"{safe_file_name}.pdf",
+                file_size=len(pdf_content),
+                short_description=f"{file_type(ct)} -> pdf",
+            )
+            await copy_file(src=content, dst=abs_docver_path(orig_ver.id, orig_ver.file_name))
+
+            await copy_file(src=pdf_content, dst=abs_docver_path(pdf_ver.id, pdf_ver.file_name))
+
+            page_count = get_pdf_page_count(pdf_content)
+            orig_ver.page_count = page_count
+            pdf_ver.page_count = page_count
+
+            for page_number in range(1, page_count + 1):
+                db_page_orig = orm.Page(
+                    number=page_number,
+                    page_count=page_count,
+                    lang=pdf_ver.lang,
+                    document_version_id=orig_ver.id,
+                )
+                db_page_pdf = orm.Page(
+                    number=page_number,
+                    page_count=page_count,
+                    lang=pdf_ver.lang,
+                    document_version_id=pdf_ver.id,
+                )
+                db_session.add_all([db_page_orig, db_page_pdf])
+
+        else:
+            raw_content = content.getvalue() if isinstance(content, io.BytesIO) else content
+            blob_ver = await create_next_version(
+                db_session,
+                doc=doc,
+                file_name=safe_file_name,
+                file_size=size,
+                short_description=ct,
+            )
+            await copy_file(src=content, dst=abs_docver_path(blob_ver.id, blob_ver.file_name))
+            blob_ver.page_count = 1
+            extracted_text = extract_upload_text(
+                content=raw_content,
+                file_name=safe_file_name,
+                content_type=ct,
+            )
+            db_session.add(
+                orm.Page(
+                    number=1,
+                    page_count=1,
+                    lang=blob_ver.lang,
+                    document_version_id=blob_ver.id,
+                    text=extracted_text,
+                )
+            )
+            if extracted_text:
+                blob_ver.text = extracted_text
+
         await db_session.commit()
     except Exception as e:
-        error = schema.Error(messages=[str(e)])
-        return None, error
+        await db_session.rollback()
+        return None, schema.Error(messages=[str(e)])
 
     owner = await get_node_owner(db_session, node_id=doc.id)
     doc.owner_name = owner.name

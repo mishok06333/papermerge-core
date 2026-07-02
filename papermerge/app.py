@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from logging.config import dictConfig
 import uuid
@@ -28,6 +29,12 @@ from papermerge.core.features.liveness_probe.router import \
 from papermerge.search.routers.search import router as search_router
 from papermerge.core.features.tasks.router import router as tasks_router
 from papermerge.core.features.portal.router import router as portal_router
+from papermerge.core.features.citizen_categories.router import (
+    router as citizen_categories_router,
+)
+from papermerge.core.features.citizen_categories.router_public import (
+    router as citizen_categories_public_router,
+)
 from papermerge.core.routers.version import (
     router as version_router,
 )
@@ -38,12 +45,26 @@ from papermerge.core.features.library_ts.router import router as library_ts_rout
 
 settings = get_settings()
 prefix = settings.papermerge__main__api_prefix
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Native dev (`run-dev-native.bat`) mirrors Docker entrypoint: ensure schema
+    # is current even when `fastapi dev` reload spawns a child without shell env.
+    if settings.papermerge__dev__auth_bypass_enabled:
+        from papermerge.core.startup_migrations import run_pending_migrations
+
+        run_pending_migrations()
+    yield
+
+
 app = FastAPI(
     title=f"{settings.papermerge__main__app_title} — API",
     version=__version__,
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -75,6 +96,8 @@ async def correlation_id_middleware(request: Request, call_next):
 app.include_router(nodes_router, prefix=prefix)
 app.include_router(public_nodes_router, prefix=prefix)
 app.include_router(portal_router, prefix=prefix)
+app.include_router(citizen_categories_router, prefix=prefix)
+app.include_router(citizen_categories_public_router, prefix=prefix)
 app.include_router(folders_router, prefix=prefix)
 app.include_router(thumbnails_router, prefix=prefix)
 app.include_router(document_router, prefix=prefix)

@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Union, Tuple, Iterable
 from uuid import UUID
 
-from sqlalchemy import func, literal, select, delete, update, exists
+from sqlalchemy import func, literal, select, delete, update, exists, or_
 from sqlalchemy.orm import selectin_polymorphic, selectinload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +19,8 @@ from papermerge.core.features.nodes.schema import DeleteDocumentsData
 from papermerge.core import orm
 from papermerge.core.config import get_settings
 from papermerge.core.features.library_ts.db import api as lib_ts_api
+from papermerge.core.features.tags.db.api import _user_group_ids_subquery
+from papermerge.core.features.users.db import api as users_dbapi
 from papermerge.core.features.tags.db import api as tags_dbapi
 from .orm import Folder
 
@@ -43,6 +45,41 @@ async def load_folder(db_session: AsyncSession, folder: orm.Folder) -> orm.Folde
     ).where(orm.Folder.id == folder.id)
     result = await db_session.execute(stmt)
     return result.scalar_one()
+
+
+from .node_titles import (
+    find_folder_id_by_title,
+    find_node_id_by_title,
+    node_ownership_filter,
+    revive_trashed_node,
+)
+
+
+def _folder_ownership_filter(stmt, user_id: UUID | None, group_id: UUID | None):
+    return node_ownership_filter(stmt, user_id, group_id)
+
+
+def _trash_visibility_filter(user_id: UUID):
+    """Nodes in trash the user may see: owned directly or via group membership."""
+    user_group_subq = _user_group_ids_subquery(user_id)
+    return or_(
+        orm.Node.user_id == user_id,
+        orm.Node.group_id.in_(user_group_subq),
+    )
+
+
+async def _user_can_manage_trashed_node(
+    db_session: AsyncSession, node: orm.Node, user_id: UUID
+) -> bool:
+    if node.deleted_at is None:
+        return False
+    if node.user_id == user_id:
+        return True
+    if node.group_id is not None:
+        return await users_dbapi.user_belongs_to(
+            db_session, group_id=node.group_id, user_id=user_id
+        )
+    return False
 
 
 def _node_file_extension_expr():
@@ -223,6 +260,25 @@ async def create_folder(
         orm.Node.id == attrs.parent_id
     )
     user_id, group_id = (await db_session.execute(stmt)).fetchone()
+
+    trashed_id = await find_folder_id_by_title(
+        db_session,
+        parent_id=attrs.parent_id,
+        title=attrs.title,
+        user_id=user_id,
+        group_id=group_id,
+        trashed=True,
+    )
+    if trashed_id is not None:
+        await revive_trashed_node(db_session, trashed_id)
+        folder = (
+            await db_session.scalars(
+                select(orm.Folder).where(orm.Folder.id == trashed_id)
+            )
+        ).one()
+        folder = await load_folder(db_session, folder)
+        await db_session.commit()
+        return schema.Folder.model_validate(folder), None
 
     folder = orm.Folder(
         id=folder_id,
@@ -540,13 +596,13 @@ async def list_trash_nodes(
         select(func.count())
         .select_from(orm.Node)
         .where(
-            orm.Node.user_id == user_id,
+            _trash_visibility_filter(user_id),
             orm.Node.deleted_at.is_not(None),
         )
     )
     total = await db_session.scalar(count_stmt)
     base = select(orm.Node).where(
-        orm.Node.user_id == user_id,
+        _trash_visibility_filter(user_id),
         orm.Node.deleted_at.is_not(None),
     )
     stmt = (
@@ -578,12 +634,14 @@ async def restore_trash_nodes(
     all_ids = [item[0] for item in await get_descendants(db_session, node_ids=node_ids)]
     stmt = select(orm.Node).where(
         orm.Node.id.in_(all_ids),
-        orm.Node.user_id == user_id,
         orm.Node.deleted_at.is_not(None),
     )
     found = (await db_session.scalars(stmt)).all()
     if len(found) != len(all_ids):
         return schema.Error(messages=["Some nodes are not in trash or not owned"])
+    for node in found:
+        if not await _user_can_manage_trashed_node(db_session, node, user_id):
+            return schema.Error(messages=["Some nodes are not in trash or not owned"])
     try:
         await db_session.execute(
             update(orm.Node)
@@ -612,7 +670,9 @@ async def permanent_delete_trashed_nodes(
     stmt = select(orm.Node).where(orm.Node.id.in_(all_ids))
     nodes = (await db_session.scalars(stmt)).all()
     for n in nodes:
-        if n.user_id != user_id or n.deleted_at is None:
+        if n.deleted_at is None:
+            return schema.Error(messages=["Only trashed nodes you own can be purged"])
+        if not await _user_can_manage_trashed_node(db_session, n, user_id):
             return schema.Error(messages=["Only trashed nodes you own can be purged"])
 
     delete_details = await prepare_documents_s3_data_deletion(db_session, all_ids)

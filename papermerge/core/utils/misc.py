@@ -6,6 +6,7 @@ import aiofiles.os
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
+from urllib.parse import unquote
 from uuid import UUID
 
 
@@ -109,6 +110,12 @@ def float2str(value: float | str | None) -> Optional[str]:
         month = math.ceil(fraction * 100)
 
     return f"{year}-{month:02d}"
+
+
+def normalize_upload_file_name(file_name: str | None) -> str:
+    """Decode percent-encoding from multipart filenames; fall back to 'upload'."""
+    name = unquote((file_name or "").strip())
+    return name or "upload"
 
 
 async def copy_file(src: Path | io.BytesIO | bytes, dst: Path):

@@ -22,7 +22,8 @@ import {
   IconUsers,
   IconBookmark,
   IconClipboardList,
-  IconBook2
+  IconBook2,
+  IconUsersGroup
 } from "@tabler/icons-react"
 import {useSelector} from "react-redux"
 import {Link, NavLink, useLocation} from "react-router-dom"
@@ -37,6 +38,9 @@ function NavBarFull() {
   const {data, isLoading} = useGetVersionQuery()
   const portalCatalogNavActive =
     pathname === "/portal" || pathname.startsWith("/portal/folder/")
+  const citizenCategoriesNavActive =
+    pathname === "/citizen-categories" ||
+    pathname.startsWith("/citizen-categories/")
 
   const user = useSelector(selectCurrentUser) as UserDetails
   const status = useSelector(selectCurrentUserStatus)
@@ -64,10 +68,10 @@ function NavBarFull() {
             to="/portal"
             className={portalCatalogNavActive ? "active" : undefined}
           >
-            <Group>
-              <IconBook2 />
-              {t("portal.home")}
-            </Group>
+          <Group wrap="nowrap" gap="xs">
+            <IconBook2 />
+            {t("portal.home")}
+          </Group>
           </Link>
         )}
         {scopes.includes(PORTAL_FEED_VIEW) && (
@@ -75,6 +79,15 @@ function NavBarFull() {
             {NavLinkWithFeedback(t("portal.feed_nav"), <IconNews />)}
           </NavLink>
         )}
+        <Link
+          to="/citizen-categories"
+          className={citizenCategoriesNavActive ? "active" : undefined}
+        >
+          <Group wrap="nowrap" gap="xs">
+            <IconUsersGroup />
+            {t("citizen_categories.nav")}
+          </Group>
+        </Link>
         {scopes.includes(NODE_VIEW) && (
           <NavLink to="/library/favorites">
             {NavLinkWithFeedback(t("library.nav"), <IconBookmark />)}
@@ -118,6 +131,9 @@ function NavBarCollapsed() {
   const {data, isLoading} = useGetVersionQuery()
   const portalCatalogNavActive =
     pathname === "/portal" || pathname.startsWith("/portal/folder/")
+  const citizenCategoriesNavActive =
+    pathname === "/citizen-categories" ||
+    pathname.startsWith("/citizen-categories/")
 
   const user = useSelector(selectCurrentUser) as UserDetails
   const status = useSelector(selectCurrentUserStatus)
@@ -155,6 +171,14 @@ function NavBarCollapsed() {
             {NavLinkWithFeedbackShort(<IconNews />)}
           </NavLink>
         )}
+        <Link
+          to="/citizen-categories"
+          className={citizenCategoriesNavActive ? "active" : undefined}
+        >
+          <Group wrap="nowrap" gap="xs">
+            <IconUsersGroup />
+          </Group>
+        </Link>
         {scopes.includes(NODE_VIEW) && (
           <NavLink to="/library/favorites">
             {NavLinkWithFeedbackShort(<IconBookmark />)}
@@ -214,7 +238,7 @@ function NavLinkWithFeedback(
   return ({isActive, isPending}) => {
     if (isActive) {
       return (
-        <Group>
+        <Group wrap="nowrap" gap="xs">
           {icon}
           {text}
         </Group>
@@ -222,7 +246,7 @@ function NavLinkWithFeedback(
     }
     if (isPending) {
       return (
-        <Group>
+        <Group wrap="nowrap" gap="xs">
           {icon}
           {text}
           <Loader size={"sm"} />
@@ -230,7 +254,7 @@ function NavLinkWithFeedback(
       )
     }
     return (
-      <Group>
+      <Group wrap="nowrap" gap="xs">
         {icon}
         {text}
       </Group>

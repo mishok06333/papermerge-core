@@ -6,6 +6,8 @@ import {useContext} from "react"
 import type {CType, PanelMode} from "@/types"
 
 import PanelContext from "@/contexts/PanelContext"
+import {canOpenCommander} from "@/scopes"
+import {selectCurrentUser} from "@/slices/currentUser"
 import {
   currentNodeChanged,
   secondaryPanelClosed,
@@ -23,9 +25,15 @@ export default function ToggleSecondaryPanel() {
   const secondaryPanel = useAppSelector(s =>
     selectPanelComponent(s, "secondary")
   )
+  const user = useAppSelector(selectCurrentUser)
+  const scopes = user?.scopes ?? []
+  const folderCommanderAllowed = canOpenCommander(scopes)
 
   const onClick = () => {
     if (!nodeID || !ctype) {
+      return
+    }
+    if (ctype === "folder" && !folderCommanderAllowed) {
       return
     }
     dispatch(secondaryPanelOpened(ctype == "folder" ? "commander" : "viewer"))
@@ -42,12 +50,13 @@ export default function ToggleSecondaryPanel() {
     /* Display button for splitting the panel if and only if there
       is no secondary panel opened */
     if (!secondaryPanel) {
+      const commanderBlocked = ctype === "folder" && !folderCommanderAllowed
       return (
         <ActionIcon
           size="lg"
           onClick={onClick}
           variant="default"
-          disabled={!nodeID || !ctype}
+          disabled={!nodeID || !ctype || commanderBlocked}
         >
           <IconColumns2 size={18} />
         </ActionIcon>

@@ -21,6 +21,7 @@ from papermerge.core import exceptions as exc
 from papermerge.core import constants as const
 from papermerge.core import dbapi, schema
 from papermerge.core.features.auth import get_current_user, scopes
+from papermerge.core.features.document.schema import DocumentTypeArg
 from papermerge.core.config import get_settings, FileServer
 from papermerge.core.tasks import send_task
 from papermerge.core.db import common as dbapi_common
@@ -37,6 +38,108 @@ router = APIRouter(
 
 logger = logging.getLogger(__name__)
 config = get_settings()
+
+
+@router.patch(
+    "/{document_id}/custom-fields",
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "description": f"No `{scopes.NODE_UPDATE}` permission on the node",
+            "content": OPEN_API_GENERIC_JSON_DETAIL,
+        }
+    },
+)
+async def update_document_custom_field_values(
+    document_id: uuid.UUID,
+    custom_fields_update: list[schema.DocumentCustomFieldsUpdate],
+    user: Annotated[
+        schema.User, Security(get_current_user, scopes=[scopes.NODE_UPDATE])
+    ],
+    db_session: AsyncSession = Depends(get_db),
+) -> list[schema.CFV]:
+    """
+    Update document's custom fields.
+    """
+    custom_fields = {}
+    for cf in custom_fields_update:
+        if cf.value is None and cf.custom_field_value_id is None:
+            continue
+        custom_fields[cf.key] = cf.value
+
+    await dbapi_common.require_node_perm(
+        db_session,
+        node_id=document_id,
+        codename=scopes.NODE_UPDATE,
+        user_id=user.id,
+    )
+    await portal_policy.require_portal_on_update_node(
+        db_session, user, document_id
+    )
+
+    try:
+        updated_entries = await dbapi.update_doc_cfv(
+            db_session,
+            document_id=document_id,
+            custom_fields=custom_fields,
+        )
+    except NoResultFound:
+        raise exc.HTTP404NotFound()
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="document_custom_fields_update",
+        resource_type="document",
+        resource_id=document_id,
+        detail=lib_ts_api.audit_detail_json({"keys": list(custom_fields.keys())}),
+    )
+    await db_session.commit()
+
+    send_task(
+        const.PATH_TMPL_MOVE_DOCUMENT,
+        kwargs={"document_id": str(document_id)},
+        route_name="path_tmpl",
+    )
+
+    return updated_entries
+
+
+@router.get(
+    "/{document_id}/custom-fields",
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "description": f"No `{scopes.NODE_VIEW}` permission on the node",
+            "content": OPEN_API_GENERIC_JSON_DETAIL,
+        }
+    },
+)
+async def get_document_custom_field_values(
+    document_id: uuid.UUID,
+    user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
+    db_session: AsyncSession = Depends(get_db),
+) -> list[schema.CFV]:
+    """
+    Get document custom field values.
+    """
+    await dbapi_common.require_node_perm(
+        db_session,
+        node_id=document_id,
+        codename=scopes.NODE_VIEW,
+        user_id=user.id,
+    )
+    await portal_policy.require_portal_view_if_under_portal(
+        db_session, user, document_id
+    )
+
+    try:
+        doc = await dbapi.get_doc_cfv(
+            db_session,
+            document_id=document_id,
+        )
+    except NoResultFound:
+        raise exc.HTTP404NotFound()
+
+    return doc
 
 
 @router.post(
@@ -124,6 +227,62 @@ async def upload_file(
     await db_session.commit()
 
     return doc
+
+
+@router.patch(
+    "/{document_id}/type",
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "description": f"No `{scopes.NODE_UPDATE}` permission on the node",
+            "content": OPEN_API_GENERIC_JSON_DETAIL,
+        }
+    },
+)
+async def update_document_type(
+    document_id: uuid.UUID,
+    document_type: DocumentTypeArg,
+    user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
+    db_session: AsyncSession = Depends(get_db),
+):
+    """
+    Updates document type.
+    """
+    try:
+        await dbapi_common.require_node_perm(
+            db_session,
+            node_id=document_id,
+            codename=scopes.NODE_UPDATE,
+            user_id=user.id,
+        )
+        await portal_policy.require_portal_on_update_node(
+            db_session, user, document_id
+        )
+
+        await dbapi.update_doc_type(
+            db_session,
+            document_id=document_id,
+            document_type_id=document_type.document_type_id,
+        )
+    except NoResultFound:
+        raise exc.HTTP404NotFound()
+
+    await lib_ts_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="document_type_update",
+        resource_type="document",
+        resource_id=document_id,
+        detail=lib_ts_api.audit_detail_json(
+            {"document_type_id": str(document_type.document_type_id)}
+        ),
+    )
+    await db_session.commit()
+
+    send_task(
+        const.PATH_TMPL_MOVE_DOCUMENT,
+        kwargs={"document_id": str(document_id)},
+        route_name="path_tmpl",
+    )
 
 
 @router.get(

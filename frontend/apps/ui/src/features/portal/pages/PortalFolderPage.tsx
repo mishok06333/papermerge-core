@@ -3,14 +3,7 @@ import {useGetFolderQuery} from "@/features/nodes/apiSlice"
 import PortalFolderTree from "@/features/portal/components/PortalFolderTree"
 import {useGetPortalNodesQuery, useGetPortalRootQuery} from "@/features/portal/portalApiSlice"
 import {makePortalDocumentNavState} from "@/features/portal/portalNavState"
-import {
-  PORTAL_DOCUMENT_DELETE,
-  PORTAL_DOCUMENT_UPDATE,
-  PORTAL_DOCUMENT_UPLOAD,
-  PORTAL_SECTION_CREATE,
-  PORTAL_SECTION_DELETE,
-  PORTAL_SECTION_UPDATE
-} from "@/scopes"
+import {COMMANDER_VIEW} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {BreadcrumbType, NodeType, UserDetails} from "@/types"
 import {
@@ -126,17 +119,7 @@ export default function PortalFolderPage() {
     )
   }
 
-  const portalCommanderWriteScopes = [
-    PORTAL_SECTION_CREATE,
-    PORTAL_SECTION_UPDATE,
-    PORTAL_SECTION_DELETE,
-    PORTAL_DOCUMENT_UPLOAD,
-    PORTAL_DOCUMENT_UPDATE,
-    PORTAL_DOCUMENT_DELETE
-  ] as const
-  const showCommanderLink = portalCommanderWriteScopes.some(s =>
-    scopes.includes(s)
-  )
+  const showCommanderLink = scopes.includes(COMMANDER_VIEW)
 
   const showTree = root && documentNavState && portalFolderTreeOpen
 

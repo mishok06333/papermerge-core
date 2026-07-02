@@ -25,6 +25,10 @@ import ErrorPage from "@/pages/Error.tsx"
 import GuestApp from "@/features/public/GuestApp"
 import PublicCatalogPage from "@/features/public/pages/PublicCatalogPage"
 import PublicDocumentPage from "@/features/public/pages/PublicDocumentPage"
+import PublicCitizenCategoriesPage from "@/features/public/pages/PublicCitizenCategoriesPage"
+import PublicCitizenCategoryDetailPage from "@/features/public/pages/PublicCitizenCategoryDetailPage"
+import CitizenCategoriesPage from "@/features/citizen_categories/pages/CitizenCategoriesPage"
+import CitizenCategoryDetailPage from "@/features/citizen_categories/pages/CitizenCategoryDetailPage"
 import PublicBrowseRedirect from "@/features/public/pages/PublicBrowseRedirect"
 import PostAuthRedirect from "@/features/auth/PostAuthRedirect"
 import {
@@ -61,6 +65,14 @@ const router = createBrowserRouter([
       {
         path: "/browse/document/:documentId",
         element: <PublicDocumentPage />
+      },
+      {
+        path: "/browse/citizen-categories",
+        element: <PublicCitizenCategoriesPage />
+      },
+      {
+        path: "/browse/citizen-categories/:categoryId",
+        element: <PublicCitizenCategoryDetailPage />
       }
     ]
   },
@@ -123,6 +135,14 @@ const router = createBrowserRouter([
       {
         path: "/portal/feed",
         element: <PortalFeedPage />
+      },
+      {
+        path: "/citizen-categories",
+        element: <CitizenCategoriesPage />
+      },
+      {
+        path: "/citizen-categories/:categoryId",
+        element: <CitizenCategoryDetailPage />
       },
       {
         path: "/tags",

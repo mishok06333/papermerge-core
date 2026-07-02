@@ -55,7 +55,10 @@ export const apiSlice = createApi({
     "LibraryComments",
     "LibraryRating",
     "LibraryNotifications",
-    "AuditLog"
+    "AuditLog",
+    "CitizenCategory",
+    "CitizenCategoryFolders",
+    "FolderCitizenCategories"
   ],
   endpoints: _ => ({})
 })

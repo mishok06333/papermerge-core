@@ -1,5 +1,5 @@
 import {Center, Group, Loader, Text} from "@mantine/core"
-import {IconBook2} from "@tabler/icons-react"
+import {IconBook2, IconUsersGroup} from "@tabler/icons-react"
 import {useTranslation} from "react-i18next"
 import {Link, useLocation} from "react-router-dom"
 
@@ -20,6 +20,10 @@ export default function GuestNavBar() {
     pathname === "/browse" ||
     pathname.startsWith("/browse/folder/")
 
+  const citizenCategoriesActive =
+    pathname === "/browse/citizen-categories" ||
+    pathname.startsWith("/browse/citizen-categories/")
+
   const catalogTo = root ? `/browse/folder/${root.id}` : "/browse"
 
   return (
@@ -29,10 +33,19 @@ export default function GuestNavBar() {
           to={catalogTo}
           className={catalogActive ? "active" : undefined}
         >
-          <Group>
-            <IconBook2 />
-            {!collapsed ? t("portal.home") : null}
-          </Group>
+        <Group wrap="nowrap" gap="xs">
+          <IconBook2 />
+          {!collapsed ? t("portal.home") : null}
+        </Group>
+        </Link>
+        <Link
+          to="/browse/citizen-categories"
+          className={citizenCategoriesActive ? "active" : undefined}
+        >
+        <Group wrap="nowrap" gap="xs">
+          <IconUsersGroup />
+          {!collapsed ? t("citizen_categories.nav") : null}
+        </Group>
         </Link>
       </div>
       <Center className="navbar-bg-color">

@@ -84,8 +84,8 @@ export default function Document({
         />
         <Tags names={tagNames} />
         <div className={classes.title}>
-          {node.title}
           <NodeVisibilityIcon summary={node.visibility_summary} />
+          <span>{node.title}</span>
         </div>
       </a>
     </Stack>

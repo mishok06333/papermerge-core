@@ -1,11 +1,13 @@
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
-import type {PanelMode} from "@/types"
+import type {CType, PanelMode} from "@/types"
 import {ActionIcon} from "@mantine/core"
 import {IconArrowBarLeft, IconArrowBarRight} from "@tabler/icons-react"
 import {useContext} from "react"
 import {useNavigate} from "react-router-dom"
 
 import PanelContext from "@/contexts/PanelContext"
+import {canOpenCommander} from "@/scopes"
+import {selectCurrentUser} from "@/slices/currentUser"
 import {
   currentNodeChanged,
   selectCurrentNodeCType,
@@ -35,9 +37,15 @@ export default function DuplicatePanelButton() {
     selectPanelComponent(s, "secondary")
   )
   const navigate = useNavigate()
+  const user = useAppSelector(selectCurrentUser)
+  const scopes = user?.scopes ?? []
   const panelsHaveDifferentNodes = nodeIDMain != nodeIDSecondary
+  const folderCommanderAllowed = canOpenCommander(scopes)
 
   const onClickDuplicateMain = () => {
+    if (ctype === "folder" && !folderCommanderAllowed) {
+      return
+    }
     /* Duplicate content of the main panel into secondary i.e.
       source is "main panel"
       target is "secondary panel"
@@ -48,6 +56,9 @@ export default function DuplicatePanelButton() {
   }
 
   const onClickDuplicateSecondary = () => {
+    if (ctype === "folder" && !folderCommanderAllowed) {
+      return
+    }
     /* Duplicate content of the secondary panel into main i.e.
       source is "secondary panel"
       target is "main panel"
@@ -65,7 +76,11 @@ export default function DuplicatePanelButton() {
   }
 
   if (mode == "main") {
-    if (secondaryPanel && panelsHaveDifferentNodes) {
+    if (
+      secondaryPanel &&
+      panelsHaveDifferentNodes &&
+      (ctype !== "folder" || folderCommanderAllowed)
+    ) {
       /* Show <DuplicatePanelButton /> in main panel if and only if secondary panel
       is visible and panels show different nodes.
       In case both panels show same node - button won't do anything as
@@ -80,7 +95,7 @@ export default function DuplicatePanelButton() {
     return <></>
   }
 
-  if (panelsHaveDifferentNodes) {
+  if (panelsHaveDifferentNodes && (ctype !== "folder" || folderCommanderAllowed)) {
     /* It does not make sense to display <DuplicatePanelButton /> when
     both panels ALREADY show same node */
     return (

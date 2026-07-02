@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.parse import unquote
 from uuid import UUID
 
 from papermerge.core import constants as const
@@ -7,9 +8,12 @@ from papermerge.core.types import ImagePreviewSize
 
 config = get_settings()
 
+DOCVER_STORAGE_BASENAME = "original"
+
 __all__ = [
     'thumbnail_path',
     'docver_path',
+    'docver_storage_basename',
     'page_txt_path',
     'page_path',
     'page_svg_path',
@@ -53,29 +57,66 @@ def abs_thumbnail_path(
     )
 
 
-def docver_path(
+def docver_storage_basename(file_name: str | None) -> str:
+    """Short on-disk name for a document version file.
+
+    The user-visible ``file_name`` is stored in the DB; only the basename
+    under ``docvers/xx/yy/<uuid>/`` is shortened so long titles (common for
+    Russian legal documents) do not exceed filesystem limits.
+    """
+    decoded = unquote((file_name or "").strip())
+    suffix = Path(decoded).suffix.lower()
+    if not suffix or len(suffix) > 20:
+        suffix = ".bin"
+    return f"{DOCVER_STORAGE_BASENAME}{suffix}"
+
+
+def _docver_rel_path(
     uuid: UUID | str,
-    file_name: str
+    file_name: str,
+    *,
+    use_storage_basename: bool,
 ) -> Path:
     uuid_str = str(uuid)
-
+    basename = (
+        docver_storage_basename(file_name)
+        if use_storage_basename
+        else (file_name or DOCVER_STORAGE_BASENAME)
+    )
     return Path(
         const.DOCVERS,
         uuid_str[0:2],
         uuid_str[2:4],
         uuid_str,
-        file_name
+        basename,
     )
+
+
+def docver_path(
+    uuid: UUID | str,
+    file_name: str
+) -> Path:
+    return _docver_rel_path(uuid, file_name, use_storage_basename=True)
 
 
 def abs_docver_path(
     uuid: UUID | str,
     file_name: str
 ):
-    return Path(
+    primary = Path(
         config.papermerge__main__media_root,
-        docver_path(uuid, file_name)
+        docver_path(uuid, file_name),
     )
+    if primary.exists():
+        return primary
+    # Backward compatibility: files uploaded before storage-basename fix.
+    legacy = Path(
+        config.papermerge__main__media_root,
+        _docver_rel_path(uuid, file_name, use_storage_basename=False),
+    )
+    if legacy.exists():
+        return legacy
+    return primary
 
 
 def page_path(

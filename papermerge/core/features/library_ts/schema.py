@@ -1,7 +1,10 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from papermerge.core import schema as core_schema
 
 
 class FavoriteOut(BaseModel):
@@ -124,3 +127,17 @@ class LibraryStatsOut(BaseModel):
 
 class TrashBatchIn(BaseModel):
     node_ids: list[UUID] = Field(min_length=1)
+
+
+class SessionAuditIn(BaseModel):
+    event: Literal["login", "logout"]
+
+
+class MspTemplateCreateIn(BaseModel):
+    parent_id: UUID
+    title: str = Field(..., min_length=1, max_length=255)
+
+
+class MspTemplateCreateOut(BaseModel):
+    root: core_schema.Folder
+    folder_count: int

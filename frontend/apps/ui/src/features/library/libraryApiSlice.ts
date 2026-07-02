@@ -219,6 +219,17 @@ export const apiSliceWithLibrary = apiSlice.injectEndpoints({
       query: ({page = 1, page_size = 50}) =>
         `/library/audit/?page=${page}&page_size=${page_size}`,
       providesTags: [{type: "AuditLog", id: "LIST"}]
+    }),
+    createMspTemplate: builder.mutation<
+      {root: FolderType; folder_count: number},
+      {parent_id: string; title: string}
+    >({
+      query: body => ({
+        url: "/library/msp-template/",
+        method: "POST",
+        body
+      }),
+      invalidatesTags: ["Node"]
     })
   })
 })
@@ -241,5 +252,6 @@ export const {
   usePutLibraryRatingMutation,
   useGetLibraryNotificationsQuery,
   useMarkLibraryNotificationReadMutation,
-  useGetLibraryAuditLogQuery
+  useGetLibraryAuditLogQuery,
+  useCreateMspTemplateMutation
 } = apiSliceWithLibrary

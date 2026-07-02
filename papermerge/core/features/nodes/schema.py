@@ -7,8 +7,9 @@ from typing import List, Literal, Tuple
 from uuid import UUID
 
 
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+from papermerge.core import constants as const
 from papermerge.core.types import OCRStatusEnum
 
 
@@ -40,7 +41,7 @@ class Tag(BaseModel):
 
 
 class UpdateNode(BaseModel):
-    title: Optional[str] = None
+    title: Optional[str] = Field(default=None, max_length=const.NODE_TITLE_MAX_LENGTH)
     parent_id: Optional[UUID] = None
 
     @field_validator("parent_id")
@@ -104,7 +105,7 @@ class Node(BaseModel):
 
 
 class CreateNode(BaseModel):
-    title: str
+    title: str = Field(max_length=const.NODE_TITLE_MAX_LENGTH)
     ctype: NodeType.folder
     parent_id: UUID | None
 
@@ -121,7 +122,7 @@ class NewFolder(BaseModel):
     # UUID may be present to allow custom IDs
     # See https://github.com/papermerge/papermerge-core/issues/325
     id: UUID | None = None
-    title: str
+    title: str = Field(max_length=const.NODE_TITLE_MAX_LENGTH)
     ctype: Literal["folder"]
     parent_id: UUID | None
 

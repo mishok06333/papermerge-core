@@ -3,6 +3,7 @@ export const NODE_VIEW = "node.view"
 export const NODE_UPDATE = "node.update"
 export const NODE_DELETE = "node.delete"
 export const NODE_MOVE = "node.move"
+export const COMMANDER_VIEW = "commander.view"
 export const PORTAL_VIEW = "portal.view"
 export const PORTAL_FEED_VIEW = "portal.feed.view"
 export const PORTAL_FEED_MANAGE = "portal.feed.manage"
@@ -12,6 +13,10 @@ export const PORTAL_SECTION_DELETE = "portal.section.delete"
 export const PORTAL_DOCUMENT_UPLOAD = "portal.document.upload"
 export const PORTAL_DOCUMENT_UPDATE = "portal.document.update"
 export const PORTAL_DOCUMENT_DELETE = "portal.document.delete"
+export const CITIZEN_CATEGORY_VIEW = "citizen_category.view"
+export const CITIZEN_CATEGORY_CREATE = "citizen_category.create"
+export const CITIZEN_CATEGORY_UPDATE = "citizen_category.update"
+export const CITIZEN_CATEGORY_DELETE = "citizen_category.delete"
 export const COMMENT_CREATE = "comment.create"
 export const COMMENT_UPDATE = "comment.update"
 export const COMMENT_DELETE = "comment.delete"
@@ -71,6 +76,92 @@ export function canSelectTags(scopes: string[]): boolean {
   return scopes.includes(TAG_SELECT) || canUpdateNodeTags(scopes)
 }
 
+export type CommanderWriteContext = {
+  /** Folder is under the legal portal catalog and route is ``/folder/…``. */
+  isPortalContext: boolean
+}
+
+/** Open the file manager UI (``/folder/…``). */
+export function canOpenCommander(scopes: string[]): boolean {
+  return scopes.includes(COMMANDER_VIEW)
+}
+
+export function canUploadInCommander(
+  scopes: string[],
+  ctx: CommanderWriteContext
+): boolean {
+  if (ctx.isPortalContext) {
+    return scopes.includes(PORTAL_DOCUMENT_UPLOAD)
+  }
+  return scopes.includes(DOCUMENT_UPLOAD)
+}
+
+export function canCreateFolderInCommander(
+  scopes: string[],
+  ctx: CommanderWriteContext
+): boolean {
+  if (ctx.isPortalContext) {
+    return scopes.includes(PORTAL_SECTION_CREATE)
+  }
+  return scopes.includes(NODE_CREATE)
+}
+
+export function canDeleteInCommander(
+  scopes: string[],
+  ctx: CommanderWriteContext
+): boolean {
+  if (ctx.isPortalContext) {
+    return (
+      scopes.includes(PORTAL_SECTION_DELETE) ||
+      scopes.includes(PORTAL_DOCUMENT_DELETE)
+    )
+  }
+  return scopes.includes(NODE_DELETE)
+}
+
+export function canRenameInCommander(
+  scopes: string[],
+  ctx: CommanderWriteContext
+): boolean {
+  if (ctx.isPortalContext) {
+    return (
+      scopes.includes(PORTAL_SECTION_UPDATE) ||
+      scopes.includes(PORTAL_DOCUMENT_UPDATE)
+    )
+  }
+  return scopes.includes(NODE_UPDATE)
+}
+
+export function canMoveInCommander(
+  scopes: string[],
+  ctx: CommanderWriteContext
+): boolean {
+  if (ctx.isPortalContext) {
+    return (
+      scopes.includes(PORTAL_SECTION_UPDATE) ||
+      scopes.includes(PORTAL_DOCUMENT_UPDATE)
+    )
+  }
+  return scopes.includes(NODE_MOVE)
+}
+
+export function canUseMspTemplateInCommander(scopes: string[]): boolean {
+  return scopes.includes(NODE_CREATE)
+}
+
+export function canMutateInCommander(
+  scopes: string[],
+  ctx: CommanderWriteContext
+): boolean {
+  return (
+    canUploadInCommander(scopes, ctx) ||
+    canCreateFolderInCommander(scopes, ctx) ||
+    canDeleteInCommander(scopes, ctx) ||
+    canRenameInCommander(scopes, ctx) ||
+    canMoveInCommander(scopes, ctx)
+  )
+}
+
 export const ALL_PERMS = [
   DOCUMENT_DOWNLOAD,
   DOCUMENT_UPLOAD,
@@ -98,6 +189,7 @@ export const ALL_PERMS = [
   TAG_UPDATE,
   TAG_DELETE,
   NODE_VIEW,
+  COMMANDER_VIEW,
   NODE_MOVE,
   NODE_CREATE,
   NODE_UPDATE,
@@ -116,5 +208,9 @@ export const ALL_PERMS = [
   PORTAL_SECTION_DELETE,
   PORTAL_DOCUMENT_UPLOAD,
   PORTAL_DOCUMENT_UPDATE,
-  PORTAL_DOCUMENT_DELETE
+  PORTAL_DOCUMENT_DELETE,
+  CITIZEN_CATEGORY_VIEW,
+  CITIZEN_CATEGORY_CREATE,
+  CITIZEN_CATEGORY_UPDATE,
+  CITIZEN_CATEGORY_DELETE
 ]

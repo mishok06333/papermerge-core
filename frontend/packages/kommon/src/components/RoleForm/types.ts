@@ -39,6 +39,14 @@ export interface I18NPermissionTree {
   custom_fields: string
   tags: string
   category: string
+  citizen_category?: string
+  citizen_categories?: string
+  citizen_category_view?: string
+  citizen_category_create?: string
+  citizen_category_update?: string
+  citizen_category_delete?: string
+  /** File manager (commander) permission group title */
+  commander?: string
 }
 
 export interface I18NCollapseButton {

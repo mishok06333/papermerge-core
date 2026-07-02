@@ -16,7 +16,7 @@ from papermerge.core.types import (
 )
 from papermerge.core.features.nodes.schema import Node
 from papermerge.core.types import OCRStatusEnum
-from papermerge.core import config
+from papermerge.core import config, constants as const
 from papermerge.core.features.document import s3
 
 settings = config.get_settings()
@@ -267,7 +267,7 @@ class NewDocument(BaseModel):
     # UUID may be present to allow custom IDs
     # See https://github.com/papermerge/papermerge-core/issues/325
     id: UUID | None = None
-    title: str
+    title: str = Field(max_length=const.NODE_TITLE_MAX_LENGTH)
     ctype: Literal["document"] = "document"
     parent_id: UUID | None
     lang: str | None = None

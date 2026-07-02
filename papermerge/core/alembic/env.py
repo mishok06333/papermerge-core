@@ -5,6 +5,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from papermerge.core.db.engine import resolve_database_url
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -12,7 +13,7 @@ from alembic import context
 config = context.config
 section = config.config_ini_section
 config.set_section_option(
-    section, "PAPERMERGE__DATABASE__URL", os.environ.get("PAPERMERGE__DATABASE__URL")
+    section, "PAPERMERGE__DATABASE__URL", resolve_database_url()
 )
 
 # Interpret the config file for Python logging.
@@ -26,6 +27,7 @@ from papermerge.core.db.base import Base
 
 # Import models so Base.metadata sees all tables (incl. portal_settings).
 from papermerge.core.features.portal.db import orm as _portal_orm  # noqa: F401
+from papermerge.core.features.citizen_categories.db import orm as _citizen_categories_orm  # noqa: F401
 
 target_metadata = Base.metadata
 

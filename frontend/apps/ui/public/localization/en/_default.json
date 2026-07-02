@@ -399,12 +399,22 @@
             "Click a document to view it in the built-in viewer."
           ]
         },
+        "citizen_categories": {
+          "title": "3. Citizen categories",
+          "items": [
+            "The Citizen categories item in the menu shows a catalog of categories — a convenient way to find materials by target audience.",
+            "Pick a category to see linked catalog folders.",
+            "Open a folder to browse documents the same way as in the main catalog.",
+            "Only public folders assigned by an administrator appear in a category."
+          ]
+        },
         "login": {
-          "title": "3. Signing in",
+          "title": "4. Signing in",
           "items": [
             "Click Sign in in the header to open the login form.",
+            "When self-registration is enabled by the administrator, the login page offers a Create account link.",
             "After a successful login, additional sections appear depending on your assigned role.",
-            "If you do not have an account, contact a system administrator."
+            "If registration is disabled and you do not have an account, contact a system administrator."
           ]
         }
       }
@@ -438,8 +448,17 @@
             "Trash — deleted materials. With sufficient rights you can restore or purge them permanently."
           ]
         },
+        "citizen_categories": {
+          "title": "4. Citizen categories",
+          "items": [
+            "The Citizen categories item in the sidebar opens a catalog with a short description and linked folder count for each category.",
+            "Pick a category to see catalog folders assigned to it.",
+            "Open a folder — navigation and document viewing work the same as under Home.",
+            "Creating and editing categories and linking folders to categories require the appropriate permissions."
+          ]
+        },
         "documents": {
-          "title": "4. Viewing documents",
+          "title": "5. Viewing documents",
           "items": [
             "Documents open in a viewer with page navigation. PDF, images, and other common formats are supported.",
             "For PDFs you can select and copy recognized text when OCR has been run.",
@@ -449,7 +468,7 @@
           ]
         },
         "search": {
-          "title": "5. Search",
+          "title": "6. Search",
           "items": [
             "Enter a query in the header search field.",
             "Press Enter or the search button to open the results page.",
@@ -457,7 +476,7 @@
           ]
         },
         "tags": {
-          "title": "6. Tags",
+          "title": "7. Tags",
           "items": [
             "Tags help group documents by topic.",
             "The Tags menu item shows the tag catalog available in the system.",
@@ -466,16 +485,17 @@
           ]
         },
         "profile": {
-          "title": "7. Profile and notifications",
+          "title": "8. Profile and notifications",
           "items": [
             "The user menu in the top-right corner includes Profile.",
-            "In your profile you can change email, first name, and last name.",
+            "In your profile you can change email, first name, last name, and password.",
+            "Username and assigned roles are read-only.",
             "The bell icon shows notifications about system events.",
             "Choose Log out in the user menu to end your session."
           ]
         },
         "comments": {
-          "title": "8. Comments",
+          "title": "9. Comments",
           "items": [
             "You can leave comments on documents when your role allows it.",
             "You may edit and delete your own comments.",
@@ -503,6 +523,7 @@
             "Built-in roles: Administrator, Moderator, and Employee.",
             "The Employee role is for browsing, downloading, and commenting without changing catalog content.",
             "Administrator and Moderator roles grant extended rights to manage the catalog, users, and settings.",
+            "The role permission tree includes Citizen categories: view, create, update, and delete categories, plus assign folders to categories.",
             "When creating a custom role, grant only the permissions that are truly needed.",
             "After permission changes in code, run paper-cli perms sync on the server."
           ]
@@ -530,15 +551,28 @@
           "items": [
             "The file manager opens when you enter a catalog or portal folder.",
             "Upload: use Upload and select one or more files from your computer.",
+            "New folder: use New folder to create a subfolder.",
+            "MSP template: Create MSP template (when you can create folders) adds a root folder with the standard social support measure layout: intake, assignment, and reference materials.",
             "Move: drag selected items onto a target folder.",
             "Rename: select one item and click Rename.",
+            "Citizen categories: when one folder is selected, the users-group icon button opens category assignment.",
             "Delete: select items and click Delete — with soft delete enabled they go to trash.",
             "Sorting and quick filter are on the toolbar above the list.",
             "Page operations (extract, rotate, delete pages) are available in the viewer when permitted."
           ]
         },
+        "citizen_categories": {
+          "title": "6. Citizen category catalog",
+          "items": [
+            "The Citizen categories item in the menu opens the category catalog.",
+            "Create a category with a name and description — it appears immediately for users and guests.",
+            "Edit or delete a category from the row actions. Deleting a category does not delete folders — only the link is removed.",
+            "To show a folder in a category, open it in the file manager, select the folder, and assign categories with the users-group icon button.",
+            "Only public folders appear in categories for guests."
+          ]
+        },
         "visibility": {
-          "title": "6. Document and folder visibility",
+          "title": "7. Document and folder visibility",
           "items": [
             "Each document or folder can be public, restricted, or visible only to the owner and moderators.",
             "A visibility icon appears next to the name in the file manager.",
@@ -547,7 +581,7 @@
           ]
         },
         "audit": {
-          "title": "7. Audit log",
+          "title": "8. Audit log",
           "items": [
             "The Audit log menu item is available only to superusers.",
             "The log records user actions: views, downloads, catalog changes, and other events.",

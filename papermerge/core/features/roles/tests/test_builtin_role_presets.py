@@ -46,6 +46,9 @@ def test_employee_is_read_only_for_nodes_and_documents():
         Scopes.PORTAL_DOCUMENT_UPLOAD,
         Scopes.PORTAL_DOCUMENT_UPDATE,
         Scopes.PORTAL_DOCUMENT_DELETE,
+        Scopes.CITIZEN_CATEGORY_CREATE,
+        Scopes.CITIZEN_CATEGORY_UPDATE,
+        Scopes.CITIZEN_CATEGORY_DELETE,
     }
     assert employee.isdisjoint(forbidden)
 
@@ -56,7 +59,9 @@ def test_employee_can_collaborate():
     assert Scopes.COMMENT_UPDATE not in employee
     assert Scopes.COMMENT_DELETE not in employee
     assert Scopes.NODE_VIEW in employee
+    assert Scopes.COMMANDER_VIEW in employee
     assert Scopes.DOCUMENT_DOWNLOAD in employee
+    assert Scopes.CITIZEN_CATEGORY_VIEW in employee
 
 
 async def test_update_role_rejects_unknown_scopes(db_session):

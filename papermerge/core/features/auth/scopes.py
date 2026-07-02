@@ -19,6 +19,7 @@ class ScopeCategory(Enum):
     SHARED_NODE = "shared_node"
     PORTAL = "portal"
     COMMENT = "comment"
+    COMMANDER = "commander"
 
 
 class Action(Enum):
@@ -43,6 +44,9 @@ class Action(Enum):
 
 class Scopes:
     """Permission scopes"""
+
+    # File manager (commander UI) — browse folders; CRUD still requires node.* / document.* scopes.
+    COMMANDER_VIEW = "commander.view"
 
     # Node permissions
     NODE_CREATE = "node.create"
@@ -119,6 +123,12 @@ class Scopes:
     PORTAL_DOCUMENT_UPLOAD = "portal.document.upload"
     PORTAL_DOCUMENT_UPDATE = "portal.document.update"
     PORTAL_DOCUMENT_DELETE = "portal.document.delete"
+
+    # Citizen categories (категории граждан) — public folder groupings
+    CITIZEN_CATEGORY_VIEW = "citizen_category.view"
+    CITIZEN_CATEGORY_CREATE = "citizen_category.create"
+    CITIZEN_CATEGORY_UPDATE = "citizen_category.update"
+    CITIZEN_CATEGORY_DELETE = "citizen_category.delete"
 
     # Comment permissions (document library / collaboration).
     # Users may always edit/delete their own comments; update/delete scopes

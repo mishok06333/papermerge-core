@@ -93,9 +93,11 @@ render_runtime_configs() {
     # whitelist of OCR-related vars). Defaults mirror the retired `roco`
     # behaviour so existing deployments don't need to set new env vars.
     LOGIN_PROVIDER="${PAPERMERGE__AUTH__LOGIN_PROVIDER:-db}"
+    REGISTRATION_ENABLED="${PAPERMERGE__AUTH__REGISTRATION_ENABLED:-true}"
     cat > /usr/share/nginx/html/auth_server/papermerge-runtime-config.js <<EOF
 window.__PAPERMERGE_RUNTIME_CONFIG__ = {
   login_provider: "${LOGIN_PROVIDER}",
+  registration_enabled: ${REGISTRATION_ENABLED},
   oidc_client_id: "${PAPERMERGE__AUTH__OIDC_CLIENT_ID:-}",
   oidc_authorize_url: "${PAPERMERGE__AUTH__OIDC_AUTHORIZE_URL:-}",
   oidc_redirect_url: "${PAPERMERGE__AUTH__OIDC_REDIRECT_URL:-}",
@@ -183,7 +185,19 @@ EOF
   "username": "Имя пользователя",
   "password": "Пароль",
   "your password": "Введите пароль",
-  "signin": "Войти"
+  "signin": "Войти",
+  "confirm password": "Подтвердите пароль",
+  "register": "Зарегистрироваться",
+  "create account": "Создать аккаунт",
+  "already have account": "Уже есть аккаунт? Войти",
+  "name": "Имя",
+  "last name": "Фамилия",
+  "email": "Почта",
+  "continue": "Продолжить",
+  "complete your profile": "Заполните профиль",
+  "passwords do not match": "Пароли не совпадают",
+  "registration failed": "Ошибка регистрации",
+  "profile update failed": "Ошибка сохранения профиля"
 }
 EOF
     cp -f "${AUTH_I18N_DIR}/en.json" "${AUTH_I18N_DIR}/ru.json"

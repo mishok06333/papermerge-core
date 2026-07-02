@@ -21,6 +21,7 @@ export default function useI18NText(): I18NRoleFormModal | undefined {
             uncheckAll: t("roleForm.checkButton.uncheckAll")
           },
           permissionTree: {
+            commander: t("roleForm.permissionTree.commander"),
             folders: t("roleForm.permissionTree.folders"),
             documents: t("roleForm.permissionTree.documents"),
             page_management: t("roleForm.permissionTree.page_management"),
@@ -48,6 +49,19 @@ export default function useI18NText(): I18NRoleFormModal | undefined {
             ),
             portal_document_delete: t(
               "roleForm.permissionTree.portal_document_delete"
+            ),
+            citizen_categories: t("roleForm.permissionTree.citizen_categories"),
+            citizen_category_view: t(
+              "roleForm.permissionTree.citizen_category_view"
+            ),
+            citizen_category_create: t(
+              "roleForm.permissionTree.citizen_category_create"
+            ),
+            citizen_category_update: t(
+              "roleForm.permissionTree.citizen_category_update"
+            ),
+            citizen_category_delete: t(
+              "roleForm.permissionTree.citizen_category_delete"
             ),
             comments: t("roleForm.permissionTree.comments"),
             comment_moderate_edit: t(

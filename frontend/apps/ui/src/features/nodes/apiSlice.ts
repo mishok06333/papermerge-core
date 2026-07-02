@@ -197,10 +197,13 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
         method: "DELETE",
         body: nodeIDs
       }),
-      invalidatesTags: (_result, _error, ids) =>
-        ids.map(id => {
+      invalidatesTags: (_result, _error, ids) => [
+        ...ids.map(id => {
           return {type: "Node", id: id}
-        })
+        }),
+        {type: "LibraryTrash", id: "LIST"},
+        "Folder"
+      ]
     }),
     moveNodes: builder.mutation<void, MoveNodesType>({
       query: data => ({

@@ -35,19 +35,26 @@ settings = config.get_settings()
     "/{parent_id}",
     responses={
         status.HTTP_403_FORBIDDEN: {
-            "description": f"No `{scopes.NODE_VIEW}` permission on the node",
+            "description": (
+                f"Missing `{scopes.COMMANDER_VIEW}` or no `{scopes.NODE_VIEW}` "
+                "permission on the node"
+            ),
             "content": OPEN_API_GENERIC_JSON_DETAIL,
         }
     },
 )
 async def get_node(
     parent_id: UUID,
-    user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
+    user: Annotated[
+        schema.User,
+        Security(get_current_user, scopes=[scopes.COMMANDER_VIEW, scopes.NODE_VIEW]),
+    ],
     params: CommonQueryParams = Depends(),
     db_session: AsyncSession = Depends(get_db),
 ) -> PaginatedResponse[Union[schema.DocumentNode, schema.Folder]]:
     """Returns list of *paginated* direct descendants of `parent_id` node
 
+    Requires ``commander.view`` (file manager access) and ``node.view`` on the parent.
     """
     order_by = ["ctype", "title", "created_at", "updated_at"]
 

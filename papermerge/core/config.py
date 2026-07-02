@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 
 from pydantic import Field, model_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class FileServer(str, Enum):
@@ -10,6 +10,12 @@ class FileServer(str, Enum):
     S3 = 's3'
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
     papermerge__main__logging_cfg: Path | None = Path("/etc/papermerge/logging.yaml")
     papermerge__main__media_root: Path = Path("media")
     papermerge__main__api_prefix: str = ''

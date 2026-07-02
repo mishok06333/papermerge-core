@@ -1,4 +1,4 @@
-import {useAppDispatch} from "@/app/hooks"
+import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import ToggleSecondaryPanel from "@/components/DualPanel/ToggleSecondaryPanel"
 import PanelContext from "@/contexts/PanelContext"
 import DeletePagesButton from "@/features/document/components/DeletePagesButton"
@@ -14,6 +14,8 @@ import DownloadButton from "@/features/document/components/DownloadButton"
 import RotateButton from "@/features/document/components/RotateButton"
 import RotateCCButton from "@/features/document/components/RotateCCButton"
 import {VIEWER_FILE_EDITING_ENABLED} from "@/features/document/constants"
+import {canOpenCommander} from "@/scopes"
+import {selectCurrentUser} from "@/slices/currentUser"
 import {
   useCurrentDoc,
   useCurrentDocVer,
@@ -40,6 +42,8 @@ export default function ActionButtons({
   const {doc} = useCurrentDoc()
   const {docVer} = useCurrentDocVer()
   const selectedPages = useSelectedPages({mode, docVerID: docVer?.id})
+  const user = useAppSelector(selectCurrentUser)
+  const showCommanderControls = canOpenCommander(user?.scopes ?? [])
 
   useEffect(() => {
     if (ref?.current) {
@@ -73,8 +77,8 @@ export default function ActionButtons({
         )}
       </Group>
       <Group>
-        <DuplicatePanelButton />
-        <ToggleSecondaryPanel />
+        {showCommanderControls && <DuplicatePanelButton />}
+        {showCommanderControls && <ToggleSecondaryPanel />}
       </Group>
     </Group>
   )

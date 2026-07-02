@@ -5,6 +5,7 @@ import {Navigate} from "react-router-dom"
 
 import {
   clearAuthCookie,
+  recordAuthSessionEvent,
   usesNginxAuthGate
 } from "@/features/public/guestMode"
 import {
@@ -26,6 +27,7 @@ export default function PostAuthRedirect() {
   const user = useSelector(selectCurrentUser)
   const retried = useRef(false)
   const authHandoffStarted = useRef(false)
+  const loginAuditSent = useRef(false)
   const [retrying, setRetrying] = useState(false)
 
   useEffect(() => {
@@ -49,6 +51,14 @@ export default function PostAuthRedirect() {
       setRetrying(false)
     }
   }, [status])
+
+  useEffect(() => {
+    if (status !== "succeeded" || !user || loginAuditSent.current) {
+      return
+    }
+    loginAuditSent.current = true
+    void recordAuthSessionEvent("login")
+  }, [status, user])
 
   useEffect(() => {
     if (status !== "failed" || retrying || authHandoffStarted.current) {

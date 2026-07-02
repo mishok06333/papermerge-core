@@ -114,8 +114,8 @@ export default function Folder({
           {node.is_shared && <IconUsers className={classes.iconUsers} />}
           <Tags names={tagNames} node={node} />
           <div className={classes.title}>
-            {node.title}
             <NodeVisibilityIcon summary={node.visibility_summary} />
+            <span>{node.title}</span>
           </div>
         </a>
       </Stack>

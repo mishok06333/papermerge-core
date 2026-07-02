@@ -8,6 +8,7 @@ from .features.roles.db.orm import Role, Permission, roles_permissions_associati
 from .features.document_types.db.orm import DocumentType, DocumentTypeCustomField
 from .features.shared_nodes.db.orm import SharedNode
 from .features.portal.db.orm import PortalNews, PortalNewsAttachment, PortalSettings
+from .features.citizen_categories.db.orm import CitizenCategory, CitizenCategoryFolder
 from .features.nodes.db.visibility_orm import NodeVisibility, NodeVisibilityRole
 from .features.library_ts.db.settings_orm import LibrarySettings
 
@@ -36,4 +37,6 @@ __all__ = [
     'NodeVisibility',
     'NodeVisibilityRole',
     'LibrarySettings',
+    'CitizenCategory',
+    'CitizenCategoryFolder',
 ]

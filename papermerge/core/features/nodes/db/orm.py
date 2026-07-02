@@ -2,9 +2,10 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, func, UniqueConstraint, CheckConstraint
+from sqlalchemy import ForeignKey, String, func, CheckConstraint, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, deferred
 
+from papermerge.core import constants as const
 from papermerge.core.features.users.db.orm import User
 from papermerge.core.db.base import Base
 from papermerge.core.types import CType
@@ -14,7 +15,7 @@ class Node(Base):
     __tablename__ = "nodes"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, insert_default=uuid.uuid4())
-    title: Mapped[str] = mapped_column(String(200))
+    title: Mapped[str] = mapped_column(String(const.NODE_TITLE_MAX_LENGTH))
     ctype: Mapped[CType]
     lang: Mapped[str] = mapped_column(String(8), default="deu")
     user: Mapped["User"] = relationship(
@@ -63,17 +64,23 @@ class Node(Base):
     }
 
     __table_args__ = (
-        UniqueConstraint(
+        Index(
+            "unique_title_per_parent_per_user_active",
             "parent_id",
             "title",
             "user_id",
-            name="unique title per parent per user",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL AND user_id IS NOT NULL"),
+            sqlite_where=text("deleted_at IS NULL AND user_id IS NOT NULL"),
         ),
-        UniqueConstraint(
+        Index(
+            "unique_title_per_parent_per_group_active",
             "parent_id",
             "title",
             "group_id",
-            name="unique title per parent per group",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL AND group_id IS NOT NULL"),
+            sqlite_where=text("deleted_at IS NULL AND group_id IS NOT NULL"),
         ),
         CheckConstraint(
             "user_id IS NOT NULL OR group_id IS NOT NULL",

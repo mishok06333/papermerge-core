@@ -26,6 +26,23 @@ export function clearAuthCookie(): void {
   document.cookie = `${ACCESS_TOKEN_COOKIE}=; Max-Age=0; path=/home`
 }
 
+/** Best-effort audit record for login/logout (does not block navigation). */
+export async function recordAuthSessionEvent(
+  event: "login" | "logout"
+): Promise<void> {
+  try {
+    const base = import.meta.env.VITE_BASE_URL || window.location.origin
+    await fetch(`${base}/api/library/audit/session/`, {
+      method: "POST",
+      credentials: "include",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({event})
+    })
+  } catch {
+    // ignore — session transition must not depend on audit
+  }
+}
+
 /**
  * True when API calls use same-origin relative URLs and nginx auth_request
  * gates protected routes (docker/production bundle).
@@ -47,8 +64,10 @@ export function navigateToLogin(): void {
 
 /** End the session and return to the public landing (full page navigation). */
 export function navigateToLogout(): void {
-  clearAuthCookie()
-  window.location.replace("/")
+  void recordAuthSessionEvent("logout").finally(() => {
+    clearAuthCookie()
+    window.location.replace("/")
+  })
 }
 
 /** Routes where PostAuthRedirect owns the /api/users/me fetch after login. */

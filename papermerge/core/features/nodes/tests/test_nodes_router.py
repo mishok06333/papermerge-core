@@ -170,6 +170,37 @@ async def test_create_document(auth_api_client: AuthTestClient, db_session: Asyn
     assert await doc_dbapi.count_docs(db_session) == 1
 
 
+async def test_create_document_with_long_title(
+    auth_api_client: AuthTestClient, db_session: AsyncSession
+):
+    """Filenames from legal/regulatory sources can exceed the old 200-char limit."""
+    user = auth_api_client.user
+    long_title = (
+        'Постановление Правительства Хабаровского края от 30.10.2015 № 358-пр '
+        '(ред. от 09.12.2025) "Об утверждении порядка назначения и выплаты '
+        "ежемесячной денежной выплаты отдельным категориям граждан на "
+        'территории Хабаровского края".docx'
+    )
+    assert len(long_title) > 200
+
+    response = await auth_api_client.post(
+        "/nodes/",
+        json={
+            "ctype": "document",
+            "title": long_title,
+            "parent_id": str(user.home_folder.id),
+        },
+    )
+
+    assert response.status_code == 201, response.json()
+    doc = (
+        await db_session.scalars(
+            select(orm.Document).where(orm.Document.title == long_title)
+        )
+    ).one()
+    assert doc.title == long_title
+
+
 async def test_two_folders_with_same_title_under_same_parent(auth_api_client: AuthTestClient):
     """It should not be possible to create two folders with
     same (parent, title) pair i.e. we cannot have folders with same

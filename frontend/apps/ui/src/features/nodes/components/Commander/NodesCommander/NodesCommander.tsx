@@ -4,7 +4,7 @@ import {useContext, useEffect, useMemo, useState} from "react"
 import {createRoot} from "react-dom/client"
 
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
-import {useLocation, useNavigate} from "react-router-dom"
+import {useLocation, useNavigate, Navigate} from "react-router-dom"
 
 import {
   currentNodeChanged,
@@ -31,12 +31,12 @@ import {useGetPortalRootQuery} from "@/features/portal/portalApiSlice"
 import PortalFolderTree from "@/features/portal/components/PortalFolderTree"
 import {makePortalDocumentNavState} from "@/features/portal/portalNavState"
 import {
-  PORTAL_DOCUMENT_DELETE,
-  PORTAL_DOCUMENT_UPDATE,
-  PORTAL_DOCUMENT_UPLOAD,
-  PORTAL_SECTION_CREATE,
-  PORTAL_SECTION_DELETE,
-  PORTAL_SECTION_UPDATE,
+  canCreateFolderInCommander,
+  canDeleteInCommander,
+  canMoveInCommander,
+  canOpenCommander,
+  canRenameInCommander,
+  canUploadInCommander,
   PORTAL_VIEW
 } from "@/scopes"
 
@@ -73,7 +73,7 @@ import DraggingIcon from "./DraggingIcon"
 import {DropFilesModal} from "./DropFiles"
 import DropNodesModal from "./DropNodesDialog"
 import ExtractPagesModal from "./ExtractPagesModal"
-import {selectCurrentUser} from "@/slices/currentUser"
+import {selectCurrentUser, selectCurrentUserStatus} from "@/slices/currentUser"
 import {equalUUIDs} from "@/utils"
 
 import FolderNodeActions from "./FolderNodeActions"
@@ -108,6 +108,7 @@ export default function Commander() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = useAppSelector(selectCurrentUser)
+  const userStatus = useAppSelector(selectCurrentUserStatus)
   const onPortalFolderPath = location.pathname.startsWith("/folder/")
   const {data: portalRoot} = useGetPortalRootQuery(undefined, {
     skip:
@@ -166,22 +167,33 @@ export default function Commander() {
     [portalRoot]
   )
 
-  const portalFolderWritesEnabled = useMemo(() => {
-    if (!isUnderPortalRoot || !onPortalFolderPath) {
+  const commanderWriteContext = useMemo(
+    () => ({isPortalContext: isUnderPortalRoot && onPortalFolderPath}),
+    [isUnderPortalRoot, onPortalFolderPath]
+  )
+
+  const scopes = user?.scopes ?? []
+
+  const commanderDragDropEnabled = useMemo(() => {
+    if (!canOpenCommander(scopes)) {
       return false
     }
-    const scopes = user?.scopes ?? []
     return (
-      [
-        PORTAL_SECTION_CREATE,
-        PORTAL_SECTION_UPDATE,
-        PORTAL_SECTION_DELETE,
-        PORTAL_DOCUMENT_UPLOAD,
-        PORTAL_DOCUMENT_UPDATE,
-        PORTAL_DOCUMENT_DELETE
-      ] as const
-    ).some(s => scopes.includes(s))
-  }, [isUnderPortalRoot, onPortalFolderPath, user?.scopes])
+      canUploadInCommander(scopes, commanderWriteContext) ||
+      canMoveInCommander(scopes, commanderWriteContext) ||
+      canCreateFolderInCommander(scopes, commanderWriteContext) ||
+      canDeleteInCommander(scopes, commanderWriteContext) ||
+      canRenameInCommander(scopes, commanderWriteContext)
+    )
+  }, [scopes, commanderWriteContext])
+
+  if (userStatus === "loading" || userStatus === "idle") {
+    return <div>{t("common.loading")}</div>
+  }
+
+  if (userStatus === "succeeded" && user && !canOpenCommander(scopes)) {
+    return <Navigate to={ERRORS_403_ACCESS_FORBIDDEN} replace />
+  }
 
   if (!currentNodeID) {
     return <div>{t("common.loading")}</div>
@@ -257,13 +269,13 @@ export default function Commander() {
   }
   const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
-    if (portalFolderWritesEnabled) {
+    if (commanderDragDropEnabled) {
       setDragOver(true)
     }
   }
 
   const onDragEnter = () => {
-    if (portalFolderWritesEnabled) {
+    if (commanderDragDropEnabled) {
       setDragOver(true)
     }
   }
@@ -279,7 +291,7 @@ export default function Commander() {
 
     setDragOver(false)
 
-    if (!portalFolderWritesEnabled) {
+    if (!commanderDragDropEnabled) {
       return
     }
 
@@ -410,7 +422,7 @@ export default function Commander() {
         >
           <FolderNodeActions
             homeFolderTreeAvailable={portalFolderTreeContext}
-            portalCommanderWriteEnabled={portalFolderWritesEnabled}
+            commanderWriteContext={commanderWriteContext}
           />
           <Breadcrumbs
             breadcrumb={currentFolder?.breadcrumb}

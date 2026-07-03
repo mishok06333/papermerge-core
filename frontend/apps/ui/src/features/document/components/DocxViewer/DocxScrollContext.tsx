@@ -15,7 +15,7 @@ type DocxScrollContextValue = {
   scrollRef: React.RefObject<HTMLDivElement | null>
   sectionsRef: React.MutableRefObject<HTMLElement[]>
   pageCount: number
-  setPageMeta: (count: number, sections: HTMLElement[]) => void
+  setPageMeta: (count: number, sections: HTMLElement[], queryRoot: Document) => void
   currentPageNumber: number
 }
 
@@ -23,16 +23,22 @@ const DocxScrollContext = createContext<DocxScrollContextValue | null>(null)
 
 export function DocxScrollProvider({children}: {children: ReactNode}) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const queryRootRef = useRef<Document | null>(null)
   const sectionsRef = useRef<HTMLElement[]>([])
   const [pageCount, setPageCount] = useState(0)
 
-  const setPageMeta = useCallback((count: number, sections: HTMLElement[]) => {
-    sectionsRef.current = sections
-    setPageCount(Math.max(1, count))
-  }, [])
+  const setPageMeta = useCallback(
+    (count: number, sections: HTMLElement[], queryRoot: Document) => {
+      sectionsRef.current = sections
+      queryRootRef.current = queryRoot
+      setPageCount(Math.max(1, count))
+    },
+    []
+  )
 
   const {currentPageNumber} = useCurrentPageNumber({
     containerRef: scrollRef,
+    queryRootRef,
     cssSelector: `.${DOCX_VIEWER_PAGE_CLASS}`,
     initialPageNumber: 1
   })

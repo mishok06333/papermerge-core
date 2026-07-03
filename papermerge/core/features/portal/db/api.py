@@ -16,9 +16,6 @@ from papermerge.core.features.portal.constants import (
     PORTAL_ROOT_FOLDER_TITLE,
     PORTAL_SETTINGS_ROW_ID,
 )
-from papermerge.core.features.portal.default_section_tree import (
-    ensure_portal_default_section_tree,
-)
 from papermerge.core.features.portal.db import orm as portal_orm
 
 logger = logging.getLogger(__name__)
@@ -81,10 +78,6 @@ async def ensure_portal_bootstrap(
             )
             if group_id is not None:
                 row.portal_group_id = group_id
-        if group_id is not None:
-            await ensure_portal_default_section_tree(
-                db_session, row.portal_root_node_id, group_id
-            )
         await db_session.commit()
         return row.portal_root_node_id, row.portal_group_id or group_id, None
 
@@ -124,8 +117,6 @@ async def ensure_portal_bootstrap(
     logger.info(
         "Portal bootstrap: root_folder_id=%s group_id=%s", root_id, group_uuid
     )
-    await ensure_portal_default_section_tree(db_session, root_id, group_uuid)
-    await db_session.commit()
     return root_id, group_uuid, None
 
 

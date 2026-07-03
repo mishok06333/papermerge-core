@@ -20,6 +20,7 @@ import {PAGINATION_DEFAULT_ITEMS_PER_PAGES} from "@/cconstants"
 import {getBlobViewerCategory} from "@/features/document/documentPreview"
 import {useGetTagNodesQuery, useGetTagQuery} from "@/features/tags/apiSlice"
 import type {ColoredTagType} from "@/types"
+import {formatNodeDisplayTitle} from "@/utils"
 import type {TFunction} from "i18next"
 
 import EditButton from "./EditButton"
@@ -28,8 +29,9 @@ import {useAppSelector} from "@/app/hooks"
 import {TAG_DELETE, TAG_UPDATE} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {User} from "@/types"
+import {formatApiDateTime} from "@/utils/formatDateTime"
 
-interface TagDetailsArgs {
+type TagDetailsArgs = {
   tagId: string
 }
 
@@ -96,14 +98,14 @@ export default function TagDetails({tagId}: TagDetailsArgs) {
                     component={Link}
                     to={openHref(row.ctype, row.node_id)}
                   >
-                    {row.title}
+                    {formatNodeDisplayTitle(row.title, row.ctype)}
                   </Anchor>
                 </Table.Td>
                 <Table.Td>
                   {resolveTypeLabel(row.ctype, row.title, t)}
                 </Table.Td>
                 <Table.Td>
-                  {new Date(row.updated_at).toLocaleString()}
+                  {formatApiDateTime(row.updated_at)}
                 </Table.Td>
               </Table.Tr>
             ))}

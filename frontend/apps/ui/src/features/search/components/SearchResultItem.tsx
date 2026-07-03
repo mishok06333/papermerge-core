@@ -3,6 +3,7 @@ import {useGetPortalRootQuery} from "@/features/portal/portalApiSlice"
 import {selectNodeById} from "@/features/search/searchSlice"
 import {normalizeSearchBreadcrumb} from "@/features/search/searchBreadcrumb"
 import type {NType, SearchResultNode} from "@/types"
+import {drop_extension} from "@/utils"
 import {Badge, Group, Paper, Stack, Text} from "@mantine/core"
 import {IconFile, IconFolder} from "@tabler/icons-react"
 import {useMemo} from "react"
@@ -57,7 +58,7 @@ export default function SearchResultItem({item, onClick}: Args) {
           <Breadcrumb
             onClick={onClick}
             items={breadcrumb}
-            fallbackTitle={item.title}
+            fallbackTitle={isFolder ? item.title : drop_extension(item.title)}
             pageNumber={!isFolder ? pageNumber : undefined}
           />
         </div>
@@ -74,7 +75,7 @@ export default function SearchResultItem({item, onClick}: Args) {
           <Stack gap={6} className={classes.body}>
             <Group gap="xs" wrap="wrap" align="center">
               <Text className={classes.title} fw={600} size="sm" lineClamp={2}>
-                {item.title}
+                {isFolder ? item.title : drop_extension(item.title)}
               </Text>
               {!isFolder && pageNumber && pageNumber > 1 && (
                 <Badge variant="light" size="sm">

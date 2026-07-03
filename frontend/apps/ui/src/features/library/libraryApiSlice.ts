@@ -1,4 +1,5 @@
 import {apiSlice} from "@/features/api/slice"
+import {portalNodesInvalidationTags} from "@/features/portal/portalApiSlice"
 import type {FolderType, NodeType, Paginated} from "@/types"
 
 export type AuditLogEntry = {
@@ -62,6 +63,10 @@ export type LibraryNotification = {
 
 type TrashBatch = {node_ids: string[]}
 
+export type LibrarySettings = {
+  trash_retention_days: number
+}
+
 export const apiSliceWithLibrary = apiSlice.injectEndpoints({
   endpoints: builder => ({
     getLibraryFavorites: builder.query<FavoriteRow[], void>({
@@ -114,7 +119,12 @@ export const apiSliceWithLibrary = apiSlice.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: [{type: "LibraryTrash", id: "LIST"}, "Node", "Folder"]
+      invalidatesTags: [
+        {type: "LibraryTrash", id: "LIST"},
+        {type: "LibraryRecent", id: "LIST"},
+        "Node",
+        "Folder"
+      ]
     }),
     getLibraryNote: builder.query<LibraryNote | null, string>({
       query: documentId => `/library/documents/${documentId}/note`,
@@ -229,7 +239,22 @@ export const apiSliceWithLibrary = apiSlice.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: ["Node"]
+      invalidatesTags: (_result, _error, body) => [
+        "Node",
+        ...portalNodesInvalidationTags(body.parent_id)
+      ]
+    }),
+    getLibrarySettings: builder.query<LibrarySettings, void>({
+      query: () => "/library/settings/",
+      providesTags: [{type: "LibrarySettings", id: "CONFIG"}]
+    }),
+    updateLibrarySettings: builder.mutation<LibrarySettings, LibrarySettings>({
+      query: body => ({
+        url: "/library/settings/",
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: [{type: "LibrarySettings", id: "CONFIG"}]
     })
   })
 })
@@ -253,5 +278,7 @@ export const {
   useGetLibraryNotificationsQuery,
   useMarkLibraryNotificationReadMutation,
   useGetLibraryAuditLogQuery,
-  useCreateMspTemplateMutation
+  useCreateMspTemplateMutation,
+  useGetLibrarySettingsQuery,
+  useUpdateLibrarySettingsMutation
 } = apiSliceWithLibrary

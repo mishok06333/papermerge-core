@@ -5,21 +5,27 @@ import {
   useGetLibraryFavoritesQuery,
   useGetLibraryRecentQuery,
   useGetLibraryTrashQuery,
+  useGetLibrarySettingsQuery,
   usePurgeLibraryTrashMutation,
   useRemoveLibraryFavoriteMutation,
-  useRestoreLibraryTrashMutation
+  useRestoreLibraryTrashMutation,
+  useUpdateLibrarySettingsMutation
 } from "@/features/library/libraryApiSlice"
 import {NODE_DELETE, NODE_UPDATE, NODE_VIEW} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {User} from "@/types"
+import {formatApiDateTime} from "@/utils/formatDateTime"
+import {formatNodeDisplayTitle} from "@/utils"
 import {
   Anchor,
   Button,
   Checkbox,
   Group,
   Loader,
+  NumberInput,
   Pagination,
   Paper,
+  ScrollArea,
   Stack,
   Table,
   Tabs,
@@ -28,7 +34,7 @@ import {
 } from "@mantine/core"
 import {notifications} from "@mantine/notifications"
 import {IconHistory, IconStar, IconTrash} from "@tabler/icons-react"
-import {useMemo, useState} from "react"
+import {type ReactNode, useEffect, useMemo, useState} from "react"
 import {useTranslation} from "react-i18next"
 import {Link, useNavigate, useParams} from "react-router-dom"
 
@@ -96,6 +102,28 @@ export default function LibraryPage() {
   )
 }
 
+const LIBRARY_PANEL_SCROLL_HEIGHT = "calc(100dvh - 18rem)"
+const LIBRARY_TRASH_SCROLL_HEIGHT = "calc(100dvh - 22rem)"
+
+function LibraryPanelScroll({
+  children,
+  height = LIBRARY_PANEL_SCROLL_HEIGHT
+}: {
+  children: ReactNode
+  height?: string
+}) {
+  return (
+    <ScrollArea
+      type="scroll"
+      offsetScrollbars
+      scrollbarSize={10}
+      h={height}
+    >
+      {children}
+    </ScrollArea>
+  )
+}
+
 function openHref(ctype: string, id: string) {
   return ctype === "folder" ? `/folder/${id}` : `/document/${id}`
 }
@@ -122,65 +150,67 @@ function FavoritesPanel() {
   }
   const rows = data ?? []
   return (
-    <Paper withBorder p="sm">
-      <Table striped highlightOnHover>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>{t("common.table.columns.name")}</Table.Th>
-            <Table.Th>{t("library.col_type")}</Table.Th>
-            <Table.Th>{t("library.col_actions")}</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {rows.map(row => (
-            <Table.Tr key={row.node_id}>
-              <Table.Td>
-                <Anchor component={Link} to={openHref(row.ctype, row.node_id)}>
-                  {row.title}
-                </Anchor>
-                {row.in_trash ? (
-                  <Text size="xs" c="dimmed">
-                    {t("library.in_trash")}
-                  </Text>
-                ) : null}
-              </Table.Td>
-              <Table.Td>{resolveTypeLabel(row.ctype, row.title, t)}</Table.Td>
-              <Table.Td>
-                <Button
-                  size="xs"
-                  variant="light"
-                  color="red"
-                  loading={removing}
-                  onClick={async () => {
-                    try {
-                      await remove(row.node_id).unwrap()
-                      notifications.show({
-                        title: t("library.removed_favorite"),
-                        message: "",
-                        color: "green"
-                      })
-                    } catch {
-                      notifications.show({
-                        title: t("library.error"),
-                        message: "",
-                        color: "red"
-                      })
-                    }
-                  }}
-                >
-                  {t("library.remove_favorite")}
-                </Button>
-              </Table.Td>
+    <LibraryPanelScroll>
+      <Paper withBorder p="sm">
+        <Table stickyHeader striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>{t("common.table.columns.name")}</Table.Th>
+              <Table.Th>{t("library.col_type")}</Table.Th>
+              <Table.Th>{t("library.col_actions")}</Table.Th>
             </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-      {rows.length === 0 ? (
-        <Text c="dimmed" mt="sm">
-          {t("library.empty_favorites")}
-        </Text>
-      ) : null}
-    </Paper>
+          </Table.Thead>
+          <Table.Tbody>
+            {rows.map(row => (
+              <Table.Tr key={row.node_id}>
+                <Table.Td>
+                  <Anchor component={Link} to={openHref(row.ctype, row.node_id)}>
+                    {formatNodeDisplayTitle(row.title, row.ctype)}
+                  </Anchor>
+                  {row.in_trash ? (
+                    <Text size="xs" c="dimmed">
+                      {t("library.in_trash")}
+                    </Text>
+                  ) : null}
+                </Table.Td>
+                <Table.Td>{resolveTypeLabel(row.ctype, row.title, t)}</Table.Td>
+                <Table.Td>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="red"
+                    loading={removing}
+                    onClick={async () => {
+                      try {
+                        await remove(row.node_id).unwrap()
+                        notifications.show({
+                          title: t("library.removed_favorite"),
+                          message: "",
+                          color: "green"
+                        })
+                      } catch {
+                        notifications.show({
+                          title: t("library.error"),
+                          message: "",
+                          color: "red"
+                        })
+                      }
+                    }}
+                  >
+                    {t("library.remove_favorite")}
+                  </Button>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+        {rows.length === 0 ? (
+          <Text c="dimmed" mt="sm">
+            {t("library.empty_favorites")}
+          </Text>
+        ) : null}
+      </Paper>
+    </LibraryPanelScroll>
   )
 }
 
@@ -196,40 +226,37 @@ function RecentPanel() {
   }
   const rows = data ?? []
   return (
-    <Paper withBorder p="sm">
-      <Table striped highlightOnHover>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>{t("common.table.columns.name")}</Table.Th>
-            <Table.Th>{t("library.col_type")}</Table.Th>
-            <Table.Th>{t("library.col_viewed")}</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {rows.map(row => (
-            <Table.Tr key={`${row.node_id}-${row.viewed_at}`}>
-              <Table.Td>
-                <Anchor component={Link} to={openHref(row.ctype, row.node_id)}>
-                  {row.title}
-                </Anchor>
-                {row.in_trash ? (
-                  <Text size="xs" c="dimmed">
-                    {t("library.in_trash")}
-                  </Text>
-                ) : null}
-              </Table.Td>
-              <Table.Td>{resolveTypeLabel(row.ctype, row.title, t)}</Table.Td>
-              <Table.Td>{new Date(row.viewed_at).toLocaleString()}</Table.Td>
+    <LibraryPanelScroll>
+      <Paper withBorder p="sm">
+        <Table stickyHeader striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>{t("common.table.columns.name")}</Table.Th>
+              <Table.Th>{t("library.col_type")}</Table.Th>
+              <Table.Th>{t("library.col_viewed")}</Table.Th>
             </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-      {rows.length === 0 ? (
-        <Text c="dimmed" mt="sm">
-          {t("library.empty_recent")}
-        </Text>
-      ) : null}
-    </Paper>
+          </Table.Thead>
+          <Table.Tbody>
+            {rows.map(row => (
+              <Table.Tr key={`${row.node_id}-${row.viewed_at}`}>
+                <Table.Td>
+                  <Anchor component={Link} to={openHref(row.ctype, row.node_id)}>
+                    {formatNodeDisplayTitle(row.title, row.ctype)}
+                  </Anchor>
+                </Table.Td>
+                <Table.Td>{resolveTypeLabel(row.ctype, row.title, t)}</Table.Td>
+                <Table.Td>{formatApiDateTime(row.viewed_at)}</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+        {rows.length === 0 ? (
+          <Text c="dimmed" mt="sm">
+            {t("library.empty_recent")}
+          </Text>
+        ) : null}
+      </Paper>
+    </LibraryPanelScroll>
   )
 }
 
@@ -237,6 +264,7 @@ function TrashPanel() {
   const {t} = useTranslation()
   const user = useAppSelector(selectCurrentUser) as User | null
   const scopes = user?.scopes ?? []
+  const isSuperuser = Boolean(user?.is_superuser)
   const [page, setPage] = useState(1)
   const {data, isLoading, isError} = useGetLibraryTrashQuery({
     page_number: page,
@@ -244,7 +272,46 @@ function TrashPanel() {
   })
   const [restore, {isLoading: restoring}] = useRestoreLibraryTrashMutation()
   const [purge, {isLoading: purging}] = usePurgeLibraryTrashMutation()
+  const {data: librarySettings} = useGetLibrarySettingsQuery()
+  const [updateSettings, {isLoading: savingRetention}] =
+    useUpdateLibrarySettingsMutation()
+  const [retentionDays, setRetentionDays] = useState<number | string>(30)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (librarySettings?.trash_retention_days != null) {
+      setRetentionDays(librarySettings.trash_retention_days)
+    }
+  }, [librarySettings?.trash_retention_days])
+
+  const handleSaveRetention = async () => {
+    const value =
+      typeof retentionDays === "string"
+        ? parseInt(retentionDays, 10)
+        : retentionDays
+    if (!Number.isFinite(value) || value < 1) {
+      notifications.show({
+        title: t("library.error"),
+        message: t("library.trash_retention_invalid"),
+        color: "red"
+      })
+      return
+    }
+    try {
+      await updateSettings({trash_retention_days: value}).unwrap()
+      notifications.show({
+        title: t("library.trash_retention_saved"),
+        message: "",
+        color: "green"
+      })
+    } catch {
+      notifications.show({
+        title: t("library.error"),
+        message: "",
+        color: "red"
+      })
+    }
+  }
 
   const items = data?.items ?? []
   const numPages = data?.num_pages ?? 1
@@ -280,6 +347,36 @@ function TrashPanel() {
 
   return (
     <Stack>
+      {isSuperuser ? (
+        <Paper withBorder p="sm">
+          <Stack gap="xs">
+            <Text size="sm" c="dimmed">
+              {t("library.trash_retention_help")}
+            </Text>
+            <Group align="flex-end" wrap="wrap">
+              <NumberInput
+                label={t("library.trash_retention_label")}
+                description={t("library.trash_retention_description")}
+                min={1}
+                max={3650}
+                value={retentionDays}
+                onChange={setRetentionDays}
+                suffix={t("library.trash_retention_suffix")}
+                maw={220}
+              />
+              <Button loading={savingRetention} onClick={handleSaveRetention}>
+                {t("common.save")}
+              </Button>
+            </Group>
+          </Stack>
+        </Paper>
+      ) : librarySettings ? (
+        <Text size="sm" c="dimmed">
+          {t("library.trash_retention_hint", {
+            days: librarySettings.trash_retention_days
+          })}
+        </Text>
+      ) : null}
       <Group>
         <Button
           size="sm"
@@ -337,50 +434,52 @@ function TrashPanel() {
           {t("library.purge_forever")}
         </Button>
       </Group>
-      <Paper withBorder p="sm">
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>
-                <Checkbox
-                  checked={items.length > 0 && selected.size === items.length}
-                  indeterminate={
-                    selected.size > 0 && selected.size < items.length
-                  }
-                  onChange={toggleAll}
-                />
-              </Table.Th>
-              <Table.Th>{t("common.table.columns.name")}</Table.Th>
-              <Table.Th>{t("library.col_type")}</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {items.map(node => (
-              <Table.Tr key={node.id}>
-                <Table.Td>
+      <LibraryPanelScroll height={LIBRARY_TRASH_SCROLL_HEIGHT}>
+        <Paper withBorder p="sm">
+          <Table stickyHeader striped highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>
                   <Checkbox
-                    checked={selected.has(node.id)}
-                    onChange={() => toggle(node.id)}
+                    checked={items.length > 0 && selected.size === items.length}
+                    indeterminate={
+                      selected.size > 0 && selected.size < items.length
+                    }
+                    onChange={toggleAll}
                   />
-                </Table.Td>
-                <Table.Td>
-                  <Anchor component={Link} to={openHref(node.ctype, node.id)}>
-                    {node.title}
-                  </Anchor>
-                </Table.Td>
-                <Table.Td>
-                  {resolveTypeLabel(node.ctype, node.title, t)}
-                </Table.Td>
+                </Table.Th>
+                <Table.Th>{t("common.table.columns.name")}</Table.Th>
+                <Table.Th>{t("library.col_type")}</Table.Th>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
-        {items.length === 0 ? (
-          <Text c="dimmed" mt="sm">
-            {t("library.empty_trash")}
-          </Text>
-        ) : null}
-      </Paper>
+            </Table.Thead>
+            <Table.Tbody>
+              {items.map(node => (
+                <Table.Tr key={node.id}>
+                  <Table.Td>
+                    <Checkbox
+                      checked={selected.has(node.id)}
+                      onChange={() => toggle(node.id)}
+                    />
+                  </Table.Td>
+                  <Table.Td>
+                    <Anchor component={Link} to={openHref(node.ctype, node.id)}>
+                      {formatNodeDisplayTitle(node.title, node.ctype)}
+                    </Anchor>
+                  </Table.Td>
+                  <Table.Td>
+                    {resolveTypeLabel(node.ctype, node.title, t)}
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+          {items.length === 0 ? (
+            <Text c="dimmed" mt="sm">
+              {t("library.empty_trash")}
+            </Text>
+          ) : null}
+        </Paper>
+      </LibraryPanelScroll>
       {numPages > 1 ? (
         <Pagination value={page} onChange={setPage} total={numPages} mt="sm" />
       ) : null}

@@ -18,7 +18,7 @@ import {useNavigate} from "react-router-dom"
 import {useGetPortalRootQuery} from "@/features/portal/portalApiSlice"
 import {makePortalDocumentNavState} from "@/features/portal/portalNavState"
 import {selectLastPageSize} from "@/features/ui/uiSlice"
-import {equalUUIDs} from "@/utils"
+import {equalUUIDs, drop_extension} from "@/utils"
 import classes from "./uploaderItem.module.css"
 
 type Args = {
@@ -90,7 +90,7 @@ export default function UploaderItem({fileItem}: Args) {
             >
               <IconFolder /> {fileItem.target.title}
             </Group>
-            <Box className={classes.uploaderItemFile}>{fileItem.file_name}</Box>
+            <Box className={classes.uploaderItemFile}>{drop_extension(fileItem.file_name)}</Box>
           </Group>
         </List.Item>
       </Tooltip>
@@ -115,7 +115,7 @@ export default function UploaderItem({fileItem}: Args) {
           onClick={canOpenDocument ? onFileClick : undefined}
         >
           <Text w={150} truncate="end">
-            {fileItem.file_name}
+            {drop_extension(fileItem.file_name)}
           </Text>
         </Box>
         <Box>{fileItem.error}</Box>

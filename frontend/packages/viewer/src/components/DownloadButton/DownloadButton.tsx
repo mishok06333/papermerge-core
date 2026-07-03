@@ -26,7 +26,7 @@ export default function DownloadButton({
   versions
 }: Args) {
   const noVersions = !versions || versions.length == 0
-  const icon = <IconDownload stroke={1.4} />
+  const icon = <IconDownload size={18} stroke={1.4} />
 
   if (!i18nIsReady) {
     return (

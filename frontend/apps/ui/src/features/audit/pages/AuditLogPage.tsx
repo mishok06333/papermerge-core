@@ -17,6 +17,7 @@ import {useTranslation} from "react-i18next"
 import {useSelector} from "react-redux"
 
 import AccessForbidden from "@/pages/errors/AccessForbidden"
+import {formatApiDateTime} from "@/utils/formatDateTime"
 
 export default function AuditLogPage() {
   const {t} = useTranslation()
@@ -73,7 +74,7 @@ export default function AuditLogPage() {
               {rows.map(row => (
                 <Table.Tr key={row.id}>
                   <Table.Td>
-                    {new Date(row.created_at).toLocaleString()}
+                    {formatApiDateTime(row.created_at)}
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" style={{wordBreak: "break-all"}}>

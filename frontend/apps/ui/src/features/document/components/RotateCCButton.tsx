@@ -11,7 +11,7 @@ export default function RotateCCButton({onClick}: Args) {
   return (
     <Tooltip label={t("document.rotate_counter_clockwise")} withArrow>
       <ActionIcon size={"lg"} variant="default" onClick={onClick}>
-        <IconRotate stroke={1.4} />
+        <IconRotate size={18} stroke={1.4} />
       </ActionIcon>
     </Tooltip>
   )

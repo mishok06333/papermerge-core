@@ -17,7 +17,6 @@ from papermerge.core.types import PaginatedResponse
 from papermerge.core.features.nodes import events
 from papermerge.core.features.nodes.schema import DeleteDocumentsData
 from papermerge.core import orm
-from papermerge.core.config import get_settings
 from papermerge.core.features.library_ts.db import api as lib_ts_api
 from papermerge.core.features.tags.db.api import _user_group_ids_subquery
 from papermerge.core.features.users.db import api as users_dbapi
@@ -59,13 +58,33 @@ def _folder_ownership_filter(stmt, user_id: UUID | None, group_id: UUID | None):
     return node_ownership_filter(stmt, user_id, group_id)
 
 
-def _trash_visibility_filter(user_id: UUID):
-    """Nodes in trash the user may see: owned directly or via group membership."""
+async def _trash_visibility_filter(db_session: AsyncSession, user_id: UUID):
+    """Nodes in trash the user may see: owned, group-owned, or portal-managed."""
+    from papermerge.core.db.common import _user_has_any_portal_perm_via_account_roles
+    from papermerge.core.features.auth import scopes as auth_scopes
+    from papermerge.core.features.portal.db import api as portal_dbapi
+
     user_group_subq = _user_group_ids_subquery(user_id)
-    return or_(
+    clauses = [
         orm.Node.user_id == user_id,
         orm.Node.group_id.in_(user_group_subq),
-    )
+    ]
+    root_id = await portal_dbapi.get_portal_root_id(db_session)
+    if root_id is not None and await _user_has_any_portal_perm_via_account_roles(
+        db_session,
+        user_id,
+        auth_scopes.PORTAL_VIEW,
+        auth_scopes.PORTAL_DOCUMENT_DELETE,
+        auth_scopes.PORTAL_SECTION_DELETE,
+        auth_scopes.PORTAL_DOCUMENT_UPDATE,
+        auth_scopes.PORTAL_SECTION_UPDATE,
+    ):
+        portal_ids = await portal_dbapi.get_portal_subtree_node_ids(
+            db_session, root_id
+        )
+        if portal_ids:
+            clauses.append(orm.Node.id.in_(portal_ids))
+    return or_(*clauses)
 
 
 async def _user_can_manage_trashed_node(
@@ -73,13 +92,31 @@ async def _user_can_manage_trashed_node(
 ) -> bool:
     if node.deleted_at is None:
         return False
+    user = await db_session.get(orm.User, user_id)
+    if user is not None and user.is_superuser:
+        return True
     if node.user_id == user_id:
         return True
-    if node.group_id is not None:
-        return await users_dbapi.user_belongs_to(
-            db_session, group_id=node.group_id, user_id=user_id
+    if node.group_id is not None and await users_dbapi.user_belongs_to(
+        db_session, group_id=node.group_id, user_id=user_id
+    ):
+        return True
+    from papermerge.core.db.common import _user_has_any_portal_perm_via_account_roles
+    from papermerge.core.features.auth import scopes as auth_scopes
+    from papermerge.core.features.portal.db import api as portal_dbapi
+
+    root_id = await portal_dbapi.get_portal_root_id(db_session)
+    if root_id is None or not await portal_dbapi.is_node_under_portal_root(
+        db_session, node.id, root_id
+    ):
+        return False
+    if node.ctype == "folder":
+        return await _user_has_any_portal_perm_via_account_roles(
+            db_session, user_id, auth_scopes.PORTAL_SECTION_DELETE
         )
-    return False
+    return await _user_has_any_portal_perm_via_account_roles(
+        db_session, user_id, auth_scopes.PORTAL_DOCUMENT_DELETE
+    )
 
 
 def _node_file_extension_expr():
@@ -453,52 +490,19 @@ async def delete_nodes(
         item[0] for item in await get_descendants(db_session, node_ids=node_ids)
     ]
 
-    settings = get_settings()
-    if settings.papermerge__main__soft_delete:
-        now = datetime.utcnow()
-        try:
-            stmt = (
-                update(orm.Node)
-                .where(orm.Node.id.in_(all_ids_to_be_deleted))
-                .values(deleted_at=now)
-            )
-            await db_session.execute(stmt)
-            for nid in all_ids_to_be_deleted:
-                await lib_ts_api.add_audit(
-                    db_session,
-                    user_id=user_id,
-                    action="node_soft_delete",
-                    resource_type="node",
-                    resource_id=nid,
-                )
-            await db_session.commit()
-        except Exception as e:
-            error = schema.Error(messages=[str(e)])
-            return error
-        return None
-
-    delete_details = await prepare_documents_s3_data_deletion(
-        db_session, all_ids_to_be_deleted
-    )
-
-    stmt = delete(orm.Node).where(orm.Node.id.in_(all_ids_to_be_deleted))
-
-    # This second delete statement - is extra hack for Sqlite DB
-    # For some reason, the (Polymorphic?) cascading does not work
-    # in Sqlite, so here it is required to manually delete associated
-    # custom fields
-    sqlite_hack_stmt = delete(orm.CustomFieldValue).where(
-        orm.CustomFieldValue.document_id.in_(all_ids_to_be_deleted)
-    )
-
+    now = datetime.utcnow()
     try:
+        stmt = (
+            update(orm.Node)
+            .where(orm.Node.id.in_(all_ids_to_be_deleted))
+            .values(deleted_at=now)
+        )
         await db_session.execute(stmt)
-        await db_session.execute(sqlite_hack_stmt)
         for nid in all_ids_to_be_deleted:
             await lib_ts_api.add_audit(
                 db_session,
                 user_id=user_id,
-                action="node_hard_delete",
+                action="node_soft_delete",
                 resource_type="node",
                 resource_id=nid,
             )
@@ -506,8 +510,6 @@ async def delete_nodes(
     except Exception as e:
         error = schema.Error(messages=[str(e)])
         return error
-
-    events.delete_documents_s3_data(delete_details)
     return None
 
 
@@ -592,17 +594,18 @@ async def list_trash_nodes(
     """Nodes soft-deleted and owned by user."""
     loader_opt = selectin_polymorphic(orm.Node, [Folder, orm.Document])
     offset = (page_number - 1) * page_size
+    visibility = await _trash_visibility_filter(db_session, user_id)
     count_stmt = (
         select(func.count())
         .select_from(orm.Node)
         .where(
-            _trash_visibility_filter(user_id),
+            visibility,
             orm.Node.deleted_at.is_not(None),
         )
     )
     total = await db_session.scalar(count_stmt)
     base = select(orm.Node).where(
-        _trash_visibility_filter(user_id),
+        visibility,
         orm.Node.deleted_at.is_not(None),
     )
     stmt = (
@@ -696,3 +699,36 @@ async def permanent_delete_trashed_nodes(
         return schema.Error(messages=[str(e)])
     events.delete_documents_s3_data(delete_details)
     return None
+
+
+async def hard_delete_nodes_system(
+    db_session: AsyncSession, node_ids: list[UUID]
+) -> list[UUID]:
+    """Permanently remove nodes (auto-purge); no per-user permission check."""
+    if not node_ids:
+        return []
+    all_ids = list(
+        {
+            item[0]
+            for item in await get_descendants(db_session, node_ids=node_ids)
+        }
+    )
+    delete_details = await prepare_documents_s3_data_deletion(db_session, all_ids)
+    stmt_del = delete(orm.Node).where(orm.Node.id.in_(all_ids))
+    sqlite_hack_stmt = delete(orm.CustomFieldValue).where(
+        orm.CustomFieldValue.document_id.in_(all_ids)
+    )
+    await db_session.execute(stmt_del)
+    await db_session.execute(sqlite_hack_stmt)
+    for nid in all_ids:
+        await lib_ts_api.add_audit(
+            db_session,
+            user_id=None,
+            action="node_purge",
+            resource_type="node",
+            resource_id=nid,
+            detail="auto-purge",
+        )
+    await db_session.commit()
+    events.delete_documents_s3_data(delete_details)
+    return all_ids

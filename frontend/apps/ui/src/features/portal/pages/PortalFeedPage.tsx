@@ -13,6 +13,8 @@ import {makePortalDocumentNavState} from "@/features/portal/portalNavState"
 import {PORTAL_FEED_MANAGE, PORTAL_FEED_VIEW, PORTAL_VIEW} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {UserDetails} from "@/types"
+import {formatApiDateTime} from "@/utils/formatDateTime"
+import {drop_extension} from "@/utils"
 import {
   Anchor,
   Button,
@@ -183,7 +185,7 @@ export default function PortalFeedPage() {
                 <Stack gap={6} style={{flex: 1, minWidth: 0}}>
                   <Title order={4}>{item.title}</Title>
                   <Text size="sm" c="dimmed">
-                    {new Date(item.created_at).toLocaleString()}
+                    {formatApiDateTime(item.created_at)}
                     {item.author_username
                       ? ` · ${t("portal.feed_author")}: ${item.author_username}`
                       : null}
@@ -206,11 +208,11 @@ export default function PortalFeedPage() {
                               state={documentNavState}
                               size="sm"
                             >
-                              {att.title}
+                              {drop_extension(att.title)}
                             </Anchor>
                           ) : (
                             <Text key={att.node_id} size="sm">
-                              {att.title}
+                              {drop_extension(att.title)}
                             </Text>
                           )
                         )}

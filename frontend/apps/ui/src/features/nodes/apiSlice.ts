@@ -1,4 +1,5 @@
 import {apiSlice} from "@/features/api/slice"
+import {portalNodesInvalidationTags} from "@/features/portal/portalApiSlice"
 import type {
   ColoredTag,
   FolderType,
@@ -161,7 +162,10 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
         method: "POST",
         body: folder
       }),
-      invalidatesTags: ["Node"]
+      invalidatesTags: (_result, _error, folder) => [
+        "Node",
+        ...portalNodesInvalidationTags(folder.parent_id)
+      ]
     }),
     renameFolder: builder.mutation<NodeType, RenameFolderType>({
       query: node => ({
@@ -202,6 +206,8 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
           return {type: "Node", id: id}
         }),
         {type: "LibraryTrash", id: "LIST"},
+        {type: "LibraryRecent", id: "LIST"},
+        ...portalNodesInvalidationTags(),
         "Folder"
       ]
     }),
@@ -225,7 +231,9 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
         return [
           ...invalidatedDocs,
           {type: "Node", id: arg.body.target_id},
-          {type: "Node", id: arg.sourceFolderID}
+          {type: "Node", id: arg.sourceFolderID},
+          ...portalNodesInvalidationTags(arg.body.target_id),
+          ...portalNodesInvalidationTags(arg.sourceFolderID)
         ]
       }
     }),

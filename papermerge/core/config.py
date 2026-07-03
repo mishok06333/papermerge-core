@@ -30,11 +30,11 @@ class Settings(BaseSettings):
     )
     papermerge__main__soft_delete: bool = Field(
         default=True,
-        description="Soft-delete nodes to trash instead of removing rows.",
+        description="Deprecated: nodes are always soft-deleted to trash.",
     )
     papermerge__main__trash_retention_days: int = Field(
         default=30,
-        description="Retention window before permanent purge (operations).",
+        description="Default retention window (days) before auto-purge; overridden by library_settings.",
     )
     papermerge__main__office_web_viewer_base_url: str | None = Field(
         default=None,
@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     papermerge__main__cf_sign_url_private_key: str | None = None
     papermerge__main__cf_sign_url_key_id: str | None = None
     papermerge__main__cf_domain: str | None = None
-    papermerge__main__timezone: str = 'Europe/Berlin'
+    papermerge__main__timezone: str = 'Asia/Vladivostok'
     papermerge__main__cache_enabled: bool = False
     papermerge__database__url: str = "sqlite:////db/db.sqlite3"
     papermerge__redis__url: str | None = None

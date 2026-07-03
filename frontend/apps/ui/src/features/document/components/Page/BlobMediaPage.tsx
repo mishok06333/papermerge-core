@@ -8,6 +8,8 @@ import {Box, Loader, Stack, Text} from "@mantine/core"
 import {useEffect, useState, type ReactNode} from "react"
 import {useTranslation} from "react-i18next"
 
+import {rtfToPlainText} from "@/utils/rtfToPlainText"
+
 import classes from "./BlobMediaPage.module.css"
 import {TextStandalonePreview} from "./TextStandalonePreview"
 
@@ -73,7 +75,7 @@ export default function BlobMediaPage({
       return
     }
 
-    if (category === "text" || category === "html") {
+    if (category === "text" || category === "html" || category === "rtf") {
       setPending(true)
       fetch(objectURL)
         .then(r => {
@@ -85,6 +87,8 @@ export default function BlobMediaPage({
         .then(body => {
           if (category === "html") {
             setHtmlContent(body)
+          } else if (category === "rtf") {
+            setTextContent(rtfToPlainText(body))
           } else {
             setTextContent(body)
           }
@@ -118,7 +122,7 @@ export default function BlobMediaPage({
     )
   }
 
-  if (pending && (category === "text" || category === "html")) {
+  if (pending && (category === "text" || category === "html" || category === "rtf")) {
     return (
       <PageChrome layout={layout} pageNumber={pageNumber}>
         <Loader />
@@ -244,7 +248,7 @@ function BlobInner({
     return <img alt="" src={objectURL} style={imageStyle} />
   }
 
-  if (category === "text" && textContent !== null) {
+  if ((category === "text" || category === "rtf") && textContent !== null) {
     return (
       <TextStandalonePreview mode={embedScroll ? "embed" : "pane"}>
         {textContent}

@@ -247,8 +247,17 @@ function imageEncode(arrayBuffer: ArrayBuffer, mimetype: MimeType) {
   return "data:" + mimetype + ";base64," + b64encoded
 }
 
+/** Display name for a file: stem without the last extension segment. */
 function drop_extension(value: string): string {
-  return value.substring(0, value.lastIndexOf("."))
+  const dot = value.lastIndexOf(".")
+  if (dot <= 0) {
+    return value
+  }
+  return value.slice(0, dot)
+}
+
+function formatNodeDisplayTitle(title: string, ctype: string): string {
+  return ctype === "document" ? drop_extension(title) : title
 }
 
 function otherPanel(mode: PanelMode): PanelMode {
@@ -291,6 +300,7 @@ function langCodes2ComboboxData(langCodes: string): ComboboxData {
 export {
   contains_every,
   drop_extension,
+  formatNodeDisplayTitle,
   getCurrentUser,
   imageEncode,
   langCodes2ComboboxData,

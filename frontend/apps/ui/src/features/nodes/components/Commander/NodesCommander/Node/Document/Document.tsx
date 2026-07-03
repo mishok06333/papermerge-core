@@ -15,6 +15,7 @@ import Thumbnail from "@/components/NodeThumbnail/Thumbnail"
 import Tags from "@/features/nodes/components/Commander/NodesCommander/Node/Tags"
 import NodeVisibilityIcon from "@/features/nodes/components/Commander/NodesCommander/Node/NodeVisibilityIcon"
 import type {NodeType, PanelMode} from "@/types"
+import {formatNodeDisplayTitle} from "@/utils"
 import classes from "./Document.module.scss"
 
 import PanelContext from "@/contexts/PanelContext"
@@ -85,7 +86,7 @@ export default function Document({
         <Tags names={tagNames} />
         <div className={classes.title}>
           <NodeVisibilityIcon summary={node.visibility_summary} />
-          <span>{node.title}</span>
+          <span>{formatNodeDisplayTitle(node.title, node.ctype)}</span>
         </div>
       </a>
     </Stack>

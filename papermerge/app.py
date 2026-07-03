@@ -45,6 +45,9 @@ from papermerge.core.features.library_ts.router import router as library_ts_rout
 
 settings = get_settings()
 prefix = settings.papermerge__main__api_prefix
+_cors_origins = settings.cors_origins_list()
+# Browsers reject Access-Control-Allow-Origin: * together with credentials.
+_cors_allow_credentials = "*" not in _cors_origins
 
 
 @asynccontextmanager
@@ -69,8 +72,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list(),
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=[

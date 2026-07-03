@@ -15,6 +15,7 @@ from papermerge.core.db.engine import get_db
 from papermerge.core.features.auth import get_current_user, scopes
 from papermerge.core.features.library_ts import schema as lib_schema
 from papermerge.core.features.library_ts.db import api as lib_api
+from papermerge.core.features.library_ts.db import settings_api as library_settings_api
 from papermerge.core.features.library_ts.msp_folder_template import (
     create_msp_folder_tree,
 )
@@ -561,3 +562,28 @@ async def library_stats(
     data = await lib_api.stats_summary(db_session)
     await db_session.commit()
     return lib_schema.LibraryStatsOut(**data)
+
+
+@router.get("/settings", response_model=lib_schema.LibrarySettingsOut)
+@router.get("/settings/", response_model=lib_schema.LibrarySettingsOut)
+async def get_library_settings(
+    user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.NODE_VIEW])],
+    db_session: AsyncSession = Depends(get_db),
+):
+    days = await library_settings_api.get_trash_retention_days(db_session)
+    return lib_schema.LibrarySettingsOut(trash_retention_days=days)
+
+
+@router.patch("/settings", response_model=lib_schema.LibrarySettingsOut)
+@router.patch("/settings/", response_model=lib_schema.LibrarySettingsOut)
+async def update_library_settings(
+    body: lib_schema.LibrarySettingsUpdate,
+    user: Annotated[schema.User, Security(get_current_user, scopes=[scopes.USER_VIEW])],
+    db_session: AsyncSession = Depends(get_db),
+):
+    if not user.is_superuser:
+        raise exc.HTTP403Forbidden()
+    days = await library_settings_api.set_trash_retention_days(
+        db_session, body.trash_retention_days
+    )
+    return lib_schema.LibrarySettingsOut(trash_retention_days=days)

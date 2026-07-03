@@ -12,7 +12,8 @@ import {
 
 } from "@/features/ui/uiSlice"
 
-import {Group, Switch} from "@mantine/core"
+import {Button, Group, Switch} from "@mantine/core"
+import {Link} from "react-router-dom"
 
 import {useViewportSize} from "@mantine/hooks"
 
@@ -85,6 +86,10 @@ type FolderNodeActionsProps = {
 
   homeFolderTreeAvailable?: boolean
 
+  /** When set, show a link back to the portal catalog view of this folder. */
+
+  portalCatalogFolderId?: string
+
   commanderWriteContext: CommanderWriteContext
 
 }
@@ -94,6 +99,8 @@ type FolderNodeActionsProps = {
 export default function FolderNodeActions({
 
   homeFolderTreeAvailable = false,
+
+  portalCatalogFolderId,
 
   commanderWriteContext
 
@@ -242,6 +249,26 @@ export default function FolderNodeActions({
           />
 
         )}
+
+        {portalCatalogFolderId ? (
+
+          <Button
+
+            component={Link}
+
+            to={`/portal/folder/${portalCatalogFolderId}`}
+
+            size="xs"
+
+            variant="light"
+
+          >
+
+            {t("portal.browse_in_catalog")}
+
+          </Button>
+
+        ) : null}
 
         <SortMenu />
 

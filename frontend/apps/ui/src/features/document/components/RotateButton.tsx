@@ -11,7 +11,7 @@ export default function RotateButton({onClick}: Args) {
   return (
     <Tooltip label={t("document.rotate_clockwise")} withArrow>
       <ActionIcon size={"lg"} variant="default" onClick={onClick}>
-        <IconRotateClockwise stroke={1.4} />
+        <IconRotateClockwise size={18} stroke={1.4} />
       </ActionIcon>
     </Tooltip>
   )

@@ -56,6 +56,7 @@ export const apiSlice = createApi({
     "LibraryRating",
     "LibraryNotifications",
     "AuditLog",
+    "LibrarySettings",
     "CitizenCategory",
     "CitizenCategoryFolders",
     "FolderCitizenCategories"

@@ -4,6 +4,7 @@ import {useDeleteNodesMutation} from "@/features/nodes/apiSlice"
 import {Button, Container, Group, Loader, Modal, Space} from "@mantine/core"
 
 import type {NodeType} from "@/types"
+import {formatNodeDisplayTitle} from "@/utils"
 import {useTranslation} from "react-i18next"
 
 type DeleteNodesModalArgs = {
@@ -23,7 +24,9 @@ export default function DeleteNodesModal({
   const {t} = useTranslation()
   const [deletedNodes, {isLoading}] = useDeleteNodesMutation()
   const [errorMessage, setErrorMessage] = useState("")
-  const nodeTitles = nodes.map(g => g.title).join(",")
+  const nodeTitles = nodes
+    .map(g => formatNodeDisplayTitle(g.title, g.ctype))
+    .join(",")
 
   const localSubmit = async () => {
     await deletedNodes(nodes.map(n => n.id))

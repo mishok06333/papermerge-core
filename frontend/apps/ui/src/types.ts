@@ -211,6 +211,7 @@ export type Sorting = {
 export interface EditEntityTitle {
   id: string
   title: string
+  ctype?: string
 }
 
 export type Paginated<T> = {

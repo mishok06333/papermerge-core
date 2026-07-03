@@ -16,10 +16,12 @@ const THUMB_MAX_PX = 130
 async function sectionToObjectURL(el: HTMLElement): Promise<string | null> {
   const w = Math.max(1, el.scrollWidth || el.offsetWidth)
   const scale = Math.min(1, THUMB_MAX_PX / w)
+  const view = el.ownerDocument.defaultView ?? window
   const canvas = await html2canvas(el, {
     scale,
     useCORS: true,
-    logging: false
+    logging: false,
+    window: view
   })
   if (!canvas.width || !canvas.height) {
     return null

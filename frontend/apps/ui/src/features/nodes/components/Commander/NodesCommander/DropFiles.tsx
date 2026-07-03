@@ -13,6 +13,7 @@ import type {CSSProperties} from "react"
 
 import {useAppDispatch} from "@/app/hooks"
 import {apiSlice} from "@/features/api/slice"
+import {portalNodesInvalidationTags} from "@/features/portal/portalApiSlice"
 import {uploadFile} from "@/features/files/filesSlice"
 
 import Error from "@/components/Error"
@@ -104,7 +105,12 @@ export const DropFilesModal = ({
         const newNodeID = newlyCreatedNode.source?.id
         dispatch(generateThumbnail({node_id: newNodeID, file}))
       }
-      dispatch(apiSlice.util.invalidateTags(["Node"]))
+      dispatch(
+        apiSlice.util.invalidateTags([
+          "Node",
+          ...portalNodesInvalidationTags(target.id)
+        ])
+      )
     }
 
     onSubmit()

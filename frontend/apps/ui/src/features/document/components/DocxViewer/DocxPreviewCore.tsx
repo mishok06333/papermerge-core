@@ -1,9 +1,16 @@
-import {Box, Loader, ScrollArea, Text} from "@mantine/core"
+import {Loader, ScrollArea, Text} from "@mantine/core"
 import {renderAsync} from "docx-preview"
 import {useEffect, useRef, useState} from "react"
 import {useTranslation} from "react-i18next"
 
+import {
+  docxViewerBaseCss,
+  normalizeDocxPageLayout,
+  resizeDocxIframeToContent
+} from "./docxPageLayout"
 import {DOCX_VIEWER_PAGE_CLASS} from "./docxViewerConstants"
+
+import classes from "./DocxPreview.module.css"
 
 interface Props {
   objectURL: string
@@ -12,7 +19,27 @@ interface Props {
   /** docx-preview root class (sections are `section.{previewClassName}`). */
   previewClassName: string
   wrapClassName?: string
-  onPagesReady?: (count: number, sections: HTMLElement[]) => void
+  onPagesReady?: (
+    count: number,
+    sections: HTMLElement[],
+    queryRoot: Document
+  ) => void
+}
+
+function prepareIframeDocument(
+  doc: Document,
+  previewClassName: string
+): HTMLElement {
+  doc.open()
+  doc.write("<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body></body></html>")
+  doc.close()
+
+  const baseStyle = doc.createElement("style")
+  baseStyle.setAttribute("data-docx-viewer-base", "")
+  baseStyle.textContent = docxViewerBaseCss(previewClassName)
+  doc.head.appendChild(baseStyle)
+
+  return doc.body
 }
 
 export default function DocxPreviewCore({
@@ -23,15 +50,15 @@ export default function DocxPreviewCore({
   onPagesReady
 }: Props) {
   const {t} = useTranslation()
-  const containerRef = useRef<HTMLDivElement>(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
   const onReadyRef = useRef(onPagesReady)
   onReadyRef.current = onPagesReady
   const [pending, setPending] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const el = containerRef.current
-    if (!el) {
+    const iframe = iframeRef.current
+    if (!iframe) {
       return
     }
     let cancelled = false
@@ -48,54 +75,41 @@ export default function DocxPreviewCore({
         if (cancelled) {
           return
         }
-        el.innerHTML = ""
-        await renderAsync(buf, el, undefined, {
+
+        const doc = iframe.contentDocument
+        if (!doc) {
+          throw new Error("iframe document unavailable")
+        }
+
+        const body = prepareIframeDocument(doc, previewClassName)
+
+        await renderAsync(buf, body, doc.head, {
           className: previewClassName,
           inWrapper: true,
           breakPages: true,
-          ignoreFonts: false
+          ignoreFonts: false,
+          ignoreWidth: false,
+          ignoreHeight: false,
+          experimental: true,
+          renderAltChunks: true
         })
         if (cancelled) {
           return
         }
-        const wrapper =
-          el.querySelector<HTMLElement>(`.${previewClassName}-wrapper`) ?? el
 
-        const directSections = Array.from(wrapper.children).filter(
-          (n): n is HTMLElement =>
-            n.tagName === "SECTION" && n.classList.contains(previewClassName)
-        )
-
-        let pageRoots: HTMLElement[] =
-          directSections.length > 0
-            ? directSections
-            : Array.from(
-                wrapper.querySelectorAll<HTMLElement>(
-                  `section.${previewClassName}`
-                )
-              )
-
-        if (pageRoots.length === 0) {
-          pageRoots = Array.from(wrapper.children).filter(
-            (n): n is HTMLElement => n.tagName === "SECTION"
-          )
-        }
-
-        if (pageRoots.length === 0) {
-          pageRoots = Array.from(wrapper.querySelectorAll("section"))
-        }
-
-        if (pageRoots.length === 0) {
-          pageRoots = [wrapper]
-        }
-
+        const pageRoots = normalizeDocxPageLayout(doc, previewClassName)
         pageRoots.forEach(node => node.classList.add(DOCX_VIEWER_PAGE_CLASS))
+        resizeDocxIframeToContent(iframe)
+
         const count = Math.max(1, pageRoots.length)
-        onReadyRef.current?.(count, pageRoots)
+        onReadyRef.current?.(count, pageRoots, doc)
         setPending(false)
       } catch {
         if (!cancelled) {
-          onReadyRef.current?.(1, [])
+          const doc = iframe.contentDocument
+          if (doc) {
+            onReadyRef.current?.(1, [], doc)
+          }
           setError(t("blobPreview.docxError"))
           setPending(false)
         }
@@ -105,27 +119,39 @@ export default function DocxPreviewCore({
     void run()
     return () => {
       cancelled = true
-      el.innerHTML = ""
+      const doc = iframe.contentDocument
+      if (doc) {
+        doc.open()
+        doc.close()
+      }
     }
   }, [objectURL, previewClassName, t])
+
+  useEffect(() => {
+    const iframe = iframeRef.current
+    if (!iframe || pending) {
+      return
+    }
+
+    const onResize = () => resizeDocxIframeToContent(iframe)
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [pending, objectURL])
 
   if (error) {
     return <Text c="red">{error}</Text>
   }
 
   const inner = (
-    <Box
-      className={wrapClassName}
-      style={{
-        width: "100%",
-        maxWidth: "100%",
-        margin: "0 auto",
-        boxSizing: "border-box"
-      }}
-    >
-      {pending && <Loader />}
-      <div ref={containerRef} />
-    </Box>
+    <div className={wrapClassName}>
+      {pending && <Loader className={classes.docxLoader} />}
+      <iframe
+        ref={iframeRef}
+        title="docx-preview"
+        className={classes.docxFrame}
+        style={{visibility: pending ? "hidden" : "visible"}}
+      />
+    </div>
   )
 
   if (embedScroll) {

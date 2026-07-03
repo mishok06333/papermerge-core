@@ -1,11 +1,11 @@
 import {useAppSelector} from "@/app/hooks"
 import useCurrentDocVer from "@/features/document/hooks/useCurrentDocVer"
 import {selectBestImageByPageId} from "@/features/document/store/selectors"
-import {Loader, Stack} from "@mantine/core"
+import {Loader} from "@mantine/core"
 import {PageList} from "viewer"
 import {useMemo} from "react"
 
-import blobPageClasses from "../Page/BlobMediaPage.module.css"
+import docxClasses from "./DocxPreview.module.css"
 import DocxPreviewCore from "./DocxPreviewCore"
 import {useDocxViewerScroll} from "./DocxScrollContext"
 import {DOCX_VIEWER_CLASS} from "./docxViewerConstants"
@@ -28,21 +28,15 @@ export default function DocxPageColumn() {
   }
 
   const pageBody = (
-    <Stack
-      className="page"
-      justify="flex-start"
-      align="stretch"
-      gap="md"
-      w="100%"
-    >
+    <div className={docxClasses.docxPageSlot}>
       <DocxPreviewCore
         objectURL={objectURL}
         embedScroll={false}
         previewClassName={DOCX_VIEWER_CLASS}
-        wrapClassName={blobPageClasses.docxWrap}
+        wrapClassName={docxClasses.docxHost}
         onPagesReady={setPageMeta}
       />
-    </Stack>
+    </div>
   )
 
   return (

@@ -6,6 +6,7 @@ import {makePortalDocumentNavState} from "@/features/portal/portalNavState"
 import {COMMANDER_VIEW} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {BreadcrumbType, NodeType, UserDetails} from "@/types"
+import {formatNodeDisplayTitle} from "@/utils"
 import {
   homeFolderTreeToggled,
   selectHomeFolderTreeOpen,
@@ -231,7 +232,7 @@ export default function PortalFolderPage() {
                           )}
                         </ThemeIcon>
                         <Text fw={500} size="md" truncate="end">
-                          {row.title}
+                          {formatNodeDisplayTitle(row.title, row.ctype)}
                         </Text>
                       </Group>
                       {isFolder ? (

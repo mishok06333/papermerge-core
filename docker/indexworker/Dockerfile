@@ -1,9 +1,14 @@
 FROM python:3.13-slim
 
+ENV TZ=Asia/Vladivostok
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libpq-dev \
-        curl && \
+        curl \
+        tzdata && \
+    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    echo "${TZ}" > /etc/timezone && \
     rm -rf /var/lib/apt/lists/*
 
 ENV CORE_APP=/core_app

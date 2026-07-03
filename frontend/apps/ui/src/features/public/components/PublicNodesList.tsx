@@ -1,6 +1,7 @@
 import {SimpleGrid, Stack, Text, UnstyledButton} from "@mantine/core"
 import {IconFolder, IconWorld} from "@tabler/icons-react"
 import type {NodeType} from "@/types"
+import {formatNodeDisplayTitle} from "@/utils"
 
 type Props = {
   items: NodeType[]
@@ -42,7 +43,7 @@ export default function PublicNodesList({
             ) : node.thumbnail_url ? (
               <img
                 src={node.thumbnail_url}
-                alt={node.title}
+                alt={formatNodeDisplayTitle(node.title, node.ctype)}
                 style={{width: 80, height: 100, objectFit: "cover"}}
               />
             ) : (
@@ -51,7 +52,7 @@ export default function PublicNodesList({
               </Text>
             )}
             <Text size="sm" lineClamp={2} ta="center">
-              {node.title}
+              {formatNodeDisplayTitle(node.title, node.ctype)}
               <VisibilityBadge summary={node.visibility_summary} />
             </Text>
           </Stack>

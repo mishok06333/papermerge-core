@@ -8,6 +8,7 @@ import {Group} from "@mantine/core"
 import {useViewportSize} from "@mantine/hooks"
 import {useContext, useEffect, useRef} from "react"
 
+import DocumentDetailsToggle from "@/components/document/DocumentDetailsToggle"
 import DuplicatePanelButton from "@/components/DualPanel/DuplicatePanelButton"
 import LibraryFavoriteToggle from "@/features/library/components/LibraryFavoriteToggle"
 import DownloadButton from "@/features/document/components/DownloadButton"
@@ -77,6 +78,7 @@ export default function ActionButtons({
         )}
       </Group>
       <Group>
+        <DocumentDetailsToggle />
         {showCommanderControls && <DuplicatePanelButton />}
         {showCommanderControls && <ToggleSecondaryPanel />}
       </Group>

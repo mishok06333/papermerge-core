@@ -17,6 +17,7 @@ import {
 } from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {User} from "@/types"
+import {formatApiDateTime} from "@/utils/formatDateTime"
 import {
   Button,
   Divider,
@@ -164,7 +165,7 @@ export default function DocumentLibraryPanel({documentId}: Props) {
               <Text size="sm">{c.body}</Text>
             )}
             <Text size="xs" c="dimmed">
-              {c.author} - {new Date(c.created_at).toLocaleString()}
+              {c.author} - {formatApiDateTime(c.created_at)}
             </Text>
             {canEditComment || canDeleteComment ? (
               <Group gap="xs">

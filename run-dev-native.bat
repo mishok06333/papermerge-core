@@ -28,15 +28,32 @@ REM Local auth bypass for debugging only.
 set "PAPERMERGE__DEV__AUTH_BYPASS_ENABLED=true"
 set "PAPERMERGE__DEV__AUTH_BYPASS_USERNAME=admin"
 
-REM Frontend points to native backend.
-set "VITE_BASE_URL=http://127.0.0.1:%DEV_BE_PORT%"
-set "VITE_WS_URL=ws://127.0.0.1:%DEV_BE_PORT%/ws"
+REM Leave VITE_BASE_URL unset so the UI calls relative /api and /ws via the Vite
+REM dev proxy (same origin as :15173 — no browser CORS preflight).
 
 echo Starting backend on http://127.0.0.1:%DEV_BE_PORT%
 start "papermerge-be-dev" cmd /k "cd /d ""%ROOT_DIR%"" && set ""PAPERMERGE__DATABASE__URL=%PAPERMERGE__DATABASE__URL%"" && set ""PAPERMERGE__REDIS__URL=%PAPERMERGE__REDIS__URL%"" && set ""PAPERMERGE__MAIN__MEDIA_ROOT=%PAPERMERGE__MAIN__MEDIA_ROOT%"" && set ""PAPERMERGE__MAIN__API_PREFIX=%PAPERMERGE__MAIN__API_PREFIX%"" && set ""PAPERMERGE__MAIN__CORS_ORIGINS=%PAPERMERGE__MAIN__CORS_ORIGINS%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_ENABLED=%PAPERMERGE__DEV__AUTH_BYPASS_ENABLED%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_USERNAME=%PAPERMERGE__DEV__AUTH_BYPASS_USERNAME%"" && set ""PAPERMERGE__SEARCH__URL=%PAPERMERGE__SEARCH__URL%"" && set ""PAPERMERGE__OCR__ENABLED=false"" && poetry env use 3.13 && poetry install -E pg && poetry run task migrate && poetry run paper-cli index-schema apply && poetry run task server --host 127.0.0.1 --port %DEV_BE_PORT%"
 
+echo Waiting for backend (migrations + poetry install may take a few minutes)...
+set /a WAIT_COUNT=0
+:wait_backend
+powershell -NoProfile -Command "try { $null = Invoke-WebRequest -Uri 'http://127.0.0.1:%DEV_BE_PORT%/api/version/' -UseBasicParsing -TimeoutSec 2; exit 0 } catch { exit 1 }" >nul 2>&1
+if %ERRORLEVEL%==0 goto backend_ready
+set /a WAIT_COUNT+=1
+if %WAIT_COUNT% GEQ 120 (
+  echo [warn] Backend not responding on port %DEV_BE_PORT% after 4 minutes.
+  echo        Check the papermerge-be-dev window for errors, then refresh the UI.
+  goto start_frontend
+)
+timeout /t 2 /nobreak >nul
+goto wait_backend
+:backend_ready
+echo Backend is ready.
+
+:start_frontend
+set "VITE_DEV_API_URL=http://127.0.0.1:%DEV_BE_PORT%"
 echo Starting frontend on http://127.0.0.1:%DEV_FE_PORT%
-start "papermerge-fe-dev" cmd /k "cd /d ""%ROOT_DIR%frontend"" && set ""VITE_BASE_URL=%VITE_BASE_URL%"" && set ""VITE_WS_URL=%VITE_WS_URL%"" && yarn workspace ui dev --host 127.0.0.1 --port %DEV_FE_PORT%"
+start "papermerge-fe-dev" cmd /k "cd /d ""%ROOT_DIR%frontend"" && set ""VITE_DEV_API_URL=%VITE_DEV_API_URL%"" && yarn workspace ui dev --host 127.0.0.1 --port %DEV_FE_PORT%"
 
 echo.
 echo Backend:  http://127.0.0.1:%DEV_BE_PORT%
@@ -51,5 +68,10 @@ echo   docker compose up -d db redis solr index_worker
 echo   docker compose exec index_worker poetry run paper-cli index index
 echo.
 echo Auth bypass is ON for this run only.
+echo.
+echo If you start the frontend manually (yarn workspace ui dev), ensure the native
+echo backend is already listening on port %DEV_BE_PORT%, or set:
+echo   VITE_DEV_API_URL=http://127.0.0.1:%DEV_BE_PORT%
+echo For docker app only: VITE_DEV_API_URL=http://127.0.0.1:12000
 
 endlocal

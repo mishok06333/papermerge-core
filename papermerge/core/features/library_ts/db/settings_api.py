@@ -19,6 +19,37 @@ async def get_library_settings_row(
     return (await db_session.scalars(stmt)).one_or_none()
 
 
+async def ensure_library_settings_row(db_session: AsyncSession) -> LibrarySettings:
+    row = await get_library_settings_row(db_session)
+    if row is not None:
+        return row
+    settings = get_settings()
+    row = LibrarySettings(
+        id=LIBRARY_SETTINGS_ROW_ID,
+        trash_retention_days=settings.papermerge__main__trash_retention_days,
+    )
+    db_session.add(row)
+    await db_session.flush()
+    return row
+
+
+async def get_trash_retention_days(db_session: AsyncSession) -> int:
+    settings = get_settings()
+    row = await get_library_settings_row(db_session)
+    if row is not None and row.trash_retention_days is not None:
+        return row.trash_retention_days
+    return settings.papermerge__main__trash_retention_days
+
+
+async def set_trash_retention_days(db_session: AsyncSession, days: int) -> int:
+    if days < 1:
+        raise ValueError("trash_retention_days must be at least 1")
+    row = await ensure_library_settings_row(db_session)
+    row.trash_retention_days = days
+    await db_session.commit()
+    return days
+
+
 async def get_catalog_root_id(db_session: AsyncSession) -> UUID | None:
     settings = get_settings()
     env_root = settings.papermerge__library__catalog_root_node_id

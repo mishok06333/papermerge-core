@@ -6,6 +6,7 @@ import {
 import {USER_ME} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
 import type {User} from "@/types"
+import {formatApiDateTime} from "@/utils/formatDateTime"
 import {
   Button,
   Group,
@@ -137,7 +138,7 @@ const NotificationsMenu: React.FC = () => {
                         {item.title}
                       </Text>
                       <Text size="xs" c="dimmed">
-                        {new Date(n.created_at).toLocaleString()}
+                        {formatApiDateTime(n.created_at)}
                       </Text>
                       {item.message ? (
                         <Text size="sm">{item.message}</Text>

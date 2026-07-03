@@ -74,6 +74,7 @@ ENV PAPERMERGE__MAIN__API_PREFIX=""
 ENV PAPERMERGE__OCR__LANG_CODES="deu,eng,rus"
 ENV PAPERMERGE__OCR__DEFAULT_LANG_CODE="rus"
 ENV PAPERMERGE__OCR__AUTOMATIC="false"
+ENV TZ=Asia/Vladivostok
 
 RUN set -eux; \
     attempts=0; max_attempts=5; \
@@ -86,7 +87,8 @@ RUN set -eux; \
             imagemagick \
             nginx \
             libpq-dev \
-            poppler-utils && \
+            poppler-utils \
+            tzdata && \
             apk upgrade --no-cache; then break; \
         fi; \
         attempts=$((attempts + 1)); \

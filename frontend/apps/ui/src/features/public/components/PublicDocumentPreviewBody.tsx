@@ -3,8 +3,9 @@ import {useEffect, useRef, useState} from "react"
 import {useTranslation} from "react-i18next"
 
 import DocxPreviewCore from "@/features/document/components/DocxViewer/DocxPreviewCore"
+import docxClasses from "@/features/document/components/DocxViewer/DocxPreview.module.css"
 import {DOCX_VIEWER_CLASS} from "@/features/document/components/DocxViewer/docxViewerConstants"
-import blobPageClasses from "@/features/document/components/Page/BlobMediaPage.module.css"
+import classes from "./PublicDocumentPreviewBody.module.css"
 import {TextStandalonePreview} from "@/features/document/components/Page/TextStandalonePreview"
 import {
   getBlobViewerCategory,
@@ -12,7 +13,7 @@ import {
   guessMimeTypeFromFileName
 } from "@/features/document/documentPreview"
 
-import classes from "./PublicDocumentPreviewBody.module.css"
+import {rtfToPlainText} from "@/utils/rtfToPlainText"
 
 type Props = {
   downloadUrl: string
@@ -103,7 +104,7 @@ export default function PublicDocumentPreviewBody({
   }, [])
 
   useEffect(() => {
-    if (!objectURL || (category !== "text" && category !== "html")) {
+    if (!objectURL || (category !== "text" && category !== "html" && category !== "rtf")) {
       return
     }
 
@@ -121,6 +122,8 @@ export default function PublicDocumentPreviewBody({
         }
         if (category === "html") {
           setHtmlContent(body)
+        } else if (category === "rtf") {
+          setTextContent(rtfToPlainText(body))
         } else {
           setTextContent(body)
         }
@@ -166,7 +169,7 @@ export default function PublicDocumentPreviewBody({
           objectURL={objectURL}
           embedScroll={false}
           previewClassName={DOCX_VIEWER_CLASS}
-          wrapClassName={blobPageClasses.docxWrap}
+          wrapClassName={docxClasses.docxHost}
         />
       </ScrollPane>
     )
@@ -205,6 +208,22 @@ export default function PublicDocumentPreviewBody({
   }
 
   if (category === "text" && textContent !== null) {
+    return (
+      <ScrollPane>
+        <TextStandalonePreview mode="pane">{textContent}</TextStandalonePreview>
+      </ScrollPane>
+    )
+  }
+
+  if (category === "rtf" && textContent === null) {
+    return (
+      <ScrollPane>
+        <Loader p="md" />
+      </ScrollPane>
+    )
+  }
+
+  if (category === "rtf" && textContent !== null) {
     return (
       <ScrollPane>
         <TextStandalonePreview mode="pane">{textContent}</TextStandalonePreview>

@@ -7,6 +7,8 @@ export type BlobViewerCategory =
   | "text"
   | "html"
   | "docx"
+  /** RTF: plain-text preview (formatting not preserved). */
+  | "rtf"
   /** Legacy binary Microsoft Word (.doc); not previewable in the browser. */
   | "word-doc"
   | "binary"
@@ -85,6 +87,8 @@ const TEXT_EXTENSIONS = new Set([
 const HTML_EXTENSIONS = new Set([".html", ".htm"])
 
 const DOCX_EXTENSIONS = new Set([".docx"])
+
+const RTF_EXTENSIONS = new Set([".rtf"])
 
 const LEGACY_WORD_DOC_EXTENSIONS = new Set([".doc"])
 
@@ -185,6 +189,7 @@ export function isBuiltinTextDocument(
     cat === "text" ||
     cat === "html" ||
     cat === "docx" ||
+    cat === "rtf" ||
     cat === "word-doc"
   )
 }
@@ -240,6 +245,9 @@ export function getBlobViewerCategory(
   }
   if (DOCX_EXTENSIONS.has(ext)) {
     return "docx"
+  }
+  if (RTF_EXTENSIONS.has(ext)) {
+    return "rtf"
   }
   if (LEGACY_WORD_DOC_EXTENSIONS.has(ext)) {
     return "word-doc"

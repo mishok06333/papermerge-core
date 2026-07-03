@@ -61,6 +61,11 @@ exec_library_catalog_bootstrap() {
     _run_core paper-cli library init-catalog || echo "[init] library init-catalog failed (see logs)"
 }
 
+exec_trash_purge() {
+    echo "[init] Purging expired trash (retention policy)..."
+    _run_core paper-cli library purge-trash || echo "[init] library purge-trash failed (see logs)"
+}
+
 exec_index_schema_apply() {
     if [ -n "${PAPERMERGE__SEARCH__URL:-}" ]; then
         echo "[init] Applying search index schema (PAPERMERGE__SEARCH__URL set)..."
@@ -76,6 +81,7 @@ exec_init() {
     exec_assign_admin_role
     exec_portal_bootstrap
     exec_library_catalog_bootstrap
+    exec_trash_purge
     exec_index_schema_apply
 }
 

@@ -422,6 +422,9 @@ export default function Commander() {
         >
           <FolderNodeActions
             homeFolderTreeAvailable={portalFolderTreeContext}
+            portalCatalogFolderId={
+              portalFolderTreeContext ? currentNodeID : undefined
+            }
             commanderWriteContext={commanderWriteContext}
           />
           <Breadcrumbs

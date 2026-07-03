@@ -3,6 +3,7 @@ import {
   getFileExtension
 } from "@/features/document/documentPreview"
 import {generatePreview} from "@/utils/pdf"
+import {rtfToPlainText} from "@/utils/rtfToPlainText"
 import {renderAsync} from "docx-preview"
 import html2canvas from "html2canvas"
 
@@ -117,7 +118,10 @@ async function captureTextThumbnail(
   maxHeight: number
 ): Promise<string | null> {
   const slice = file.slice(0, 24_000)
-  const text = await slice.text()
+  let text = await slice.text()
+  if (getFileExtension(file.name) === ".rtf") {
+    text = rtfToPlainText(text)
+  }
   const canvas = document.createElement("canvas")
   canvas.width = maxWidth
   canvas.height = maxHeight
@@ -218,7 +222,7 @@ export async function generateNodeThumbnailFromFile(
     if (cat === "docx") {
       return await thumbnailFromDocx(file, 300)
     }
-    if (cat === "text" || cat === "html") {
+    if (cat === "text" || cat === "html" || cat === "rtf") {
       return await captureTextThumbnail(file, 300, 200)
     }
   } catch (e) {

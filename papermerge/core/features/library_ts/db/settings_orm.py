@@ -25,3 +25,8 @@ class LibrarySettings(Base):
         ),
         nullable=True,
     )
+    trash_retention_days: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        doc="Days before trashed nodes are permanently removed; null uses env default.",
+    )

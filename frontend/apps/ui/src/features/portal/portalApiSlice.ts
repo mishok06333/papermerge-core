@@ -30,6 +30,17 @@ export type PortalNodesArgs = {
   filter?: string
 }
 
+/** RTK Query tags to refresh portal folder listings after node changes. */
+export function portalNodesInvalidationTags(parentId?: string) {
+  const tags: Array<{type: "PortalNodes"; id: string}> = [
+    {type: "PortalNodes", id: "LIST"}
+  ]
+  if (parentId) {
+    tags.push({type: "PortalNodes", id: parentId})
+  }
+  return tags
+}
+
 const injected = apiSlice.injectEndpoints({
   endpoints: builder => ({
     getPortalRoot: builder.query<PortalRoot, void>({
@@ -53,6 +64,7 @@ const injected = apiSlice.injectEndpoints({
         return `/portal/nodes/${parentId}?${sp.toString()}`
       },
       providesTags: (_res, _err, arg) => [
+        {type: "PortalNodes", id: "LIST"},
         {type: "PortalNodes", id: arg.parentId}
       ]
     }),

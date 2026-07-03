@@ -1,13 +1,14 @@
 import json
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy import and_, delete, exists, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core import orm
+from papermerge.core.features.library_ts.db import settings_api as library_settings_api
 from papermerge.core.db import common as db_common
 from papermerge.core.features.auth import scopes
 from papermerge.core.features.library_ts.db import orm as lib_orm
@@ -22,6 +23,11 @@ OCR_COMPLETED_KIND = "ocr_completed"
 def audit_detail_json(data: object) -> str:
     """Serialize audit metadata with readable Unicode (not \\uXXXX escapes)."""
     return json.dumps(data, ensure_ascii=False)[:2000]
+
+
+def _utc_naive_now() -> datetime:
+    """Naive UTC for TIMESTAMP WITHOUT TIME ZONE columns (asyncpg requirement)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 async def add_audit(
@@ -55,7 +61,7 @@ async def add_favorite(db_session: AsyncSession, user_id: UUID, node_id: UUID) -
         return
     db_session.add(
         lib_orm.UserFavorite(
-            user_id=user_id, node_id=node_id, created_at=datetime.utcnow()
+            user_id=user_id, node_id=node_id, created_at=_utc_naive_now()
         )
     )
 
@@ -108,7 +114,7 @@ async def list_favorites_enriched(db_session: AsyncSession, user_id: UUID):
 
 
 async def record_recent_view(db_session: AsyncSession, user_id: UUID, node_id: UUID) -> None:
-    now = datetime.utcnow()
+    now = _utc_naive_now()
     await db_session.execute(
         delete(lib_orm.UserRecentDocument).where(
             lib_orm.UserRecentDocument.user_id == user_id,
@@ -145,23 +151,26 @@ async def list_recent_enriched(db_session: AsyncSession, user_id: UUID):
 
     urd = lib_orm.UserRecentDocument
     stmt = (
-        select(urd, orm.Node.title, orm.Node.ctype, orm.Node.deleted_at)
+        select(urd, orm.Node.title, orm.Node.ctype)
         .select_from(urd)
         .join(orm.Node, orm.Node.id == urd.node_id)
-        .where(urd.user_id == user_id)
+        .where(
+            urd.user_id == user_id,
+            orm.Node.deleted_at.is_(None),
+        )
         .order_by(urd.viewed_at.desc())
         .limit(RECENT_LIMIT)
     )
     rows = (await db_session.execute(stmt)).all()
     out: list[lib_schema.RecentRowOut] = []
-    for rec, title, ctype, deleted_at in rows:
+    for rec, title, ctype in rows:
         out.append(
             lib_schema.RecentRowOut(
                 node_id=rec.node_id,
                 title=title,
                 ctype=str(ctype),
                 viewed_at=rec.viewed_at,
-                in_trash=deleted_at is not None,
+                in_trash=False,
             )
         )
     return out
@@ -206,7 +215,7 @@ async def upsert_note(
     )
     if row:
         row.body = body[:8000]
-        row.updated_at = datetime.utcnow()
+        row.updated_at = _utc_naive_now()
         return row
     row = lib_orm.DocumentNote(
         id=uuid.uuid4(),
@@ -479,7 +488,7 @@ async def ensure_ocr_complete_notifications(
                 "document_id": str(document_id),
                 "document_version_id": str(doc_ver_id),
                 "title": title,
-                "finished_at": datetime.utcnow().isoformat(),
+                "finished_at": datetime.now(timezone.utc).isoformat(),
             }
         )
         db_session.add(
@@ -517,7 +526,7 @@ async def mark_notification_read(
             lib_orm.UserNotification.id == notif_id,
             lib_orm.UserNotification.user_id == user_id,
         )
-        .values(read_at=datetime.utcnow())
+        .values(read_at=_utc_naive_now())
     )
 
 
@@ -568,9 +577,13 @@ async def stats_summary(db_session: AsyncSession) -> dict:
 async def purge_expired_trash(
     db_session: AsyncSession, retention_days: int, now: datetime | None = None
 ) -> list[UUID]:
-    """Returns node IDs permanently removed (caller must run index/S3 cleanup)."""
+    """Return node IDs in trash longer than retention_days."""
+    if retention_days < 1:
+        return []
     if now is None:
-        now = datetime.utcnow()
+        now = _utc_naive_now()
+    elif now.tzinfo is not None:
+        now = now.astimezone(timezone.utc).replace(tzinfo=None)
     cutoff = now - timedelta(days=retention_days)
     stmt = select(orm.Node.id).where(
         orm.Node.deleted_at.is_not(None),
@@ -578,3 +591,23 @@ async def purge_expired_trash(
     )
     ids = [r[0] for r in (await db_session.execute(stmt)).all()]
     return ids
+
+
+async def run_auto_trash_purge(db_session: AsyncSession) -> list[UUID]:
+    """Permanently delete trashed nodes past the configured retention window."""
+    from papermerge.core.constants import INDEX_REMOVE_NODE
+    from papermerge.core.features.nodes.db import api as nodes_dbapi
+    from papermerge.core.tasks import send_task
+
+    retention_days = await library_settings_api.get_trash_retention_days(db_session)
+    expired_roots = await purge_expired_trash(db_session, retention_days)
+    if not expired_roots:
+        return []
+    removed = await nodes_dbapi.hard_delete_nodes_system(db_session, expired_roots)
+    if removed:
+        send_task(
+            INDEX_REMOVE_NODE,
+            kwargs={"item_ids": [str(i) for i in removed]},
+            route_name="i3",
+        )
+    return removed

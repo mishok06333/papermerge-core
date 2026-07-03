@@ -24,6 +24,7 @@ export default function LibraryFavoriteToggle({nodeId}: Props) {
   return (
     <Tooltip label={isFav ? t("library.unfavorite") : t("library.favorite")}>
       <ActionIcon
+        size="lg"
         variant="default"
         loading={loading}
         onClick={async () => {

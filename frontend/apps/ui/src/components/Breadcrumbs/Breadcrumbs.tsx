@@ -76,7 +76,7 @@ export default function BreadcrumbsComponent({
 
   if (items.length == 1) {
     return (
-      <Group ref={ref} my={0} className={className}>
+      <Group ref={ref} my={0} className={className} style={{minWidth: 0}}>
         <Breadcrumbs className={classes.breadcrumbs}>
           <RootItem
             itemId={items[0][0]}
@@ -90,7 +90,7 @@ export default function BreadcrumbsComponent({
   }
 
   return (
-    <Group ref={ref} my={0} className={className}>
+    <Group ref={ref} my={0} className={className} style={{minWidth: 0}}>
       <Breadcrumbs className={classes.breadcrumbs}>
         <RootItem
           itemId={items[0][0]}
@@ -98,7 +98,7 @@ export default function BreadcrumbsComponent({
           onClick={onRootElementClick}
         />
         {links}
-        <Anchor>{lastOne}</Anchor>
+        <Anchor title={lastOne}>{lastOne}</Anchor>
       </Breadcrumbs>
       {isFetching && <Loader size={"sm"} />}
     </Group>

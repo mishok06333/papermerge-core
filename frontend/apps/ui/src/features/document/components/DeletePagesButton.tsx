@@ -12,7 +12,7 @@ export default function DeleteButton({onClick}: Args) {
     <>
       <Tooltip withArrow label={t("common.delete")}>
         <ActionIcon size="lg" onClick={onClick} color={"red"}>
-          <IconTrash />
+          <IconTrash size={18} />
         </ActionIcon>
       </Tooltip>
     </>

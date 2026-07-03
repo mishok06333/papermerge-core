@@ -2,7 +2,7 @@ import {useAppDispatch, useAppSelector} from "@/app/hooks"
 import {useCurrentDoc} from "@/features/document/hooks"
 import {Alert, Button, Flex, Group, Loader} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
-import {useContext} from "react"
+import {useContext, useRef, useMemo} from "react"
 import {useLocation, useNavigate} from "react-router-dom"
 
 import Breadcrumbs from "@/components/Breadcrumbs"
@@ -11,10 +11,8 @@ import PanelContext from "@/contexts/PanelContext"
 import EditNodeTitleModal from "@/components/EditNodeTitleModal"
 import useEnsureDocVerBuffer from "@/features/document/hooks/useEnsureDocVerBuffer"
 import useGeneratePreviews from "@/features/document/hooks/useGeneratePreviews"
-import {useRef} from "react"
 
 import DocumentDetails from "@/components/document/DocumentDetails/DocumentDetails"
-import DocumentDetailsToggle from "@/components/document/DocumentDetailsToggle"
 import classes from "@/components/document/Viewer.module.css"
 import {applyPageChangesThunk} from "@/features/document/actions/applyPageOpChanges"
 import ActionButtons from "@/features/document/components/ActionButtons"
@@ -45,6 +43,7 @@ import {viewerSelectionCleared} from "@/features/ui/uiSlice"
 import DeleteEntireDocumentConfirm from "./DeleteEntireDocumentConfirm"
 import PagesHaveChangedDialog from "./PageHaveChangedDialog"
 import {isPortalDocumentNavState} from "@/features/portal/portalNavState"
+import {drop_extension} from "@/utils"
 import {useTranslation} from "react-i18next"
 
 export default function Viewer() {
@@ -69,6 +68,16 @@ export default function Viewer() {
     imageSize: "md"
   })
   const selectedPages = useSelectedPages({mode, docVerID: docVer?.id})
+
+  const breadcrumb = useMemo(() => {
+    if (!doc?.breadcrumb?.length) {
+      return doc?.breadcrumb
+    }
+    const items = doc.breadcrumb.map(([id, title]) => [id, title] as [string, string])
+    const last = items[items.length - 1]
+    items[items.length - 1] = [last[0], drop_extension(last[1])]
+    return items
+  }, [doc?.breadcrumb])
 
   const {
     opened,
@@ -212,10 +221,7 @@ export default function Viewer() {
         onRotateCCClicked={onRotateCCItemClicked}
         onDeletePagesClicked={onDeletePagesItemClicked}
       />
-      <Group justify="space-between" wrap="nowrap">
-        <Breadcrumbs breadcrumb={doc?.breadcrumb} onClick={onClick} />
-        <DocumentDetailsToggle />
-      </Group>
+      <Breadcrumbs breadcrumb={breadcrumb} onClick={onClick} />
       <Flex className={classes.inner} style={{height: `${height}px`}}>
         {chrome === "native-pdf" && <NativePdfViewer />}
         {chrome === "docx" && (
@@ -264,7 +270,7 @@ export default function Viewer() {
         )}
       <EditNodeTitleModal
         opened={openedEditNodeTitleModal}
-        node={{id: doc?.id!, title: doc?.title!}}
+        node={{id: doc?.id!, title: doc?.title!, ctype: "document"}}
         onSubmit={closeEditNodeTitleModal}
         onCancel={closeEditNodeTitleModal}
       />

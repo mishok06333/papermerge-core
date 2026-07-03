@@ -19,6 +19,7 @@ function categoryIcon(category: BlobViewerCategory) {
       return IconPhoto
     case "text":
     case "html":
+    case "rtf":
       return IconFileText
     case "docx":
     case "word-doc":

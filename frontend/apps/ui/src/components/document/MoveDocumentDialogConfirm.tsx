@@ -7,7 +7,7 @@ import {
   useMoveNodesMutation
 } from "@/features/nodes/apiSlice"
 import {selectCurrentNode, selectCurrentNodeID} from "@/features/ui/uiSlice"
-import {otherPanel} from "@/utils"
+import {otherPanel, drop_extension} from "@/utils"
 import {Button, Group, Loader, Modal, Text} from "@mantine/core"
 import {skipToken} from "@reduxjs/toolkit/query"
 import {useContext, useState} from "react"
@@ -77,7 +77,7 @@ export default function MoveDocumentDialogConfirm({
       <Modal title={t("document.move_document.title")} opened={opened} onClose={onCancel}>
         <Text component="span">
           {t("document.move_document.body", {
-            docTitle: doc.title,
+            docTitle: drop_extension(doc.title),
             folderTitle: targetFolder.title
           })}
         </Text>

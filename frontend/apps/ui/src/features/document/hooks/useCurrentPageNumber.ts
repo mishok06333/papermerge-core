@@ -6,12 +6,15 @@ interface State {
 
 interface Args {
   containerRef: React.RefObject<HTMLElement | null>
+  /** When set, page nodes are queried here (e.g. docx iframe document). */
+  queryRootRef?: React.RefObject<Document | ParentNode | null>
   cssSelector: string
   initialPageNumber?: number
 }
 
 export default function useCurrentPageNumber({
   containerRef,
+  queryRootRef,
   cssSelector,
   initialPageNumber = 1
 }: Args): State {
@@ -19,9 +22,12 @@ export default function useCurrentPageNumber({
 
   const checkCurrentPage = useCallback(() => {
     const container = containerRef.current
+    const queryRoot = queryRootRef?.current
     if (!container) return
 
-    const pageElements = container.querySelectorAll<HTMLElement>(cssSelector)
+    const pageElements = (
+      queryRoot ?? container
+    ).querySelectorAll<HTMLElement>(cssSelector)
     if (pageElements.length === 0) {
       return
     }
@@ -54,7 +60,7 @@ export default function useCurrentPageNumber({
       }
     })
     setCurrentPage(closestIndex + 1)
-  }, [containerRef])
+  }, [containerRef, queryRootRef])
 
   useEffect(() => {
     if (!containerRef) {

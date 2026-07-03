@@ -19,7 +19,6 @@ import {
   selectDocumentDetailsPanelOpen
 } from "@/features/ui/uiSlice"
 import type {PanelMode} from "@/types"
-import DocumentDetailsToggle from "../DocumentDetailsToggle"
 import DocumentLibraryPanel from "@/features/library/components/DocumentLibraryPanel"
 
 interface Args {
@@ -39,7 +38,6 @@ export default function DocumentDetails({doc, docID, isLoading}: Args) {
   if (!docID || isLoading) {
     return (
       <Group align="flex-start" className={classes.documentDetailsOpened}>
-        <DocumentDetailsToggle />
         <Stack className={classes.documentDetailsContent} justify="flex-start">
           <Skeleton height={"20"} />
           <Skeleton height={"20"} />

@@ -1,5 +1,6 @@
 import {useGetPortalNodesQuery} from "@/features/portal/portalApiSlice"
 import type {NodeType} from "@/types"
+import {drop_extension} from "@/utils"
 import {
   Anchor,
   Button,
@@ -137,7 +138,7 @@ export default function NewsAttachmentPickerModal({
                         ) : (
                           <Group gap="xs">
                             <IconFile size={18} />
-                            <Text size="sm">{row.title}</Text>
+                            <Text size="sm">{drop_extension(row.title)}</Text>
                           </Group>
                         )}
                       </Table.Td>
@@ -183,7 +184,7 @@ export default function NewsAttachmentPickerModal({
                   onChange(value.filter(p => p.node_id !== att.node_id))
                 }
               >
-                {att.title} ×
+                {drop_extension(att.title)} ×
               </Button>
             ))}
           </Group>

@@ -141,3 +141,16 @@ class MspTemplateCreateIn(BaseModel):
 class MspTemplateCreateOut(BaseModel):
     root: core_schema.Folder
     folder_count: int
+
+
+class LibrarySettingsOut(BaseModel):
+    trash_retention_days: int = Field(
+        ...,
+        ge=1,
+        le=3650,
+        description="Days trashed files are kept before automatic permanent deletion.",
+    )
+
+
+class LibrarySettingsUpdate(BaseModel):
+    trash_retention_days: int = Field(..., ge=1, le=3650)

@@ -1,9 +1,14 @@
 import {useRenameFolderMutation} from "@/features/nodes/apiSlice"
+import {
+  buildFileNameWithOriginalExtension,
+  isAcceptableUploadStem
+} from "@/features/document/documentPreview"
 import type {EditEntityTitle} from "@/types"
 import type {I18NEditNodeTitleModal} from "kommon"
 import {EditNodeTitleModal} from "kommon"
 import {ChangeEvent, useEffect, useState} from "react"
 
+import {drop_extension} from "@/utils"
 import {useTranslation} from "react-i18next"
 import {useEnterSubmit} from "./useEnterSubmit"
 
@@ -23,8 +28,17 @@ export const EditNodeTitleModalContainer = ({
   const {t} = useTranslation()
   const txt = useI18nText()
   const [renameFolder, {isLoading}] = useRenameFolderMutation()
-  const [title, setTitle] = useState(node.title)
+  const isDocument = node.ctype === "document"
+  const [title, setTitle] = useState(
+    isDocument ? drop_extension(node.title) : node.title
+  )
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (opened) {
+      setTitle(isDocument ? drop_extension(node.title) : node.title)
+    }
+  }, [opened, node.id, node.title, isDocument])
 
   const handleTitleChanged = (event: ChangeEvent<HTMLInputElement>) => {
     let value = event.currentTarget.value
@@ -32,8 +46,20 @@ export const EditNodeTitleModalContainer = ({
   }
 
   const onLocalSubmit = async () => {
+    const finalTitle = isDocument
+      ? buildFileNameWithOriginalExtension(node.title, title)
+      : title
+
+    if (
+      isDocument &&
+      !isAcceptableUploadStem(node.title, title)
+    ) {
+      setError(t("common.generic_error"))
+      return
+    }
+
     const data = {
-      title: title,
+      title: finalTitle,
       id: node.id
     }
 

@@ -3,6 +3,8 @@ services:
     image: postgres:16.1
     restart: unless-stopped
     environment:
+      TZ: ${TZ:-Asia/Vladivostok}
+      PGTZ: ${TZ:-Asia/Vladivostok}
       POSTGRES_USER: ${POSTGRES_USER:-papermerge}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-papermerge}
       POSTGRES_DB: ${POSTGRES_DB:-papermerge}
@@ -47,6 +49,8 @@ services:
     ports:
       - "${APP_PORT:-12000}:80"
     environment:
+      TZ: ${TZ:-Asia/Vladivostok}
+      PAPERMERGE__MAIN__TIMEZONE: ${TZ:-Asia/Vladivostok}
       PAPERMERGE__SECURITY__SECRET_KEY: ${SECRET_KEY:-change-me-to-a-random-secret}
       PAPERMERGE__MAIN__API_PREFIX: /api
       PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER:-papermerge}:${POSTGRES_PASSWORD:-papermerge}@db:5432/${POSTGRES_DB:-papermerge}
@@ -95,6 +99,8 @@ services:
       sbom: false
     restart: unless-stopped
     environment:
+      TZ: ${TZ:-Asia/Vladivostok}
+      PAPERMERGE__MAIN__TIMEZONE: ${TZ:-Asia/Vladivostok}
       PAPERMERGE__DATABASE__URL: postgresql://${POSTGRES_USER:-papermerge}:${POSTGRES_PASSWORD:-papermerge}@db:5432/${POSTGRES_DB:-papermerge}
       PAPERMERGE__REDIS__URL: redis://redis:6379/0
       PAPERMERGE__SEARCH__URL: solr://solr:8983/papermerge

@@ -1,4 +1,5 @@
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
+import {apiSlice} from "@/features/api/slice"
 import {
   Box,
   Group,
@@ -148,6 +149,18 @@ export default function PortalFolderTree({
   const loadingRef = useRef(new Set<string>())
   const [treeData, setTreeData] = useState<TreeNodeData[]>([])
   const [rootLoading, setRootLoading] = useState(true)
+  const portalListingRevision = useAppSelector(state => {
+    const entry = apiSlice.endpoints.getPortalNodes.select({
+      parentId: currentFolderId,
+      page_size: 100
+    })(state)
+    return entry.fulfilledTimeStamp
+  })
+  const prevPortalListingRevision = useRef<number | undefined>()
+
+  useEffect(() => {
+    prevPortalListingRevision.current = undefined
+  }, [currentFolderId])
 
   const fetchAllPages = useCallback(
     async (parentId: string) => {
@@ -257,6 +270,31 @@ export default function PortalFolderTree({
       cancelled = true
     }
   }, [portalRootId, portalRootTitle, fetchAllPages, nodeToTreeData])
+
+  useEffect(() => {
+    if (rootLoading || !portalListingRevision) {
+      return
+    }
+    if (prevPortalListingRevision.current === undefined) {
+      prevPortalListingRevision.current = portalListingRevision
+      return
+    }
+    if (prevPortalListingRevision.current === portalListingRevision) {
+      return
+    }
+    prevPortalListingRevision.current = portalListingRevision
+    let cancelled = false
+    ;(async () => {
+      loadedRef.current.delete(currentFolderId)
+      await ensureLoadedRef.current(currentFolderId)
+      if (cancelled) {
+        return
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [portalListingRevision, currentFolderId, rootLoading])
 
   useEffect(() => {
     if (!portalRootId || !currentFolderId || rootLoading) {

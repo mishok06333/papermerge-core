@@ -9,7 +9,7 @@ import {
   useGetPublicCatalogRootQuery,
   useGetPublicDocumentQuery
 } from "@/features/public/publicApiSlice"
-import {getBaseURL} from "@/utils"
+import {getBaseURL, drop_extension} from "@/utils"
 
 export default function PublicDocumentPage() {
   if (hasAuthCookie()) {
@@ -41,7 +41,7 @@ function PublicDocumentPageGuest() {
     return buildPublicTrail(
       doc.breadcrumb,
       root?.id,
-      {id: doc.id, title: doc.title},
+      {id: doc.id, title: drop_extension(doc.title)},
       t("portal.root_folder")
     )
   }, [doc, root?.id, t])
@@ -56,7 +56,7 @@ function PublicDocumentPageGuest() {
   return (
     <SimpleDocumentPreview
       trail={trail}
-      title={doc?.title ?? ""}
+      title={doc?.title ? drop_extension(doc.title) : ""}
       previewUrl={previewUrl}
       downloadUrl={downloadUrl}
       fileName={doc?.file_name}

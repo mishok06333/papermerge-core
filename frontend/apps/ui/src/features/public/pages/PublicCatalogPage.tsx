@@ -22,6 +22,7 @@ import {
   useGetPublicPaginatedNodesQuery
 } from "@/features/public/publicApiSlice"
 import type {NodeType} from "@/types"
+import {formatNodeDisplayTitle} from "@/utils"
 
 function sortItems(items: NodeType[]): NodeType[] {
   return [...items].sort((a, b) => {
@@ -154,7 +155,7 @@ function PublicCatalogPageGuest() {
                           )}
                         </ThemeIcon>
                         <Text fw={500} size="md" truncate="end">
-                          {row.title}
+                          {formatNodeDisplayTitle(row.title, row.ctype)}
                         </Text>
                       </Group>
                       {isFolder ? (

@@ -1,0 +1,29 @@
+.docxHost {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.docxLoader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.docxFrame {
+  display: block;
+  width: 100%;
+  min-height: 320px;
+  border: none;
+  background: #666;
+}
+
+.docxPageSlot {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}

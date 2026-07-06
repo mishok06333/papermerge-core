@@ -26,7 +26,8 @@ import {
 import {
   currentDocVerUpdated,
   currentNodeChanged,
-  selectContentHeight
+  selectContentHeight,
+  selectLastPageSize
 } from "@/features/ui/uiSlice"
 import type {NType, PanelMode} from "@/types"
 import {getViewerChromeKind, usesNativePdfPreview} from "@/features/document/documentPreview"
@@ -57,6 +58,7 @@ export default function Viewer() {
   const location = useLocation()
   const dispatch = useAppDispatch()
   const height = useAppSelector(s => selectContentHeight(s, mode))
+  const lastPageSize = useAppSelector(s => selectLastPageSize(s, mode))
   const chrome = docVer ? getViewerChromeKind(docVer.file_name) : undefined
   const customPreview = Boolean(docVer && !usesNativePdfPreview(docVer.file_name))
   /* Native PDF iframe also needs an authenticated buffer (no Bearer token on iframe GET). */
@@ -108,7 +110,7 @@ export default function Viewer() {
       if (isPortalDocumentNavState(location.state)) {
         navigate(`/portal/folder/${node.id}`, {state: location.state})
       } else {
-        navigate(`/folder/${node.id}`)
+        navigate(`/folder/${node.id}?page_size=${lastPageSize}`)
       }
     }
   }

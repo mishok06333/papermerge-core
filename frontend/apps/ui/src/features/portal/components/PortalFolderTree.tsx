@@ -367,7 +367,9 @@ export default function PortalFolderTree({
     (node: TreeNodeData) => {
       const ctype = node.nodeProps?.["data-ctype"]
       if (ctype === "document") {
-        navigate(`/document/${node.value}`, {state: documentNavState})
+        navigate(`/document/${node.value}`, {
+          state: folderNav === "commander" ? undefined : documentNavState
+        })
         return
       }
       if (folderNav === "commander" && commanderPageSize != null) {

@@ -202,6 +202,9 @@ EOF
   "continue": "Продолжить",
   "complete your profile": "Заполните профиль",
   "passwords do not match": "Пароли не совпадают",
+  "Passwords do not match": "Пароли не совпадают",
+  "Username already taken": "Имя пользователя уже занято",
+  "Email already in use": "Этот адрес электронной почты уже используется",
   "registration failed": "Ошибка регистрации",
   "profile update failed": "Ошибка сохранения профиля"
 }

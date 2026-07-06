@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 RECENT_LIMIT = 50
 OCR_COMPLETED_KIND = "ocr_completed"
+PORTAL_FEED_PUBLISHED_KIND = "portal_feed_published"
 
 
 def audit_detail_json(data: object) -> str:
@@ -377,6 +378,69 @@ async def notify_users_document_changed(
                 id=uuid.uuid4(),
                 user_id=uid,
                 kind=kind,
+                payload=payload,
+            )
+        )
+
+
+async def list_active_user_ids_with_scope(
+    db_session: AsyncSession, scope_codename: str
+) -> list[UUID]:
+    from papermerge.core.features.roles.db.orm import (
+        Permission,
+        roles_permissions_association,
+        users_roles_association,
+    )
+
+    role_ids_with_scope = (
+        select(roles_permissions_association.c.role_id)
+        .join(
+            Permission,
+            Permission.id == roles_permissions_association.c.permission_id,
+        )
+        .where(Permission.codename == scope_codename)
+    )
+    stmt = select(orm.User.id).where(
+        orm.User.is_active.is_(True),
+        or_(
+            orm.User.is_superuser.is_(True),
+            orm.User.id.in_(
+                select(users_roles_association.c.user_id).where(
+                    users_roles_association.c.role_id.in_(role_ids_with_scope)
+                )
+            ),
+        ),
+    )
+    return list((await db_session.scalars(stmt)).all())
+
+
+async def notify_users_portal_feed_published(
+    db_session: AsyncSession,
+    *,
+    news_id: UUID,
+    title: str,
+    author_id: UUID,
+    author_username: str,
+) -> None:
+    """Notify every active user who can view the portal feed (except the author)."""
+    viewer_ids = await list_active_user_ids_with_scope(
+        db_session, scopes.PORTAL_FEED_VIEW
+    )
+    payload = audit_detail_json(
+        {
+            "news_id": str(news_id),
+            "title": title,
+            "author_username": author_username,
+        }
+    )
+    for uid in viewer_ids:
+        if uid == author_id:
+            continue
+        db_session.add(
+            lib_orm.UserNotification(
+                id=uuid.uuid4(),
+                user_id=uid,
+                kind=PORTAL_FEED_PUBLISHED_KIND,
                 payload=payload,
             )
         )

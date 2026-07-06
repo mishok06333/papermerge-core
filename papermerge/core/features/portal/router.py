@@ -150,6 +150,13 @@ async def create_portal_feed_item(
         resource_id=row["id"],
         detail=payload.title[:2000],
     )
+    await lib_ts_api.notify_users_portal_feed_published(
+        db_session,
+        news_id=row["id"],
+        title=row["title"],
+        author_id=user.id,
+        author_username=row["author_username"],
+    )
     await db_session.commit()
     return portal_schema.PortalNewsOut(**row)
 

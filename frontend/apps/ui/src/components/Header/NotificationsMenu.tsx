@@ -16,6 +16,7 @@ import {
   Popover,
   Stack,
   Text,
+  Tooltip,
   UnstyledButton
 } from "@mantine/core"
 import {notifications} from "@mantine/notifications"
@@ -31,6 +32,8 @@ type NotificationPayload = {
   document_version_id?: string
   title?: string
   finished_at?: string
+  news_id?: string
+  author_username?: string
 }
 
 const NotificationsMenu: React.FC = () => {
@@ -100,6 +103,23 @@ const NotificationsMenu: React.FC = () => {
       }
     }
 
+    if (kind === "portal_feed_published") {
+      const newsTitle = parsed?.title?.trim() ?? ""
+      const author = parsed?.author_username?.trim() ?? ""
+      return {
+        title: t("library.notification.portal_feed_published.title"),
+        message: newsTitle
+          ? t("library.notification.portal_feed_published.message", {
+              title: newsTitle,
+              author
+            })
+          : t("library.notification.portal_feed_published.message_no_title", {
+              author
+            }),
+        feedPath: "/portal/feed"
+      }
+    }
+
     return {
       title: kind,
       message: payload || ""
@@ -109,15 +129,17 @@ const NotificationsMenu: React.FC = () => {
   return hasScope ? (
     <Popover withArrow position="bottom-end" width={380}>
       <Popover.Target>
-        <Indicator
-          label={unreadCount > 0 ? unreadCount : undefined}
-          disabled={unreadCount === 0}
-          size={16}
-        >
-          <UnstyledButton aria-label={t("library.tab_notifications")}>
-            <IconBell />
-          </UnstyledButton>
-        </Indicator>
+        <Tooltip label={t("library.tab_notifications")}>
+          <Indicator
+            label={unreadCount > 0 ? unreadCount : undefined}
+            disabled={unreadCount === 0}
+            size={16}
+          >
+            <UnstyledButton aria-label={t("library.tab_notifications")}>
+              <IconBell />
+            </UnstyledButton>
+          </Indicator>
+        </Tooltip>
       </Popover.Target>
       <Popover.Dropdown p="sm">
         <Text fw={600} mb="sm">
@@ -152,6 +174,17 @@ const NotificationsMenu: React.FC = () => {
                           onClick={() => navigate(`/document/${item.documentId}`)}
                         >
                           Открыть документ
+                        </Button>
+                      ) : null}
+                      {item.feedPath ? (
+                        <Button
+                          size="xs"
+                          variant="subtle"
+                          p={0}
+                          justify="flex-start"
+                          onClick={() => navigate(item.feedPath!)}
+                        >
+                          {t("library.notification.open_feed")}
                         </Button>
                       ) : null}
                     </Stack>

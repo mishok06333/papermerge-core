@@ -22,7 +22,10 @@ export default function LibraryFavoriteToggle({nodeId}: Props) {
   const loading = adding || removing
 
   return (
-    <Tooltip label={isFav ? t("library.unfavorite") : t("library.favorite")}>
+    <Tooltip
+      label={isFav ? t("library.unfavorite") : t("library.favorite")}
+      withArrow
+    >
       <ActionIcon
         size="lg"
         variant="default"

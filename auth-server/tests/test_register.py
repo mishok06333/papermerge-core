@@ -5,9 +5,16 @@ from auth_server.db import api as dbapi
 from auth_server.db.orm import User
 
 
-def test_register_user_creates_account_without_groups(
+def test_register_user_creates_account_with_employee_role(
     client, db_session: Session
 ):
+    dbapi.sync_perms(db_session)
+    dbapi.create_role(
+        db_session,
+        name="employee",
+        scopes=["node.view", "document.download", "user.me"],
+    )
+
     response = client.post(
         "/register",
         json={
@@ -23,12 +30,13 @@ def test_register_user_creates_account_without_groups(
     user = dbapi.get_user_by_username(db_session, "newuser")
     assert user.username == "newuser"
     assert user.is_superuser is False
-    assert len(user.scopes) == 0
+    assert set(user.scopes) == {"node.view", "document.download", "user.me"}
 
     db_user = db_session.get(User, user.id)
     assert db_user is not None
     assert len(db_user.groups) == 0
-    assert len(db_user.roles) == 0
+    assert len(db_user.roles) == 1
+    assert db_user.roles[0].name == "employee"
 
 
 def test_register_rejects_password_mismatch(client):

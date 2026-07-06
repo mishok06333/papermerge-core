@@ -297,7 +297,7 @@ def is_pending_email(email: str) -> bool:
 
 
 def register_user(session: Session, username: str, password: str) -> schema.User:
-    """Create a new user account without group or role assignments."""
+    """Create a new user account with the default employee role."""
     if username_exists(session, username):
         raise ValueError("Username already taken")
 
@@ -309,7 +309,7 @@ def register_user(session: Session, username: str, password: str) -> schema.User
         password=password,
         is_superuser=False,
         is_active=True,
-        role_names=[],
+        role_names=[constants.DEFAULT_REGISTRATION_ROLE],
     )
 
 

@@ -13,6 +13,9 @@
   "continue": "Continue",
   "complete your profile": "Complete your profile",
   "passwords do not match": "Passwords do not match",
+  "Passwords do not match": "Passwords do not match",
+  "Username already taken": "Username already taken",
+  "Email already in use": "Email already in use",
   "registration failed": "Registration failed",
   "profile update failed": "Profile update failed"
 }

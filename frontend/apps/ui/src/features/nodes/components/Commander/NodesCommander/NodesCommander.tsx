@@ -244,11 +244,7 @@ export default function Commander() {
         navigate(`/folder/${node.id}?page_size=${lastPageSize}`)
         break
       case "document":
-        if (portalDocumentNavState && isUnderPortalRoot) {
-          navigate(`/document/${node.id}`, {state: portalDocumentNavState})
-        } else {
-          navigate(`/document/${node.id}`)
-        }
+        navigate(`/document/${node.id}`)
         break
     }
   }

@@ -63,7 +63,7 @@ export default function DBRegister() {
           const detail = payload?.detail;
           setError(
             typeof detail === 'string'
-              ? detail
+              ? t(detail)
               : t('registration failed'),
           );
           return;
@@ -103,7 +103,7 @@ export default function DBRegister() {
           const detail = payload?.detail;
           setError(
             typeof detail === 'string'
-              ? detail
+              ? t(detail)
               : t('profile update failed'),
           );
           return;

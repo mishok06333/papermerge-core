@@ -1,7 +1,8 @@
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
-import {ActionIcon} from "@mantine/core"
+import {ActionIcon, Tooltip} from "@mantine/core"
 import {IconColumns2, IconX} from "@tabler/icons-react"
 import {useContext} from "react"
+import {useTranslation} from "react-i18next"
 
 import type {CType, PanelMode} from "@/types"
 
@@ -18,6 +19,7 @@ import {
 } from "@/features/ui/uiSlice"
 
 export default function ToggleSecondaryPanel() {
+  const {t} = useTranslation()
   const mode: PanelMode = useContext(PanelContext)
   const dispatch = useAppDispatch()
   const nodeID = useAppSelector(s => selectCurrentNodeID(s, mode))
@@ -52,14 +54,17 @@ export default function ToggleSecondaryPanel() {
     if (!secondaryPanel) {
       const commanderBlocked = ctype === "folder" && !folderCommanderAllowed
       return (
-        <ActionIcon
-          size="lg"
-          onClick={onClick}
-          variant="default"
-          disabled={!nodeID || !ctype || commanderBlocked}
-        >
-          <IconColumns2 size={18} />
-        </ActionIcon>
+        <Tooltip label={t("document.split_screen")} withArrow>
+          <ActionIcon
+            size="lg"
+            onClick={onClick}
+            variant="default"
+            disabled={!nodeID || !ctype || commanderBlocked}
+            aria-label={t("document.split_screen")}
+          >
+            <IconColumns2 size={18} />
+          </ActionIcon>
+        </Tooltip>
       )
     }
 
@@ -67,12 +72,15 @@ export default function ToggleSecondaryPanel() {
   }
 
   return (
-    <ActionIcon
-      onClick={() => dispatch(secondaryPanelClosed())}
-      size="lg"
-      variant="default"
-    >
-      <IconX size={18} />
-    </ActionIcon>
+    <Tooltip label={t("document.split_screen")} withArrow>
+      <ActionIcon
+        onClick={() => dispatch(secondaryPanelClosed())}
+        size="lg"
+        variant="default"
+        aria-label={t("document.split_screen")}
+      >
+        <IconX size={18} />
+      </ActionIcon>
+    </Tooltip>
   )
 }

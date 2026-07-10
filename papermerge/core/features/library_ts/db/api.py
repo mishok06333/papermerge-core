@@ -379,6 +379,7 @@ async def notify_users_document_changed(
                 user_id=uid,
                 kind=kind,
                 payload=payload,
+                created_at=_utc_naive_now(),
             )
         )
 
@@ -442,6 +443,7 @@ async def notify_users_portal_feed_published(
                 user_id=uid,
                 kind=PORTAL_FEED_PUBLISHED_KIND,
                 payload=payload,
+                created_at=_utc_naive_now(),
             )
         )
 
@@ -561,6 +563,7 @@ async def ensure_ocr_complete_notifications(
                 user_id=user_id,
                 kind=OCR_COMPLETED_KIND,
                 payload=payload,
+                created_at=_utc_naive_now(),
             )
         )
         existing_doc_ver_ids.add(str(doc_ver_id))
@@ -675,3 +678,46 @@ async def run_auto_trash_purge(db_session: AsyncSession) -> list[UUID]:
             route_name="i3",
         )
     return removed
+
+
+MAX_DOCUMENT_FULL_VERSION_ATTACHMENTS = 30
+
+
+async def list_full_version_attachments(
+    db_session: AsyncSession, document_id: UUID
+) -> list[dict]:
+    stmt = (
+        select(
+            lib_orm.DocumentFullVersionAttachment.node_id,
+            lib_orm.DocumentFullVersionAttachment.sort_order,
+            orm.Node.title,
+            orm.Node.ctype,
+        )
+        .join(orm.Node, orm.Node.id == lib_orm.DocumentFullVersionAttachment.node_id)
+        .where(lib_orm.DocumentFullVersionAttachment.document_id == document_id)
+        .order_by(lib_orm.DocumentFullVersionAttachment.sort_order)
+    )
+    return [
+        {"node_id": node_id, "title": title, "ctype": ctype}
+        for node_id, _sort_order, title, ctype in (await db_session.execute(stmt)).all()
+    ]
+
+
+async def replace_full_version_attachments(
+    db_session: AsyncSession,
+    document_id: UUID,
+    node_ids: list[UUID],
+) -> None:
+    await db_session.execute(
+        delete(lib_orm.DocumentFullVersionAttachment).where(
+            lib_orm.DocumentFullVersionAttachment.document_id == document_id
+        )
+    )
+    for i, nid in enumerate(node_ids):
+        db_session.add(
+            lib_orm.DocumentFullVersionAttachment(
+                document_id=document_id,
+                node_id=nid,
+                sort_order=i,
+            )
+        )

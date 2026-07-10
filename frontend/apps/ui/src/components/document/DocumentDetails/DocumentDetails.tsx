@@ -20,6 +20,7 @@ import {
 } from "@/features/ui/uiSlice"
 import type {PanelMode} from "@/types"
 import DocumentLibraryPanel from "@/features/library/components/DocumentLibraryPanel"
+import DocumentFullVersionField from "@/features/document/components/DocumentFullVersionField"
 
 interface Args {
   doc?: DocumentType
@@ -60,6 +61,7 @@ export default function DocumentDetails({doc, docID, isLoading}: Args) {
               mt="md"
             />
           </Group>
+          {docID ? <DocumentFullVersionField documentId={docID} /> : null}
           {docID ? <DocumentLibraryPanel documentId={docID} /> : null}
         </Stack>
       </Group>

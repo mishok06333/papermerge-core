@@ -244,6 +244,14 @@ function getPermissionTree(txt?: I18NPermissionTree) {
             {value: "document.update.tags", label: txt?.tags || "Tags"}
           ]
         },
+        {
+          value: "document.full_version.view",
+          label: txt?.full_version_view || "View full version links"
+        },
+        {
+          value: "document.full_version.manage",
+          label: txt?.full_version_manage_perm || "Manage full version links"
+        },
         {value: "document.move", label: txt?.move || "Move"},
         {value: "document.delete", label: txt?.delete || "Delete"},
         {
@@ -394,6 +402,8 @@ const PERMISSION_DEPENDENCIES = {
   "document.delete": ["folder.delete"],
   "document.update.title": ["folder.update"],
   "document.update.tags": ["tag.select"],
+  "document.full_version.view": ["document.view"],
+  "document.full_version.manage": ["document.full_version.view", "portal.view"],
   comment: ["document.view"],
   "comment.create": ["document.view"],
   "comment.update": ["document.view"],

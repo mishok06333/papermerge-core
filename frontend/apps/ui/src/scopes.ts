@@ -21,6 +21,8 @@ export const COMMENT_CREATE = "comment.create"
 export const COMMENT_UPDATE = "comment.update"
 export const COMMENT_DELETE = "comment.delete"
 export const DOCUMENT_UPDATE_TAGS = "document.update.tags"
+export const DOCUMENT_FULL_VERSION_VIEW = "document.full_version.view"
+export const DOCUMENT_FULL_VERSION_MANAGE = "document.full_version.manage"
 export const DOCUMENT_UPLOAD = "document.upload"
 export const DOCUMENT_DOWNLOAD = "document.download"
 export const TAG_CREATE = "tag.create"
@@ -194,6 +196,8 @@ export const ALL_PERMS = [
   NODE_CREATE,
   NODE_UPDATE,
   DOCUMENT_UPDATE_TAGS,
+  DOCUMENT_FULL_VERSION_VIEW,
+  DOCUMENT_FULL_VERSION_MANAGE,
   NODE_DELETE,
   COMMENT_CREATE,
   COMMENT_UPDATE,

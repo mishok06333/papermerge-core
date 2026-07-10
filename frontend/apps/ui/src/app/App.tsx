@@ -6,6 +6,7 @@ import {useEffect, useRef} from "react"
 import {useDispatch, useSelector} from "react-redux"
 import {Outlet} from "react-router-dom"
 
+import {HEADER_HEIGHT_DEFAULT} from "@/accessibility/constants"
 import Header from "@/components/Header/Header"
 import NavBar from "@/components/NavBar"
 import {updateOutlet} from "@/features/ui/uiSlice"
@@ -20,6 +21,7 @@ import "./App.css"
 
 function App() {
   const {height, width} = useViewportSize()
+  const headerHeight = HEADER_HEIGHT_DEFAULT
   const dispatch = useDispatch()
   const navBarWidth = useSelector(selectNavBarWidth)
   const status = useSelector(selectCurrentUserStatus)
@@ -43,7 +45,7 @@ function App() {
   return (
     <>
       <AppShell
-        header={{height: 60}}
+        header={{height: headerHeight}}
         navbar={{
           width: navBarWidth,
           breakpoint: 0

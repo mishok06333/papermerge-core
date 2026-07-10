@@ -50,6 +50,7 @@ def employee_scopes() -> list[str]:
             Scopes.PAGE_VIEW,
             Scopes.SHARED_NODE_VIEW,
             Scopes.COMMENT_CREATE,
+            Scopes.DOCUMENT_FULL_VERSION_VIEW,
         }
     )
 

@@ -4,6 +4,7 @@ import {useEffect, useRef} from "react"
 import {useDispatch, useSelector} from "react-redux"
 import {Outlet} from "react-router-dom"
 
+import {HEADER_HEIGHT_DEFAULT} from "@/accessibility/constants"
 import GuestHeader from "@/features/public/components/GuestHeader"
 import GuestNavBar from "@/features/public/components/GuestNavBar"
 import {updateOutlet} from "@/features/ui/uiSlice"
@@ -12,6 +13,7 @@ import "@/app/App.css"
 
 export default function GuestApp() {
   const {height, width} = useViewportSize()
+  const headerHeight = HEADER_HEIGHT_DEFAULT
   const dispatch = useDispatch()
   const navBarWidth = useSelector(selectNavBarWidth)
   const ref = useRef<HTMLDivElement>(null)
@@ -28,7 +30,7 @@ export default function GuestApp() {
 
   return (
     <AppShell
-      header={{height: 60}}
+      header={{height: headerHeight}}
       navbar={{
         width: navBarWidth,
         breakpoint: 0

@@ -4,9 +4,11 @@ import {useEffect, useRef, useState} from "react"
 import {useTranslation} from "react-i18next"
 
 import {
+  applyDocxZoom,
+  configureDocxHyperlinks,
   docxViewerBaseCss,
   normalizeDocxPageLayout,
-  resizeDocxIframeToContent
+  syncMantineThemeToIframe
 } from "./docxPageLayout"
 import {DOCX_VIEWER_PAGE_CLASS} from "./docxViewerConstants"
 
@@ -19,6 +21,7 @@ interface Props {
   /** docx-preview root class (sections are `section.{previewClassName}`). */
   previewClassName: string
   wrapClassName?: string
+  zoomFactor?: number
   onPagesReady?: (
     count: number,
     sections: HTMLElement[],
@@ -38,6 +41,7 @@ function prepareIframeDocument(
   baseStyle.setAttribute("data-docx-viewer-base", "")
   baseStyle.textContent = docxViewerBaseCss(previewClassName)
   doc.head.appendChild(baseStyle)
+  syncMantineThemeToIframe(doc)
 
   return doc.body
 }
@@ -47,12 +51,15 @@ export default function DocxPreviewCore({
   embedScroll,
   previewClassName,
   wrapClassName,
+  zoomFactor = 100,
   onPagesReady
 }: Props) {
   const {t} = useTranslation()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const onReadyRef = useRef(onPagesReady)
   onReadyRef.current = onPagesReady
+  const zoomRef = useRef(zoomFactor)
+  zoomRef.current = zoomFactor
   const [pending, setPending] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -99,7 +106,8 @@ export default function DocxPreviewCore({
 
         const pageRoots = normalizeDocxPageLayout(doc, previewClassName)
         pageRoots.forEach(node => node.classList.add(DOCX_VIEWER_PAGE_CLASS))
-        resizeDocxIframeToContent(iframe)
+        configureDocxHyperlinks(doc)
+        applyDocxZoom(iframe, previewClassName, zoomRef.current)
 
         const count = Math.max(1, pageRoots.length)
         onReadyRef.current?.(count, pageRoots, doc)
@@ -133,10 +141,19 @@ export default function DocxPreviewCore({
       return
     }
 
-    const onResize = () => resizeDocxIframeToContent(iframe)
+    const onResize = () =>
+      applyDocxZoom(iframe, previewClassName, zoomRef.current)
     window.addEventListener("resize", onResize)
     return () => window.removeEventListener("resize", onResize)
-  }, [pending, objectURL])
+  }, [pending, objectURL, previewClassName])
+
+  useEffect(() => {
+    const iframe = iframeRef.current
+    if (!iframe || pending) {
+      return
+    }
+    applyDocxZoom(iframe, previewClassName, zoomFactor)
+  }, [pending, previewClassName, zoomFactor])
 
   if (error) {
     return <Text c="red">{error}</Text>

@@ -1,4 +1,4 @@
-import {MantineProvider} from "@mantine/core"
+import {AccessibilityProvider} from "@/accessibility/AccessibilityContext"
 import {Notifications} from "@mantine/notifications"
 import * as React from "react"
 import * as ReactDOM from "react-dom/client"
@@ -11,7 +11,6 @@ import "@/index.css"
 import {fetchCurrentUser} from "@/slices/currentUser"
 import "@mantine/notifications/styles.css"
 
-import theme from "@/themes"
 import {initializeI18n} from "./initializeI18n"
 import router from "./router"
 import {
@@ -31,14 +30,16 @@ async function start_app() {
 
   await initializeI18n()
 
+  document.documentElement.setAttribute("data-accessibility", "false")
+
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-      <MantineProvider theme={theme}>
+      <AccessibilityProvider>
         <Provider store={store}>
           <RouterProvider router={router} />
         </Provider>
         <Notifications />
-      </MantineProvider>
+      </AccessibilityProvider>
     </React.StrictMode>
   )
 }

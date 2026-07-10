@@ -1,6 +1,6 @@
 [project]
 name = "papermerge"
-version = "3.5.3"
+version = "0.0.8"
 description = "Open source document management system for digital archives"
 authors = [
     { name = "Eugen Ciur", email = "eugen@papermerge.com" }

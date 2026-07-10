@@ -467,6 +467,76 @@ async def put_rating(
     )
 
 
+@router.get(
+    "/documents/{document_id}/full-versions",
+    response_model=list[lib_schema.FullVersionAttachmentOut],
+)
+async def list_document_full_versions(
+    document_id: uuid.UUID,
+    user: Annotated[
+        schema.User,
+        Security(
+            get_current_user,
+            scopes=[scopes.NODE_VIEW, scopes.DOCUMENT_FULL_VERSION_VIEW],
+        ),
+    ],
+    db_session: AsyncSession = Depends(get_db),
+):
+    await dbapi_common.require_node_perm(
+        db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
+    )
+    rows = await lib_api.list_full_version_attachments(db_session, document_id)
+    await db_session.commit()
+    return [lib_schema.FullVersionAttachmentOut(**row) for row in rows]
+
+
+@router.put(
+    "/documents/{document_id}/full-versions",
+    response_model=list[lib_schema.FullVersionAttachmentOut],
+)
+async def put_document_full_versions(
+    document_id: uuid.UUID,
+    payload: lib_schema.FullVersionAttachmentsUpdate,
+    user: Annotated[
+        schema.User,
+        Security(
+            get_current_user,
+            scopes=[scopes.NODE_VIEW, scopes.DOCUMENT_FULL_VERSION_MANAGE],
+        ),
+    ],
+    db_session: AsyncSession = Depends(get_db),
+):
+    await dbapi_common.require_node_perm(
+        db_session, node_id=document_id, codename=scopes.NODE_VIEW, user_id=user.id
+    )
+    try:
+        attachment_ids = await portal_dbapi.validate_portal_news_attachment_nodes(
+            db_session,
+            user_id=user.id,
+            node_ids=payload.node_ids,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if len(attachment_ids) > lib_api.MAX_DOCUMENT_FULL_VERSION_ATTACHMENTS:
+        raise HTTPException(status_code=400, detail="too_many_attachments")
+    await lib_api.replace_full_version_attachments(
+        db_session, document_id, attachment_ids
+    )
+    await lib_api.add_audit(
+        db_session,
+        user_id=user.id,
+        action="full_version_update",
+        resource_type="document",
+        resource_id=document_id,
+        detail=lib_api.audit_detail_json(
+            {"attachment_count": len(attachment_ids)}
+        ),
+    )
+    await db_session.commit()
+    rows = await lib_api.list_full_version_attachments(db_session, document_id)
+    return [lib_schema.FullVersionAttachmentOut(**row) for row in rows]
+
+
 @router.get("/notifications", response_model=list[lib_schema.NotificationOut])
 @router.get("/notifications/", response_model=list[lib_schema.NotificationOut])
 async def list_my_notifications(

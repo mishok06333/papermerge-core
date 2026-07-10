@@ -35,6 +35,11 @@ from papermerge.core.pathlib import (
     abs_docver_path,
 )
 from papermerge.core.features.document.upload_text import extract_upload_text
+from papermerge.core.features.document.docx_convert import (
+    DocxConversionError,
+    convert_docx_to_pdf,
+    is_docx_upload,
+)
 from papermerge.core.features.document.ordered_document_cfv import \
     OrderedDocumentCFV
 from papermerge.core import config
@@ -760,6 +765,77 @@ async def upload(
                     document_version_id=pdf_ver.id,
                 )
                 db_session.add_all([db_page_orig, db_page_pdf])
+
+        elif is_docx_upload(content_type=ct, file_name=safe_file_name):
+            raw_content = (
+                content.getvalue() if isinstance(content, io.BytesIO) else content
+            )
+            try:
+                pdf_content = await convert_docx_to_pdf(raw_content, safe_file_name)
+            except DocxConversionError as exc:
+                return None, schema.Error(messages=[str(exc)])
+
+            orig_ver = await create_next_version(
+                db_session,
+                doc=doc,
+                file_name=safe_file_name,
+                file_size=size,
+                short_description=ct,
+            )
+            pdf_ver = await create_next_version(
+                db_session,
+                doc=doc,
+                file_name=f"{safe_file_name}.pdf",
+                file_size=len(pdf_content),
+                short_description="docx -> pdf",
+            )
+            await copy_file(
+                src=content, dst=abs_docver_path(orig_ver.id, orig_ver.file_name)
+            )
+            await copy_file(
+                src=pdf_content,
+                dst=abs_docver_path(pdf_ver.id, pdf_ver.file_name),
+            )
+
+            page_count = get_pdf_page_count(pdf_content)
+            orig_ver.page_count = page_count
+            pdf_ver.page_count = page_count
+
+            extracted_text = extract_upload_text(
+                content=raw_content,
+                file_name=safe_file_name,
+                content_type=ct,
+            )
+
+            for page_number in range(1, page_count + 1):
+                page_text = extracted_text if page_number == 1 else None
+                db_page_orig = orm.Page(
+                    number=page_number,
+                    page_count=page_count,
+                    lang=pdf_ver.lang,
+                    document_version_id=orig_ver.id,
+                    text=page_text,
+                )
+                db_page_pdf = orm.Page(
+                    number=page_number,
+                    page_count=page_count,
+                    lang=pdf_ver.lang,
+                    document_version_id=pdf_ver.id,
+                )
+                db_session.add_all([db_page_orig, db_page_pdf])
+
+            if extracted_text:
+                orig_ver.text = extracted_text
+
+            pdf_dst = abs_docver_path(pdf_ver.id, pdf_ver.file_name)
+            await populate_embedded_pdf_text(
+                db_session=db_session,
+                doc=doc,
+                doc_ver=pdf_ver,
+                pdf_path=str(pdf_dst),
+                page_count=page_count,
+            )
+            db_session.add_all([orig_ver, pdf_ver])
 
         else:
             raw_content = content.getvalue() if isinstance(content, io.BytesIO) else content

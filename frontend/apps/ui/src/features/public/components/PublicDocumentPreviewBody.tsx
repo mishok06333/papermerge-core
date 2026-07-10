@@ -164,12 +164,12 @@ export default function PublicDocumentPreviewBody({
 
   if (chrome === "docx") {
     return (
-      <ScrollPane>
+      <ScrollPane className={classes.docxScrollPane}>
         <DocxPreviewCore
           objectURL={objectURL}
           embedScroll={false}
           previewClassName={DOCX_VIEWER_CLASS}
-          wrapClassName={docxClasses.docxHost}
+          wrapClassName={`${docxClasses.docxHost} ${docxClasses.docxPane}`}
         />
       </ScrollPane>
     )

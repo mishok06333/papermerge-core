@@ -5,6 +5,11 @@
   background: var(--mantine-color-body);
 }
 
+.docxScrollPane {
+  padding: var(--mantine-spacing-md);
+  box-sizing: border-box;
+}
+
 .imageWrap {
   display: flex;
   justify-content: center;

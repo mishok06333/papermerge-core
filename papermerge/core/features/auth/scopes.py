@@ -62,6 +62,8 @@ class Scopes:
     DOCUMENT_DOWNLOAD_LAST_VERSION_ONLY = "document.download.last_version_only"
     DOCUMENT_UPDATE_TITLE = "document.update.title"
     DOCUMENT_UPDATE_TAGS = "document.update.tags"
+    DOCUMENT_FULL_VERSION_VIEW = "document.full_version.view"
+    DOCUMENT_FULL_VERSION_MANAGE = "document.full_version.manage"
 
     # Tag permissions
     TAG_SELECT = "tag.select"  # User can assign existing tags from the catalog

@@ -154,3 +154,13 @@ class LibrarySettingsOut(BaseModel):
 
 class LibrarySettingsUpdate(BaseModel):
     trash_retention_days: int = Field(..., ge=1, le=3650)
+
+
+class FullVersionAttachmentOut(BaseModel):
+    node_id: UUID
+    title: str
+    ctype: str
+
+
+class FullVersionAttachmentsUpdate(BaseModel):
+    node_ids: list[UUID] = Field(default_factory=list, max_length=30)

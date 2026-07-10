@@ -39,6 +39,8 @@ export interface I18NPermissionTree {
   custom_fields: string
   tags: string
   category: string
+  full_version_view?: string
+  full_version_manage_perm?: string
   citizen_category?: string
   citizen_categories?: string
   citizen_category_view?: string

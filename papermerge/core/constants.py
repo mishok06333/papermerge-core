@@ -45,6 +45,9 @@ class ContentType:
     IMAGE_JPEG = "image/jpeg"
     IMAGE_PNG = "image/png"
     IMAGE_TIFF = "image/tiff"
+    DOCX = (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
 
 # Define appropriate lengths for different field types
 USERNAME_MAX_LENGTH = 150

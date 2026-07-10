@@ -67,6 +67,12 @@ export type LibrarySettings = {
   trash_retention_days: number
 }
 
+export type DocumentFullVersionAttachment = {
+  node_id: string
+  title: string
+  ctype: string
+}
+
 export const apiSliceWithLibrary = apiSlice.injectEndpoints({
   endpoints: builder => ({
     getLibraryFavorites: builder.query<FavoriteRow[], void>({
@@ -255,6 +261,28 @@ export const apiSliceWithLibrary = apiSlice.injectEndpoints({
         body
       }),
       invalidatesTags: [{type: "LibrarySettings", id: "CONFIG"}]
+    }),
+    getDocumentFullVersions: builder.query<
+      DocumentFullVersionAttachment[],
+      string
+    >({
+      query: documentId => `/library/documents/${documentId}/full-versions`,
+      providesTags: (_r, _e, documentId) => [
+        {type: "DocumentFullVersions", id: documentId}
+      ]
+    }),
+    putDocumentFullVersions: builder.mutation<
+      DocumentFullVersionAttachment[],
+      {documentId: string; nodeIds: string[]}
+    >({
+      query: ({documentId, nodeIds}) => ({
+        url: `/library/documents/${documentId}/full-versions`,
+        method: "PUT",
+        body: {node_ids: nodeIds}
+      }),
+      invalidatesTags: (_r, _e, {documentId}) => [
+        {type: "DocumentFullVersions", id: documentId}
+      ]
     })
   })
 })
@@ -280,5 +308,7 @@ export const {
   useGetLibraryAuditLogQuery,
   useCreateMspTemplateMutation,
   useGetLibrarySettingsQuery,
-  useUpdateLibrarySettingsMutation
+  useUpdateLibrarySettingsMutation,
+  useGetDocumentFullVersionsQuery,
+  usePutDocumentFullVersionsMutation
 } = apiSliceWithLibrary

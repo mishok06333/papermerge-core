@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from papermerge.core.db.base import Base
@@ -75,6 +75,22 @@ class DocumentRating(Base):
     created_at: Mapped[datetime] = mapped_column(insert_default=func.now())
 
     __table_args__ = (CheckConstraint("score >= 1 AND score <= 5", name="ck_rating_score_1_5"),)
+
+
+class DocumentFullVersionAttachment(Base):
+    """Full-version document links shown in the About file panel."""
+
+    __tablename__ = "document_full_version_attachments"
+
+    document_id: Mapped[UUID] = mapped_column(
+        ForeignKey("nodes.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    node_id: Mapped[UUID] = mapped_column(
+        ForeignKey("nodes.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 class DocumentCounter(Base):

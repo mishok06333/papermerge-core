@@ -98,9 +98,12 @@ RUN set -eux; \
     [ "$attempts" -lt "$max_attempts" ] || (echo "apk install failed"; exit 1); \
     rm -rf /var/cache/apk/*
 
-RUN pip install --upgrade poetry==2.0.1 && \
-    curl -L -o /bin/env2js https://github.com/papermerge/env2js/releases/download/0.2/env2js.amd64 && \
-    chmod +x /bin/env2js
+RUN pip install --upgrade poetry==2.0.1
+
+# Vendored binary — download once and place at docker/app/bin/env2js.amd64
+# (GitHub CDN may time out during `docker build` on slow networks).
+COPY docker/app/bin/env2js.amd64 /bin/env2js
+RUN chmod +x /bin/env2js
 
 COPY poetry.lock pyproject.toml README.md LICENSE ${CORE_APP}/
 

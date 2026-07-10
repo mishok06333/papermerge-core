@@ -5,6 +5,12 @@
   "downloadButton.error": "Ошибка: не удалось выполнить действие",
   "downloadButton.emptyVersionsArrayError": "Ошибка: список версий пуст",
   "downloadButton.versionLabel": "Версия",
+  "downloadButton.versionDescription.original": "Оригинал",
+  "downloadButton.versionDescription.docxToPdf": "docx → PDF",
+  "downloadButton.versionDescription.convertToPdf": "{{source}} → PDF",
+  "downloadButton.versionDescription.pagesMovedIn": "{{count}} стр. перемещено в документ",
+  "downloadButton.versionDescription.pagesMovedOut": "{{count}} стр. перемещено из документа",
+  "downloadButton.versionDescription.pagesReplaced": "{{count}} стр. заменено",
   "documentVersion.was-created": "Создана версия документа {{versionNumber}}",
   "pagesHaveChanged": {
     "mainText": "Есть изменения, например порядок страниц или поворот, которые еще не сохранены на сервере. Что сделать?",
@@ -120,7 +126,9 @@
       "title": "Название",
       "custom_fields": "Поля",
       "tags": "Теги",
-      "category": "Тип документа"
+      "category": "Тип документа",
+      "full_version_view": "Полная версия файла (просмотр)",
+      "full_version_manage": "Полная версия файла (редактирование)"
     }
   },
   "load-more": "Загрузить еще",
@@ -258,6 +266,7 @@
   "nodes.upload.title": "Загрузка файлов",
   "nodes.upload.confirm_lead": "Вы уверены, что хотите загрузить в",
   "nodes.upload.file_name": "Имя файла",
+  "nodes.upload.pdf_conversion_notice": "Один или несколько выбранных файлов будут преобразованы в PDF при загрузке. Это может занять больше времени, чем обычно.",
   "upload.error.duplicate_title": "В этой папке уже есть файл с таким именем",
   "upload.error.generic": "Не удалось загрузить файл",
   "upload.error.node_creation": "Не удалось создать документ",
@@ -383,6 +392,14 @@
     "guest": {
       "title": "Справка для гостей",
       "sections": {
+        "about": {
+          "title": "О проекте",
+          "items": [
+            "Электронная библиотека, версия 0.0.8",
+            "Проект создан для КГКУ «Хабаровский центр социальной поддержки населения»",
+            "Разработчики: Соколов Михаил Андреевич, Разуваев Сергей Александрович"
+          ]
+        },
         "intro": {
           "title": "1. О системе",
           "items": [
@@ -420,6 +437,14 @@
     },
     "user": {
       "sections": {
+        "about": {
+          "title": "О проекте",
+          "items": [
+            "Электронная библиотека, версия 0.0.8",
+            "Проект создан для КГКУ «Хабаровский центр социальной поддержки населения»",
+            "Разработчики: Соколов Михаил Андреевич, Разуваев Сергей Александрович"
+          ]
+        },
         "intro": {
           "title": "1. Начало работы",
           "items": [
@@ -505,6 +530,14 @@
     },
     "admin": {
       "sections": {
+        "about": {
+          "title": "О проекте",
+          "items": [
+            "Электронная библиотека, версия 0.0.8",
+            "Проект создан для КГКУ «Хабаровский центр социальной поддержки населения»",
+            "Разработчики: Соколов Михаил Андреевич, Разуваев Сергей Александрович"
+          ]
+        },
         "users": {
           "title": "1. Управление пользователями",
           "items": [
@@ -790,6 +823,12 @@
   "document.rotate_clockwise": "Повернуть выбранные страницы по часовой стрелке",
   "document.rotate_counter_clockwise": "Повернуть выбранные страницы против часовой стрелки",
   "document.about_file": "О файле",
+  "document.full_version": "Полная версия файла",
+  "document.full_version_manage": "Документы…",
+  "document.full_version_empty": "Файлы не прикреплены.",
+  "document.full_version_saved": "Полная версия файла сохранена",
+  "document.full_version_save_error": "Не удалось сохранить полную версию файла",
+  "document.full_version_need_portal_view": "Нужно право просмотра каталога портала, чтобы выбирать документы.",
   "document.split_screen": "Разделение экрана",
   "viewer.preview_load_failed": "Не удалось загрузить предпросмотр",
   "viewer.retry_preview": "Повторить загрузку предпросмотра",
@@ -825,5 +864,8 @@
   "node.visibility.effective": "Эффективный уровень: {{level}}",
   "node.visibility.level.private": "Приватный",
   "node.visibility.level.public": "Публичный",
-  "node.visibility.level.role_based": "По ролям"
+  "node.visibility.level.role_based": "По ролям",
+  "accessibility.toggle.label": "Версия для слабовидящих",
+  "accessibility.toggle.enable": "Включить версию для слабовидящих",
+  "accessibility.toggle.disable": "Выключить версию для слабовидящих"
 }

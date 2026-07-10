@@ -7,6 +7,9 @@
 .pnp.*
 
 
+# Docker build helper (download manually when GitHub CDN is unreachable)
+docker/app/bin/env2js.amd64
+
 # env vars
 # NOTE: .env.dev is the committed reference; .env is the per-developer file
 # (produced via `cp .env.dev .env`) and must never be committed.
@@ -40,6 +43,7 @@ docs/build/
 _build
 _static
 media/
+backups/
 ./static/
 celerybeat-schedule
 .vscode

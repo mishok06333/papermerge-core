@@ -2,6 +2,7 @@ import type {RootState} from "@/app/types"
 import {
   MAX_ZOOM_FACTOR,
   MIN_ZOOM_FACTOR,
+  COMMANDER_DEFAULT_PAGE_SIZE,
   PAGINATION_DEFAULT_ITEMS_PER_PAGES,
   ZOOM_FACTOR_INIT,
   ZOOM_FACTOR_STEP
@@ -16,6 +17,12 @@ import type {
 import type {PanelComponent} from "@/types.d/ui"
 import {PayloadAction, createSelector, createSlice} from "@reduxjs/toolkit"
 import Cookies from "js-cookie"
+
+import {
+  ACCESSIBILITY_COOKIE_KEY,
+  HEADER_HEIGHT_ACCESSIBILITY,
+  HEADER_HEIGHT_DEFAULT
+} from "@/accessibility/constants"
 
 import type {
   FileItemStatus,
@@ -47,7 +54,12 @@ export const HOME_FOLDER_TREE_WIDTH_MAX = 640
 export const HOME_FOLDER_TREE_WIDTH_DEFAULT = 240
 
 const SMALL_BOTTOM_MARGIN = 13 /* pixles */
-const APP_SHELL_HEADER_HEIGHT = 60
+
+function appShellHeaderHeight(): number {
+  return Cookies.get(ACCESSIBILITY_COOKIE_KEY) === "true"
+    ? HEADER_HEIGHT_ACCESSIBILITY
+    : HEADER_HEIGHT_DEFAULT
+}
 const EFFECTIVE_VIEWER_MAX_ZOOM_FACTOR = ZOOM_FACTOR_INIT
 
 function clampHomeFolderTreeWidth(width: number): number {
@@ -918,7 +930,7 @@ export const selectSearchContentHeight = (state: RootState) => {
 export const selectSearchPageHeight = (state: RootState) => {
   let height: number = state.ui.sizes.windowInnerHeight
 
-  height -= APP_SHELL_HEADER_HEIGHT
+  height -= appShellHeaderHeight()
   height -= state.ui.sizes.outletTopMarginAndPadding
   height -= SMALL_BOTTOM_MARGIN
 
@@ -1077,13 +1089,12 @@ export const selectLastPageSize = (
 ): number => {
   if (mode == "main") {
     return (
-      state.ui.mainCommanderLastPageSize || PAGINATION_DEFAULT_ITEMS_PER_PAGES
+      state.ui.mainCommanderLastPageSize || COMMANDER_DEFAULT_PAGE_SIZE
     )
   }
 
   return (
-    state.ui.secondaryCommanderLastPageSize ||
-    PAGINATION_DEFAULT_ITEMS_PER_PAGES
+    state.ui.secondaryCommanderLastPageSize || COMMANDER_DEFAULT_PAGE_SIZE
   )
 }
 

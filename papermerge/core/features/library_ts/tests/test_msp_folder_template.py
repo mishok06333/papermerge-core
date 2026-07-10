@@ -55,7 +55,7 @@ async def test_create_msp_folder_tree(
     nested_stmt = (
         select(func.count())
         .select_from(orm.Folder)
-        .where(orm.Folder.title == "федеральные")
+        .where(orm.Folder.title == "Федеральные")
     )
     assert (await db_session.scalar(nested_stmt)) == 1
 

@@ -52,7 +52,7 @@ export type PaginatedArgs = {
   sortColumn: SortMenuColumn
 }
 
-import {PAGINATION_DEFAULT_ITEMS_PER_PAGES} from "@/cconstants"
+import {COMMANDER_DEFAULT_PAGE_SIZE} from "@/cconstants"
 
 export const apiSliceWithNodes = apiSlice.injectEndpoints({
   endpoints: builder => ({
@@ -60,7 +60,7 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
       query: ({
         nodeID,
         page_number = 1,
-        page_size = PAGINATION_DEFAULT_ITEMS_PER_PAGES,
+        page_size = COMMANDER_DEFAULT_PAGE_SIZE,
         sortDir,
         sortColumn,
         filter = undefined

@@ -33,3 +33,6 @@ class AuthTestClient(BaseModel):
             )
         """
         return self.test_client.patch(*args, **kwargs)
+
+    def put(self, *args, **kwargs):
+        return self.test_client.put(*args, **kwargs)

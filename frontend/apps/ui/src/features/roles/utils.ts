@@ -27,7 +27,9 @@ const FOLDER_DOCUMENT_NODE_MAP: Record<string, string> = {
 /** Fine-grained document field scopes stored as-is on the server. */
 const DOCUMENT_FIELD_SCOPES = new Set([
   "document.update.title",
-  "document.update.tags"
+  "document.update.tags",
+  "document.full_version.view",
+  "document.full_version.manage"
 ])
 
 const PAGE_MANAGEMENT_MAP_C2S: Record<string, string> = {

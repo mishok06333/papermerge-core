@@ -57,6 +57,7 @@ export const apiSlice = createApi({
     "LibraryNotifications",
     "AuditLog",
     "LibrarySettings",
+    "DocumentFullVersions",
     "CitizenCategory",
     "CitizenCategoryFolders",
     "FolderCitizenCategories"

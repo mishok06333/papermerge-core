@@ -89,7 +89,11 @@ export default function useI18NText(): I18NRoleFormModal | undefined {
             title: t("roleForm.permissionTree.title"),
             custom_fields: t("roleForm.permissionTree.custom_fields"),
             tags: t("roleForm.permissionTree.tags"),
-            category: t("roleForm.permissionTree.category")
+            category: t("roleForm.permissionTree.category"),
+            full_version_view: t("roleForm.permissionTree.full_version_view"),
+            full_version_manage_perm: t(
+              "roleForm.permissionTree.full_version_manage"
+            )
           }
         }
       })

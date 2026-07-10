@@ -5,6 +5,7 @@ import {skipToken} from "@reduxjs/toolkit/query"
 import {useEffect, useState} from "react"
 import {useTranslation} from "react-i18next"
 import type {DownloadDocumentVersion, I18NDownloadButtonText} from "viewer"
+import {localizeVersionShortDescription} from "./localizeVersionShortDescription"
 
 interface Args {
   initiateListDownload?: boolean
@@ -29,22 +30,24 @@ export default function useDownloadButton({
   nodeID
 }: Args): DownloadButtonState {
   const [versions, setVersions] = useState<Array<DownloadDocumentVersion>>()
+  const {t, i18n} = useTranslation()
   const {isInitialized, txt} = useI18nText()
   const apiParam = initiateListDownload && nodeID ? nodeID : skipToken
   const {data, isError, isLoading} = useGetDocVersionsListQuery(apiParam)
 
   useEffect(() => {
     if (data) {
-      const vers = data?.map((d: DocVersItem) => {
-        return {
-          id: d.id,
-          number: d.number,
-          shortDescription: d.short_description
-        }
-      })
+      const vers = data.map((d: DocVersItem) => ({
+        id: d.id,
+        number: d.number,
+        shortDescription: localizeVersionShortDescription(
+          d.short_description,
+          t
+        )
+      }))
       setVersions(vers)
     }
-  }, [data])
+  }, [data, t, i18n.language])
 
   return {
     i18nIsReady: isInitialized,

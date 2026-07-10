@@ -41,6 +41,8 @@ export const HIDDEN = {
 }
 
 export const PAGINATION_DEFAULT_ITEMS_PER_PAGES = 10
+/** Default page size for the folder/file commander (bottom pagination). */
+export const COMMANDER_DEFAULT_PAGE_SIZE = 50
 export const STORAGE_KEY_PAGINATION_MITEMS_PER_PAGE = "mitems_per_page"
 export const STORAGE_KEY_PAGINATION_SITEMS_PER_PAGE = "sitems_per_page"
 

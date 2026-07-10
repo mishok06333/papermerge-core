@@ -5,6 +5,12 @@
   "downloadButton.error": "Error: Oops, it didn't work",
   "downloadButton.emptyVersionsArrayError": "Error: empty version list",
   "downloadButton.versionLabel": "Version",
+  "downloadButton.versionDescription.original": "Original",
+  "downloadButton.versionDescription.docxToPdf": "docx -> pdf",
+  "downloadButton.versionDescription.convertToPdf": "{{source}} -> pdf",
+  "downloadButton.versionDescription.pagesMovedIn": "{{count}} page(s) moved in",
+  "downloadButton.versionDescription.pagesMovedOut": "{{count}} page(s) moved out",
+  "downloadButton.versionDescription.pagesReplaced": "{{count}} page(s) replaced",
   "documentVersion.was-created": "Document version {{versionNumber}} was created",
   "pagesHaveChanged": {
     "mainText": "There are changes, like page order or rotation, which are not yet saved on the server. What would you like to do?",
@@ -120,7 +126,9 @@
       "title": "Title",
       "custom_fields": "Custom Fields",
       "tags": "Tags",
-      "category": "Document Type"
+      "category": "Document Type",
+      "full_version_view": "Full file version (view)",
+      "full_version_manage": "Full file version (edit)"
     }
   },
   "load-more": "Load more",
@@ -258,6 +266,7 @@
   "nodes.upload.title": "Upload Files",
   "nodes.upload.confirm_lead": "Are you sure you want to upload to",
   "nodes.upload.file_name": "File name",
+  "nodes.upload.pdf_conversion_notice": "One or more selected files will be converted to PDF during upload. This may take longer than usual.",
   "upload.error.duplicate_title": "A file with this name already exists in this folder",
   "upload.error.generic": "Upload failed",
   "upload.error.node_creation": "Failed to create document",
@@ -385,6 +394,14 @@
     "guest": {
       "title": "Guest help",
       "sections": {
+        "about": {
+          "title": "About the project",
+          "items": [
+            "Digital library, version 0.0.8",
+            "Project created for KGKU \"Khabarovsk Center for Social Support of the Population\"",
+            "Developers: Sokolov Mikhail Andreevich, Razuvaev Sergey Alexandrovich"
+          ]
+        },
         "intro": {
           "title": "1. About the system",
           "items": [
@@ -422,6 +439,14 @@
     },
     "user": {
       "sections": {
+        "about": {
+          "title": "About the project",
+          "items": [
+            "Digital library, version 0.0.8",
+            "Project created for KGKU \"Khabarovsk Center for Social Support of the Population\"",
+            "Developers: Sokolov Mikhail Andreevich, Razuvaev Sergey Alexandrovich"
+          ]
+        },
         "intro": {
           "title": "1. Getting started",
           "items": [
@@ -507,6 +532,14 @@
     },
     "admin": {
       "sections": {
+        "about": {
+          "title": "About the project",
+          "items": [
+            "Digital library, version 0.0.8",
+            "Project created for KGKU \"Khabarovsk Center for Social Support of the Population\"",
+            "Developers: Sokolov Mikhail Andreevich, Razuvaev Sergey Alexandrovich"
+          ]
+        },
         "users": {
           "title": "1. User management",
           "items": [
@@ -794,6 +827,12 @@
   "document.rotate_clockwise": "Rotate selected pages clockwise",
   "document.rotate_counter_clockwise": "Rotate selected pages counter-clockwise",
   "document.about_file": "About file",
+  "document.full_version": "Full file version",
+  "document.full_version_manage": "Documents…",
+  "document.full_version_empty": "No files attached.",
+  "document.full_version_saved": "Full file version saved",
+  "document.full_version_save_error": "Could not save full file version",
+  "document.full_version_need_portal_view": "Catalog view permission is required to pick documents.",
   "document.split_screen": "Split screen",
   "viewer.preview_load_failed": "Preview failed to load",
   "viewer.retry_preview": "Retry preview loading",
@@ -829,5 +868,8 @@
   "node.visibility.effective": "Effective level: {{level}}",
   "node.visibility.level.private": "Private",
   "node.visibility.level.public": "Public",
-  "node.visibility.level.role_based": "Role-based"
+  "node.visibility.level.role_based": "Role-based",
+  "accessibility.toggle.label": "Visually impaired mode",
+  "accessibility.toggle.enable": "Enable visually impaired mode",
+  "accessibility.toggle.disable": "Disable visually impaired mode"
 }

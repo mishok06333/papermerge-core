@@ -1,4 +1,5 @@
 export const USER_GUIDE_SECTION_KEYS = [
+  "about",
   "intro",
   "portal",
   "library",
@@ -11,6 +12,7 @@ export const USER_GUIDE_SECTION_KEYS = [
 ] as const
 
 export const ADMIN_GUIDE_SECTION_KEYS = [
+  "about",
   "users",
   "roles",
   "tags",
@@ -22,6 +24,7 @@ export const ADMIN_GUIDE_SECTION_KEYS = [
 ] as const
 
 export const GUEST_GUIDE_SECTION_KEYS = [
+  "about",
   "intro",
   "browse",
   "citizen_categories",

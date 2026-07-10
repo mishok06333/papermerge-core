@@ -88,6 +88,16 @@ const HTML_EXTENSIONS = new Set([".html", ".htm"])
 
 const DOCX_EXTENSIONS = new Set([".docx"])
 
+/** Extensions for which the backend creates a PDF version on upload. */
+const UPLOAD_PDF_CONVERSION_EXTENSIONS = new Set([
+  ".docx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".tif",
+  ".tiff"
+])
+
 const RTF_EXTENSIONS = new Set([".rtf"])
 
 const LEGACY_WORD_DOC_EXTENSIONS = new Set([".doc"])
@@ -192,6 +202,13 @@ export function isBuiltinTextDocument(
     cat === "rtf" ||
     cat === "word-doc"
   )
+}
+
+/** True when upload triggers server-side PDF conversion (docx or raster images). */
+export function uploadConvertsToPdf(
+  fileName: string | null | undefined
+): boolean {
+  return UPLOAD_PDF_CONVERSION_EXTENSIONS.has(getFileExtension(fileName))
 }
 
 /** Whether the upload dialog should offer scheduling OCR for this file. */

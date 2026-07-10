@@ -22,7 +22,8 @@ import type {UploadFileOutput} from "@/features/nodes/types"
 import {
   buildFileNameWithOriginalExtension,
   isAcceptableUploadStem,
-  splitStemAndExtension
+  splitStemAndExtension,
+  uploadConvertsToPdf
 } from "@/features/document/documentPreview"
 import type {FolderType} from "@/types"
 import {useTranslation} from "react-i18next"
@@ -82,38 +83,48 @@ export const DropFilesModal = ({
       )
     )
 
-  const localSubmit = async () => {
+  const localSubmit = () => {
     if (!namesValid) {
       return
     }
-    for (let i = 0; i < source_files.length; i++) {
-      const file = fileWithRenamedStem(
-        source_files[i],
-        fileStems[i] ?? splitStemAndExtension(source_files[i].name).stem
-      )
-      const result = await dispatch(
-        uploadFile({
-          file,
-          refreshTarget: true,
-          ocr: false,
-          target
-        })
-      )
-      const newlyCreatedNode = result.payload as UploadFileOutput
 
-      if (newlyCreatedNode.source?.id) {
-        const newNodeID = newlyCreatedNode.source?.id
-        dispatch(generateThumbnail({node_id: newNodeID, file}))
-      }
-      dispatch(
-        apiSlice.util.invalidateTags([
-          "Node",
-          ...portalNodesInvalidationTags(target.id)
-        ])
+    const preparedFiles = filesArray.map((f, i) =>
+      fileWithRenamedStem(
+        f,
+        fileStems[i] ?? splitStemAndExtension(f.name).stem
       )
-    }
+    )
 
     onSubmit()
+
+    if (preparedFiles.some(file => uploadConvertsToPdf(file.name))) {
+      alert(t("nodes.upload.pdf_conversion_notice"))
+    }
+
+    void (async () => {
+      for (const file of preparedFiles) {
+        const result = await dispatch(
+          uploadFile({
+            file,
+            refreshTarget: true,
+            ocr: false,
+            target
+          })
+        )
+        const newlyCreatedNode = result.payload as UploadFileOutput
+
+        if (newlyCreatedNode.source?.id) {
+          const newNodeID = newlyCreatedNode.source.id
+          dispatch(generateThumbnail({node_id: newNodeID, file}))
+        }
+        dispatch(
+          apiSlice.util.invalidateTags([
+            "Node",
+            ...portalNodesInvalidationTags(target.id)
+          ])
+        )
+      }
+    })()
   }
 
   const localCancel = () => {

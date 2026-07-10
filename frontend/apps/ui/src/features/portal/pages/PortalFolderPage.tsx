@@ -12,6 +12,7 @@ import {
   selectHomeFolderTreeOpen,
   selectHomeFolderTreeSidebarHeight
 } from "@/features/ui/uiSlice"
+import breadcrumbClasses from "@/components/Breadcrumbs/Breadcrumbs.module.css"
 import {
   Anchor,
   Box,
@@ -139,20 +140,22 @@ export default function PortalFolderPage() {
         <Group justify="space-between" align="center" wrap="wrap" gap="sm">
           <Box style={{flex: 1, minWidth: 0}}>
             {trail.length > 0 ? (
-              <Breadcrumbs separator="›">
+              <Breadcrumbs
+                separator="›"
+                className={breadcrumbClasses.breadcrumbs}
+              >
                 {trail.map(([id, title], index) => {
                   const isLast = index === trail.length - 1
                   return isLast ? (
-                    <Text key={id} size="sm" fw={600} lineClamp={1}>
+                    <Anchor key={id} title={title} fw={600}>
                       {title}
-                    </Text>
+                    </Anchor>
                   ) : (
                     <Anchor
                       key={id}
                       component={Link}
                       to={`/portal/folder/${id}`}
-                      size="sm"
-                      lineClamp={1}
+                      title={title}
                     >
                       {title}
                     </Anchor>

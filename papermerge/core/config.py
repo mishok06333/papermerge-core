@@ -40,6 +40,14 @@ class Settings(BaseSettings):
         default=None,
         description="Optional Office Web Viewer base URL for iframe previews.",
     )
+    papermerge__main__gotenberg_url: str | None = Field(
+        default="http://127.0.0.1:3000",
+        description="Gotenberg base URL for DOCX→PDF conversion on upload.",
+    )
+    papermerge__main__gotenberg_timeout_seconds: float = Field(
+        default=300.0,
+        description="HTTP timeout (seconds) for Gotenberg DOCX conversion.",
+    )
     papermerge__main__file_server: FileServer = FileServer.LOCAL
     papermerge__main__cf_sign_url_private_key: str | None = None
     papermerge__main__cf_sign_url_key_id: str | None = None

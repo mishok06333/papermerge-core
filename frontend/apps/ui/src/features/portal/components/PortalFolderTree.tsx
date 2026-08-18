@@ -108,7 +108,7 @@ type Props = {
   portalRootTitle: string
   currentFolderId: string
   /** Total sidebar height (title + scrollable tree area). */
-  height: number
+  height: number | string
   documentNavState: PortalDocumentNavState
   /** Where folder nodes navigate: portal catalog vs dual-panel commander. */
   folderNav?: PortalFolderTreeFolderNav

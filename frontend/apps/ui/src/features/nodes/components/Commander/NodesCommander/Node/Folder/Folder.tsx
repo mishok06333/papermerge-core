@@ -1,5 +1,5 @@
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
-import {Checkbox, Stack} from "@mantine/core"
+import {Checkbox, Stack, Tooltip} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
 import {IconUsers} from "@tabler/icons-react"
 import {useContext, useState} from "react"
@@ -115,7 +115,9 @@ export default function Folder({
           <Tags names={tagNames} node={node} />
           <div className={classes.title}>
             <NodeVisibilityIcon summary={node.visibility_summary} />
-            <span>{node.title}</span>
+            <Tooltip label={node.title}>
+              <span>{node.title}</span>
+            </Tooltip>
           </div>
         </a>
       </Stack>

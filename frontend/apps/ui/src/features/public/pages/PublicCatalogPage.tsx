@@ -1,5 +1,6 @@
 import {
   Anchor,
+  Box,
   Group,
   Loader,
   Paper,
@@ -21,6 +22,7 @@ import {
   useGetPublicFolderQuery,
   useGetPublicPaginatedNodesQuery
 } from "@/features/public/publicApiSlice"
+import classes from "@/features/portal/catalogPage.module.css"
 import type {NodeType} from "@/types"
 import {formatNodeDisplayTitle} from "@/utils"
 
@@ -98,9 +100,11 @@ function PublicCatalogPageGuest() {
   }
 
   return (
-    <Group align="flex-start" wrap="nowrap" gap="md" p="md">
-      <Stack gap="md" style={{flex: 1, minWidth: 0}}>
-        <PublicBreadcrumbs trail={trail} />
+    <Group align="stretch" wrap="nowrap" gap="md" p="md" className={classes.page}>
+      <Stack gap="md" className={classes.column}>
+        <Box className={classes.header}>
+          <PublicBreadcrumbs trail={trail} />
+        </Box>
 
         {sortedItems.length === 0 ? (
           <Paper withBorder p="xl" radius="md">
@@ -109,7 +113,7 @@ function PublicCatalogPageGuest() {
             </Text>
           </Paper>
         ) : (
-          <Stack gap="sm">
+          <Stack gap="sm" className={classes.list}>
             {sortedItems.map(row => {
               const isFolder = row.ctype === "folder"
               return (

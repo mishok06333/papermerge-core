@@ -9,10 +9,10 @@ import type {BreadcrumbType, NodeType, UserDetails} from "@/types"
 import {formatNodeDisplayTitle} from "@/utils"
 import {
   homeFolderTreeToggled,
-  selectHomeFolderTreeOpen,
-  selectHomeFolderTreeSidebarHeight
+  selectHomeFolderTreeOpen
 } from "@/features/ui/uiSlice"
 import breadcrumbClasses from "@/components/Breadcrumbs/Breadcrumbs.module.css"
+import classes from "@/features/portal/catalogPage.module.css"
 import {
   Anchor,
   Box,
@@ -64,8 +64,6 @@ export default function PortalFolderPage() {
   const {folderId} = useParams<{folderId: string}>()
   const user = useSelector(selectCurrentUser) as UserDetails | null
   const scopes = user?.scopes ?? []
-  // `p="md"` on the page group — subtract top + bottom padding from sidebar height.
-  const treeHeight = useAppSelector(s => selectHomeFolderTreeSidebarHeight(s) - 32)
   const portalFolderTreeOpen = useAppSelector(selectHomeFolderTreeOpen)
 
   const {data: root} = useGetPortalRootQuery()
@@ -126,18 +124,30 @@ export default function PortalFolderPage() {
   const showTree = root && documentNavState && portalFolderTreeOpen
 
   return (
-    <Group align="flex-start" wrap="nowrap" gap="md" p="md">
+    <Group
+      align="stretch"
+      wrap="nowrap"
+      gap="md"
+      p="md"
+      className={classes.page}
+    >
       {showTree ? (
         <PortalFolderTree
           portalRootId={root.id}
           portalRootTitle={t("portal.root_folder")}
           currentFolderId={parentId}
-          height={treeHeight}
+          height="100%"
           documentNavState={documentNavState}
         />
       ) : null}
-      <Stack gap="md" style={{flex: 1, minWidth: 0}}>
-        <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+      <Stack gap="md" className={classes.column}>
+        <Group
+          justify="space-between"
+          align="center"
+          wrap="wrap"
+          gap="sm"
+          className={classes.header}
+        >
           <Box style={{flex: 1, minWidth: 0}}>
             {trail.length > 0 ? (
               <Breadcrumbs
@@ -188,7 +198,7 @@ export default function PortalFolderPage() {
             </Text>
           </Paper>
         ) : (
-          <Stack gap="sm">
+          <Stack gap="sm" className={classes.list}>
             {sortedItems.map(row => {
               const isFolder = row.ctype === "folder"
               return (

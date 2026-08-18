@@ -1,5 +1,5 @@
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
-import {Checkbox, Stack} from "@mantine/core"
+import {Checkbox, Stack, Tooltip} from "@mantine/core"
 import {IconUsers} from "@tabler/icons-react"
 import {useContext} from "react"
 
@@ -86,7 +86,9 @@ export default function Document({
         <Tags names={tagNames} />
         <div className={classes.title}>
           <NodeVisibilityIcon summary={node.visibility_summary} />
-          <span>{formatNodeDisplayTitle(node.title, node.ctype)}</span>
+          <Tooltip label={node.title}>
+            <span>{formatNodeDisplayTitle(node.title, node.ctype)}</span>
+          </Tooltip>
         </div>
       </a>
     </Stack>

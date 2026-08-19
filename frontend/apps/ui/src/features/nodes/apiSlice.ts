@@ -8,9 +8,7 @@ import type {
   ServerNotifDocumentMoved,
   ServerNotifDocumentsMoved,
   ServerNotifPayload,
-  ServerNotifType,
-  SortMenuColumn,
-  SortMenuDirection
+  ServerNotifType
 } from "@/types"
 import {getWSURL} from "@/utils"
 import {
@@ -48,8 +46,6 @@ export type PaginatedArgs = {
   page_number?: number
   page_size?: number
   filter?: string | null
-  sortDir: SortMenuDirection
-  sortColumn: SortMenuColumn
 }
 
 import {COMMANDER_DEFAULT_PAGE_SIZE} from "@/cconstants"
@@ -61,15 +57,11 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
         nodeID,
         page_number = 1,
         page_size = COMMANDER_DEFAULT_PAGE_SIZE,
-        sortDir,
-        sortColumn,
         filter = undefined
       }: PaginatedArgs) => {
-        const orderBy = sortDir == "az" ? sortColumn : `-${sortColumn}`
         const params = new URLSearchParams({
           page_number: String(page_number),
-          page_size: String(page_size),
-          order_by: orderBy
+          page_size: String(page_size)
         })
         if (filter) {
           params.set("filter", filter)
@@ -237,6 +229,21 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
         ]
       }
     }),
+    reorderNodes: builder.mutation<
+      void,
+      {parentId: string; node_ids: string[]}
+    >({
+      query: ({parentId, node_ids}) => ({
+        url: `/nodes/${parentId}/reorder`,
+        method: "POST",
+        body: {node_ids}
+      }),
+      invalidatesTags: (_result, _error, arg) => [
+        {type: "Node", id: arg.parentId},
+        "Node",
+        ...portalNodesInvalidationTags(arg.parentId)
+      ]
+    }),
     getNodeVisibility: builder.query<NodeVisibilitySettings, string>({
       query: nodeID => `/nodes/${nodeID}/visibility`,
       providesTags: (_result, _error, id) => [{type: "Node", id}]
@@ -282,6 +289,7 @@ export const {
   useGetNodeTagsQuery,
   useDeleteNodesMutation,
   useMoveNodesMutation,
+  useReorderNodesMutation,
   useGetNodeVisibilityQuery,
   useUpdateNodeVisibilityMutation
 } = apiSliceWithNodes

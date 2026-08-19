@@ -56,7 +56,7 @@ async def get_node(
 
     Requires ``commander.view`` (file manager access) and ``node.view`` on the parent.
     """
-    order_by = ["ctype", "title", "created_at", "updated_at"]
+    order_by = ["sort_index"]
 
     if params.order_by:
         order_by = [item.strip() for item in params.order_by.split(",")]
@@ -256,6 +256,51 @@ async def update_node(
     send_task(INDEX_ADD_NODE, kwargs={"node_id": str(updated_node.id)}, route_name="i3")
 
     return updated_node
+
+
+@router.post(
+    "/{parent_id}/reorder",
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "description": (
+                f"No `{scopes.NODE_UPDATE}` permission on the parent folder"
+            ),
+            "content": OPEN_API_GENERIC_JSON_DETAIL,
+        }
+    },
+)
+async def reorder_nodes(
+    parent_id: UUID,
+    payload: schema.ReorderNodes,
+    user: Annotated[
+        schema.User, Security(get_current_user, scopes=[scopes.NODE_UPDATE])
+    ],
+    db_session: AsyncSession = Depends(get_db),
+) -> schema.ReorderNodes:
+    """Save a custom order of files and folders inside ``parent_id``."""
+    await portal_policy.require_portal_view_if_under_portal(
+        db_session, user, parent_id
+    )
+    await dbapi_common.require_node_perm(
+        db_session,
+        node_id=parent_id,
+        codename=scopes.NODE_UPDATE,
+        user_id=user.id,
+    )
+    await portal_policy.require_portal_on_reorder(db_session, user, parent_id)
+
+    try:
+        await nodes_dbapi.reorder_nodes(
+            db_session,
+            parent_id=parent_id,
+            node_ids=payload.node_ids,
+            user_id=user.id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    await db_session.commit()
+    return payload
 
 
 @router.delete(

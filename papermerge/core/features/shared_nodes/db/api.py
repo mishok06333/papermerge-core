@@ -25,11 +25,16 @@ def str2colexpr(keys: list[str]):
         "-created_at": orm.Node.created_at.desc(),
         "updated_at": orm.Node.updated_at,
         "-updated_at": orm.Node.updated_at.desc(),
+        "sort_index": (orm.Node.sort_index.asc(), orm.Node.title.asc()),
+        "-sort_index": (orm.Node.sort_index.desc(), orm.Node.title.desc()),
     }
 
     for key in keys:
         item = ORDER_BY_MAP.get(key, orm.Node.title)
-        result.append(item)
+        if isinstance(item, tuple):
+            result.extend(item)
+        else:
+            result.append(item)
 
     return result
 

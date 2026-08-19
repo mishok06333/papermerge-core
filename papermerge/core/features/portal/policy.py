@@ -72,6 +72,19 @@ async def require_portal_on_update_node(
         raise exc.HTTP403Forbidden()
 
 
+async def require_portal_on_reorder(
+    db_session: AsyncSession, user: schema.User, parent_id: UUID
+) -> None:
+    """Rearranging catalog items requires section or document update on the portal."""
+    if not await _under_portal(db_session, parent_id):
+        return
+    if not (
+        _has_portal_scope(user, scopes.PORTAL_SECTION_UPDATE)
+        or _has_portal_scope(user, scopes.PORTAL_DOCUMENT_UPDATE)
+    ):
+        raise exc.HTTP403Forbidden()
+
+
 async def require_portal_on_delete_node(
     db_session: AsyncSession, user: schema.User, node_id: UUID
 ) -> None:

@@ -1,8 +1,9 @@
 """Node title lookup and trash revive helpers without heavy feature imports."""
 
 from uuid import UUID
+from typing import Iterable
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from papermerge.core import orm
@@ -58,8 +59,31 @@ async def find_folder_id_by_title(
     )
 
 
+async def next_sort_index(
+    db_session: AsyncSession,
+    parent_id: UUID | None,
+    exclude_ids: Iterable[UUID] | None = None,
+) -> int:
+    """Next sort_index for a new/moved child of ``parent_id`` (appends at end)."""
+    stmt = select(func.coalesce(func.max(orm.Node.sort_index), -1)).where(
+        orm.Node.parent_id == parent_id,
+        orm.Node.deleted_at.is_(None),
+    )
+    if exclude_ids:
+        excluded = list(exclude_ids)
+        if excluded:
+            stmt = stmt.where(orm.Node.id.notin_(excluded))
+    return (await db_session.execute(stmt)).scalar_one() + 1
+
+
 async def revive_trashed_node(db_session: AsyncSession, node_id: UUID) -> None:
+    parent_id = await db_session.scalar(
+        select(orm.Node.parent_id).where(orm.Node.id == node_id)
+    )
+    sort_index = await next_sort_index(db_session, parent_id)
     await db_session.execute(
-        update(orm.Node).where(orm.Node.id == node_id).values(deleted_at=None)
+        update(orm.Node)
+        .where(orm.Node.id == node_id)
+        .values(deleted_at=None, sort_index=sort_index)
     )
     await db_session.flush()

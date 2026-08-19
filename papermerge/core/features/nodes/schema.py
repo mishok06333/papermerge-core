@@ -14,6 +14,8 @@ from papermerge.core.types import OCRStatusEnum
 
 
 class OrderBy(str, Enum):
+    sort_index_asc = "sort_index"
+    sort_index_desc = "-sort_index"
     title_asc = "title"
     title_desc = "-title"
     ctype_asc = "ctype"
@@ -116,6 +118,10 @@ class CreateNode(BaseModel):
 class MoveNode(BaseModel):
     source_ids: List[UUID]
     target_id: UUID
+
+
+class ReorderNodes(BaseModel):
+    node_ids: List[UUID]
 
 
 class NewFolder(BaseModel):

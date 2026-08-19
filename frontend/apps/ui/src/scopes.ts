@@ -134,6 +134,13 @@ export function canRenameInCommander(
   return scopes.includes(NODE_UPDATE)
 }
 
+export function canReorderInCommander(
+  scopes: string[],
+  ctx: CommanderWriteContext
+): boolean {
+  return canRenameInCommander(scopes, ctx)
+}
+
 export function canMoveInCommander(
   scopes: string[],
   ctx: CommanderWriteContext

@@ -519,8 +519,9 @@ async def test_home_with_two_tagged_nodes(
     results = response.json()["items"]
     assert len(results) == 2  # there are two folders
 
-    doc_tag_names = [tag["name"] for tag in results[0]["tags"]]
-    folder_tag_names = [tag["name"] for tag in results[1]["tags"]]
+    by_ctype = {item["ctype"]: item for item in results}
+    doc_tag_names = [tag["name"] for tag in by_ctype["document"]["tags"]]
+    folder_tag_names = [tag["name"] for tag in by_ctype["folder"]["tags"]]
 
     assert {"doc_a", "doc_b"} == set(doc_tag_names)
     assert {"folder_a", "folder_b"} == set(folder_tag_names)
@@ -851,3 +852,38 @@ async def test_assign_tags_with_tag_select_scope_only_from_db_role(
     assert response.status_code == 200, response.json()
     updated = core_schema.Document.model_validate(response.json())
     assert {t.name for t in updated.tags} == {"important"}
+
+
+async def test_reorder_nodes_persists_custom_order(
+    auth_api_client: AuthTestClient, make_folder, make_document
+):
+    user = auth_api_client.user
+    folder_a = await make_folder(title="Alpha", user=user, parent=user.home_folder)
+    folder_b = await make_folder(title="Beta", user=user, parent=user.home_folder)
+    doc = await make_document(title="letter.pdf", user=user, parent=user.home_folder)
+
+    new_order = [str(doc.id), str(folder_b.id), str(folder_a.id)]
+    response = await auth_api_client.post(
+        f"/nodes/{user.home_folder.id}/reorder",
+        json={"node_ids": new_order},
+    )
+    assert response.status_code == 200, response.json()
+
+    listed = await auth_api_client.get(f"/nodes/{user.home_folder.id}?page_size=50")
+    assert listed.status_code == 200, listed.json()
+    titles = [item["title"] for item in listed.json()["items"]]
+    assert titles == ["letter.pdf", "Beta", "Alpha"]
+
+
+async def test_reorder_nodes_rejects_incomplete_list(
+    auth_api_client: AuthTestClient, make_folder, make_document
+):
+    user = auth_api_client.user
+    folder = await make_folder(title="OnlyFolder", user=user, parent=user.home_folder)
+    await make_document(title="only.pdf", user=user, parent=user.home_folder)
+
+    response = await auth_api_client.post(
+        f"/nodes/{user.home_folder.id}/reorder",
+        json={"node_ids": [str(folder.id)]},
+    )
+    assert response.status_code == 400

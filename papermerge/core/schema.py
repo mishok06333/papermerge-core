@@ -1,5 +1,5 @@
 from .features.nodes.schema import (
-    Folder, NewFolder, Node, UpdateNode, MoveNode, Owner,
+    Folder, NewFolder, Node, UpdateNode, MoveNode, ReorderNodes, Owner,
     NodeVisibilitySettings, UpdateNodeVisibility, LibraryCatalogRoot,
 )
 from .features.shared_nodes.schema import (
@@ -51,6 +51,7 @@ __all__ = [
     'Owner',
     'UpdateNode',
     'MoveNode',
+    'ReorderNodes',
     'NodeVisibilitySettings',
     'UpdateNodeVisibility',
     'LibraryCatalogRoot',

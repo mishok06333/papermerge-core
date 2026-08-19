@@ -23,17 +23,7 @@ import {
   useGetPublicPaginatedNodesQuery
 } from "@/features/public/publicApiSlice"
 import classes from "@/features/portal/catalogPage.module.css"
-import type {NodeType} from "@/types"
 import {formatNodeDisplayTitle} from "@/utils"
-
-function sortItems(items: NodeType[]): NodeType[] {
-  return [...items].sort((a, b) => {
-    if (a.ctype !== b.ctype) {
-      return a.ctype === "folder" ? -1 : 1
-    }
-    return a.title.localeCompare(b.title, undefined, {sensitivity: "base"})
-  })
-}
 
 export default function PublicCatalogPage() {
   if (hasAuthCookie()) {
@@ -59,10 +49,7 @@ function PublicCatalogPageGuest() {
     {skip: !parentId}
   )
 
-  const sortedItems = useMemo(
-    () => (data?.items ? sortItems(data.items) : []),
-    [data?.items]
-  )
+  const catalogItems = data?.items ?? []
 
   const trail = useMemo(() => {
     if (!parentId) {
@@ -106,7 +93,7 @@ function PublicCatalogPageGuest() {
           <PublicBreadcrumbs trail={trail} />
         </Box>
 
-        {sortedItems.length === 0 ? (
+        {catalogItems.length === 0 ? (
           <Paper withBorder p="xl" radius="md">
             <Text c="dimmed" ta="center">
               {t("portal.folder_empty")}
@@ -114,7 +101,7 @@ function PublicCatalogPageGuest() {
           </Paper>
         ) : (
           <Stack gap="sm" className={classes.list}>
-            {sortedItems.map(row => {
+            {catalogItems.map(row => {
               const isFolder = row.ctype === "folder"
               return (
                 <Paper

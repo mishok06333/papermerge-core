@@ -51,9 +51,9 @@ export const publicApiSlice = apiSlice.injectEndpoints({
         filter = undefined
       }) => {
         if (!filter) {
-          return `/public/nodes/${nodeID}?page_number=${page_number}&page_size=${page_size}&order_by=ctype`
+          return `/public/nodes/${nodeID}?page_number=${page_number}&page_size=${page_size}`
         }
-        return `/public/nodes/${nodeID}?page_size=${page_size}&filter=${filter}&order_by=ctype`
+        return `/public/nodes/${nodeID}?page_size=${page_size}&filter=${filter}`
       },
       transformResponse: (response: Paginated<NodeType>) => ({
         ...response,

@@ -11,25 +11,31 @@ type Args = {
   onClick: (node: NodeType) => void
   onDragStart: (nodeID: string, event: React.DragEvent) => void
   onDrag: (nodeID: string, event: React.DragEvent) => void
+  reorderMode?: boolean
+  isReorderDragging?: boolean
+  onReorderPointerDown?: (event: React.PointerEvent, nodeID: string) => void
 }
 
-export default function Node({node, onClick, onDrag, onDragStart}: Args) {
+export default function Node({
+  node,
+  onClick,
+  onDrag,
+  onDragStart,
+  reorderMode = false,
+  isReorderDragging = false,
+  onReorderPointerDown
+}: Args) {
   const [cssClassNames, setCssClassNames] = useState<Array<string>>([])
   const draggedNodesIDs = useAppSelector(selectDraggedNodeIDs)
 
   useEffect(() => {
+    const names: string[] = []
     const node_is_being_dragged = draggedNodesIDs?.includes(node.id)
-    if (node_is_being_dragged) {
-      if (cssClassNames.indexOf(DRAGGED) < 0) {
-        setCssClassNames([...cssClassNames, DRAGGED])
-      }
-    } else {
-      setCssClassNames(
-        // remove css class
-        cssClassNames.filter(item => item !== DRAGGED)
-      )
+    if (node_is_being_dragged && !reorderMode) {
+      names.push(DRAGGED)
     }
-  }, [draggedNodesIDs?.length])
+    setCssClassNames(names)
+  }, [draggedNodesIDs?.length, node.id, reorderMode])
 
   if (node.ctype == "folder") {
     return (
@@ -39,6 +45,9 @@ export default function Node({node, onClick, onDrag, onDragStart}: Args) {
         onDrag={onDrag}
         onDragStart={onDragStart}
         cssClassNames={cssClassNames}
+        reorderMode={reorderMode}
+        isReorderDragging={isReorderDragging}
+        onReorderPointerDown={onReorderPointerDown}
       />
     )
   }
@@ -50,6 +59,9 @@ export default function Node({node, onClick, onDrag, onDragStart}: Args) {
       onDrag={onDrag}
       onDragStart={onDragStart}
       cssClassNames={cssClassNames}
+      reorderMode={reorderMode}
+      isReorderDragging={isReorderDragging}
+      onReorderPointerDown={onReorderPointerDown}
     />
   )
 }

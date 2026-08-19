@@ -1,6 +1,6 @@
-import {Box, Group, Stack} from "@mantine/core"
+import {Box, Group, Stack, Text} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks"
-import {useContext, useEffect, useMemo, useState} from "react"
+import {useContext, useEffect, useMemo, useRef, useState} from "react"
 import {createRoot} from "react-dom/client"
 
 import {useAppDispatch, useAppSelector} from "@/app/hooks"
@@ -45,13 +45,12 @@ import Pagination from "@/components/Pagination"
 import PanelContext from "@/contexts/PanelContext"
 import {
   useGetFolderQuery,
-  useGetPaginatedNodesQuery
+  useGetPaginatedNodesQuery,
+  useReorderNodesMutation
 } from "@/features/nodes/apiSlice"
 import {
   commanderLastPageSizeUpdated,
   currentDocVerUpdated,
-  selectCommanderSortMenuColumn,
-  selectCommanderSortMenuDir,
   selectContentHeight,
   selectHomeFolderTreeSidebarHeight,
   selectDraggedNodes,
@@ -60,7 +59,7 @@ import {
   selectHomeFolderTreeOpen,
   selectLastPageSize
 } from "@/features/ui/uiSlice"
-import type {NType, PanelMode} from "@/types"
+import type {NodeType, NType, PanelMode} from "@/types"
 import classes from "./Commander.module.scss"
 
 import {
@@ -79,6 +78,24 @@ import {equalUUIDs} from "@/utils"
 import FolderNodeActions from "./FolderNodeActions"
 import NodesList from "./NodesList"
 import SupportedFilesInfoModal from "./SupportedFilesInfoModal"
+
+const REORDER_PAGE_SIZE = 1000
+
+function moveNodeInList(
+  items: NodeType[],
+  fromId: string,
+  toId: string
+): NodeType[] {
+  const from = items.findIndex(item => item.id === fromId)
+  const to = items.findIndex(item => item.id === toId)
+  if (from < 0 || to < 0 || from === to) {
+    return items
+  }
+  const next = [...items]
+  const [item] = next.splice(from, 1)
+  next.splice(to, 0, item)
+  return next
+}
 
 export default function Commander() {
   const {t} = useTranslation()
@@ -130,22 +147,27 @@ export default function Commander() {
   const [pageSize, setPageSize] = useState<number>(lastPageSize)
   const [page, setPage] = useState<number>(1)
   const filter = useAppSelector(s => selectFilterText(s, mode))
-  const sortDir = useAppSelector(s => selectCommanderSortMenuDir(s, mode))
-  const sortColumn = useAppSelector(s => selectCommanderSortMenuColumn(s, mode))
+  const [reorderMode, setReorderMode] = useState(false)
+  const [orderedItems, setOrderedItems] = useState<NodeType[]>([])
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
+  const draggingNodeIdRef = useRef<string | null>(null)
+  const [reorderSaving, setReorderSaving] = useState(false)
+  const [reorderNodes] = useReorderNodesMutation()
 
   useEffect(() => {
+    setReorderMode(false)
+    setDraggingNodeId(null)
+    draggingNodeIdRef.current = null
     setPage(1)
-  }, [sortColumn, sortDir])
+  }, [currentNodeID])
 
   const {data, isLoading, isFetching, isError, refetch, error} =
     useGetPaginatedNodesQuery(
       {
         nodeID: currentNodeID!,
-        page_number: page,
-        page_size: pageSize,
-        filter: filter,
-        sortDir: sortDir,
-        sortColumn: sortColumn
+        page_number: reorderMode ? 1 : page,
+        page_size: reorderMode ? REORDER_PAGE_SIZE : pageSize,
+        filter: reorderMode ? undefined : filter
       },
       {skip: !currentNodeID}
     )
@@ -175,6 +197,9 @@ export default function Commander() {
   const scopes = user?.scopes ?? []
 
   const commanderDragDropEnabled = useMemo(() => {
+    if (reorderMode) {
+      return false
+    }
     if (!canOpenCommander(scopes)) {
       return false
     }
@@ -185,7 +210,46 @@ export default function Commander() {
       canDeleteInCommander(scopes, commanderWriteContext) ||
       canRenameInCommander(scopes, commanderWriteContext)
     )
-  }, [scopes, commanderWriteContext])
+  }, [scopes, commanderWriteContext, reorderMode])
+
+  useEffect(() => {
+    if (!reorderMode || !data?.items || draggingNodeIdRef.current) {
+      return
+    }
+    setOrderedItems(data.items)
+  }, [data?.items, reorderMode])
+
+  useEffect(() => {
+    if (!draggingNodeId) {
+      return
+    }
+    const onMove = (event: PointerEvent) => {
+      const dragId = draggingNodeIdRef.current
+      if (!dragId) {
+        return
+      }
+      event.preventDefault()
+      const el = document.elementFromPoint(event.clientX, event.clientY)
+      const target = el?.closest("[data-node-id]") as HTMLElement | null
+      const targetId = target?.dataset.nodeId
+      if (!targetId || targetId === dragId) {
+        return
+      }
+      setOrderedItems(prev => moveNodeInList(prev, dragId, targetId))
+    }
+    const onUp = () => {
+      draggingNodeIdRef.current = null
+      setDraggingNodeId(null)
+    }
+    window.addEventListener("pointermove", onMove, {passive: false})
+    window.addEventListener("pointerup", onUp)
+    window.addEventListener("pointercancel", onUp)
+    return () => {
+      window.removeEventListener("pointermove", onMove)
+      window.removeEventListener("pointerup", onUp)
+      window.removeEventListener("pointercancel", onUp)
+    }
+  }, [draggingNodeId])
 
   if (userStatus === "loading" || userStatus === "idle") {
     return <div>{t("common.loading")}</div>
@@ -204,7 +268,7 @@ export default function Commander() {
 
   const showPortalFolderTree = portalFolderTreeContext && homeFolderTreeOpen
 
-  if (isLoading && !data) {
+  if (isLoading && !data && !(reorderMode && orderedItems.length > 0)) {
     return <div>{t("common.loading")}</div>
   }
 
@@ -227,7 +291,7 @@ export default function Commander() {
     return <div>{detail}</div>
   }
 
-  if (!data) {
+  if (!data && !(reorderMode && orderedItems.length > 0)) {
     return <div>{t("nodes.error.data_null")}</div>
   }
 
@@ -347,6 +411,10 @@ export default function Commander() {
   const onNodeDrag = () => {}
 
   const onNodeDragStart = (nodeID: string, event: React.DragEvent) => {
+    if (reorderMode) {
+      event.preventDefault()
+      return
+    }
     const image = <DraggingIcon nodeID={nodeID} />
     let ghost = document.createElement("div")
     ghost.style.transform = "translate(-10000px, -10000px)"
@@ -359,29 +427,85 @@ export default function Commander() {
     root.render(image)
   }
 
+  const onStartReorder = () => {
+    setOrderedItems(data?.items ?? [])
+    setReorderMode(true)
+  }
+
+  const onCancelReorder = () => {
+    draggingNodeIdRef.current = null
+    setDraggingNodeId(null)
+    setOrderedItems(data?.items ?? [])
+    setReorderMode(false)
+  }
+
+  const onFinishReorder = async () => {
+    if (!currentNodeID) {
+      return
+    }
+    setReorderSaving(true)
+    try {
+      await reorderNodes({
+        parentId: currentNodeID,
+        node_ids: orderedItems.map(item => item.id)
+      }).unwrap()
+      setReorderMode(false)
+    } finally {
+      draggingNodeIdRef.current = null
+      setDraggingNodeId(null)
+      setReorderSaving(false)
+    }
+  }
+
+  const onReorderPointerDown = (
+    event: React.PointerEvent,
+    nodeID: string
+  ) => {
+    if (!reorderMode) {
+      return
+    }
+    event.preventDefault()
+    draggingNodeIdRef.current = nodeID
+    setDraggingNodeId(nodeID)
+  }
+
+  const visibleItems = reorderMode ? orderedItems : (data?.items ?? [])
+
   let commanderContent
 
-  if (data.items.length > 0) {
+  if (visibleItems.length > 0) {
     commanderContent = (
       <>
-        <Group>
-          <NodesList
-            items={data.items}
-            onClick={onClick}
-            onNodeDrag={onNodeDrag}
-            onNodeDragStart={onNodeDragStart}
+        <Stack gap="xs">
+          {reorderMode && (
+            <Text size="sm" c="dimmed">
+              {t("nodes.reorder.hint")}
+            </Text>
+          )}
+          <Group>
+            <NodesList
+              items={visibleItems}
+              onClick={onClick}
+              onNodeDrag={onNodeDrag}
+              onNodeDragStart={onNodeDragStart}
+              reorderMode={reorderMode}
+              draggingNodeId={draggingNodeId}
+              onReorderPointerDown={onReorderPointerDown}
+            />
+          </Group>
+        </Stack>
+        {!reorderMode && data && (
+          <Pagination
+            pagination={{
+              pageNumber: page,
+              pageSize: pageSize!,
+              numPages: data.num_pages
+            }}
+            onPageNumberChange={onPageNumberChange}
+            onPageSizeChange={onPageSizeChange}
+            lastPageSize={lastPageSize}
           />
-        </Group>
-        <Pagination
-          pagination={{
-            pageNumber: page,
-            pageSize: pageSize!,
-            numPages: data.num_pages
-          }}
-          onPageNumberChange={onPageNumberChange}
-          onPageSizeChange={onPageSizeChange}
-          lastPageSize={lastPageSize}
-        />
+        )}
       </>
     )
   } else {
@@ -422,6 +546,11 @@ export default function Commander() {
               portalFolderTreeContext ? currentNodeID : undefined
             }
             commanderWriteContext={commanderWriteContext}
+            reorderMode={reorderMode}
+            reorderSaving={reorderSaving}
+            onStartReorder={onStartReorder}
+            onFinishReorder={onFinishReorder}
+            onCancelReorder={onCancelReorder}
           />
           <Breadcrumbs
             breadcrumb={currentFolder?.breadcrumb}

@@ -13,13 +13,19 @@ interface Args {
   onClick: (node: NType) => void
   onNodeDrag: () => void
   onNodeDragStart: (nodeID: string, event: React.DragEvent) => void
+  reorderMode?: boolean
+  draggingNodeId?: string | null
+  onReorderPointerDown?: (event: React.PointerEvent, nodeID: string) => void
 }
 
 export default function NodesList({
   items,
   onClick,
   onNodeDrag,
-  onNodeDragStart
+  onNodeDragStart,
+  reorderMode = false,
+  draggingNodeId = null,
+  onReorderPointerDown
 }: Args) {
   const dispatch = useAppDispatch()
   const documentIds = useMemo(
@@ -61,6 +67,9 @@ export default function NodesList({
       node={n}
       onDrag={onNodeDrag}
       onDragStart={onNodeDragStart}
+      reorderMode={reorderMode}
+      isReorderDragging={draggingNodeId === n.id}
+      onReorderPointerDown={onReorderPointerDown}
     />
   ))
 }

@@ -74,7 +74,7 @@ async def list_portal_children(
         codename=scopes.NODE_VIEW,
         user_id=user.id,
     )
-    order_by = ["ctype", "title", "created_at", "updated_at"]
+    order_by = ["sort_index"]
     if params.order_by:
         order_by = [item.strip() for item in params.order_by.split(",")]
 

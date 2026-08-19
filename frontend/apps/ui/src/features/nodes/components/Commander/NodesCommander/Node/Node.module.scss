@@ -26,3 +26,16 @@
     color: light-dark(var(--mantine-color-pmg-9), var(--mantine-color-pmg-2));
   }
 }
+
+.reorder {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.reorderDragging {
+  cursor: grabbing;
+  opacity: 0.45;
+  z-index: 2;
+  pointer-events: none;
+}

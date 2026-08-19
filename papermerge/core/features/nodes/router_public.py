@@ -82,7 +82,7 @@ async def get_public_nodes(
 ) -> PaginatedResponse[Union[schema.DocumentNode, Folder]]:
     await _require_public_parent_access(db_session, parent_id)
 
-    order_by = ["ctype", "title", "created_at", "updated_at"]
+    order_by = ["sort_index"]
     if params.order_by:
         order_by = [item.strip() for item in params.order_by.split(",")]
 

@@ -49,6 +49,7 @@ async def load_folder(db_session: AsyncSession, folder: orm.Folder) -> orm.Folde
 from .node_titles import (
     find_folder_id_by_title,
     find_node_id_by_title,
+    next_sort_index,
     node_ownership_filter,
     revive_trashed_node,
 )
@@ -143,6 +144,8 @@ def str2colexpr(keys: list[str]):
         "-created_at": orm.Node.created_at.desc(),
         "updated_at": orm.Node.updated_at,
         "-updated_at": orm.Node.updated_at.desc(),
+        "sort_index": (orm.Node.sort_index.asc(), orm.Node.title.asc()),
+        "-sort_index": (orm.Node.sort_index.desc(), orm.Node.title.desc()),
     }
     logger.debug(f"str2colexpr keys = {keys}")
 
@@ -324,6 +327,7 @@ async def create_folder(
         title=attrs.title,
         parent_id=attrs.parent_id,
         ctype="folder",
+        sort_index=await next_sort_index(db_session, attrs.parent_id),
     )
     db_session.add(folder)
     try:
@@ -542,9 +546,73 @@ async def move_nodes(db_session: AsyncSession, source_ids: list[UUID], target_id
 
     result = await db_session.execute(stmt)
     await db_session.execute(stmt_update_owner)
+
+    base_index = await next_sort_index(
+        db_session, target_id, exclude_ids=source_ids
+    )
+    for offset, source_id in enumerate(source_ids):
+        await db_session.execute(
+            update(orm.Node)
+            .where(orm.Node.id == source_id)
+            .values(sort_index=base_index + offset)
+        )
+
     await db_session.commit()
 
     return result.rowcount
+
+
+async def reorder_nodes(
+    db_session: AsyncSession,
+    parent_id: UUID,
+    node_ids: list[UUID],
+    user_id: UUID | None,
+) -> None:
+    """Persist a custom child order for ``parent_id``.
+
+    ``node_ids`` must be a permutation of children the user can view.
+    Nodes the user cannot see stay in their current slots.
+    """
+    from papermerge.core.features.nodes.visibility import can_view_node
+
+    requested = list(dict.fromkeys(node_ids))
+    if len(requested) != len(node_ids):
+        raise ValueError("node_ids must not contain duplicates")
+
+    stmt = (
+        select(orm.Node)
+        .where(
+            orm.Node.parent_id == parent_id,
+            orm.Node.deleted_at.is_(None),
+        )
+        .order_by(orm.Node.sort_index.asc(), orm.Node.title.asc())
+    )
+    children = list((await db_session.scalars(stmt)).all())
+
+    visible_ids: list[UUID] = []
+    for child in children:
+        if await can_view_node(db_session, node_id=child.id, user_id=user_id):
+            visible_ids.append(child.id)
+
+    if set(requested) != set(visible_ids):
+        raise ValueError(
+            "node_ids must list every visible child of the folder exactly once"
+        )
+
+    visible_set = set(visible_ids)
+    queue = list(requested)
+    merged: list[UUID] = []
+    for child in children:
+        if child.id in visible_set:
+            merged.append(queue.pop(0))
+        else:
+            merged.append(child.id)
+
+    for index, node_id in enumerate(merged):
+        await db_session.execute(
+            update(orm.Node).where(orm.Node.id == node_id).values(sort_index=index)
+        )
+    await db_session.commit()
 
 
 async def prepare_documents_s3_data_deletion(

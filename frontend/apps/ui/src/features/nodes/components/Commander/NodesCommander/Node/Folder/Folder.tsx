@@ -19,6 +19,7 @@ import Tags from "@/features/nodes/components/Commander/NodesCommander/Node/Tags
 import NodeVisibilityIcon from "@/features/nodes/components/Commander/NodesCommander/Node/NodeVisibilityIcon"
 import type {NodeType, PanelMode} from "@/types"
 import classes from "./Folder.module.scss"
+import nodeClasses from "../Node.module.scss"
 
 import PanelContext from "@/contexts/PanelContext"
 
@@ -28,6 +29,9 @@ type Args = {
   onDragStart: (nodeID: string, event: React.DragEvent) => void
   onDrag: (nodeID: string, event: React.DragEvent) => void
   cssClassNames: string[]
+  reorderMode?: boolean
+  isReorderDragging?: boolean
+  onReorderPointerDown?: (event: React.PointerEvent, nodeID: string) => void
 }
 
 export default function Folder({
@@ -35,7 +39,10 @@ export default function Folder({
   onClick,
   onDrag,
   onDragStart,
-  cssClassNames
+  cssClassNames,
+  reorderMode = false,
+  isReorderDragging = false,
+  onReorderPointerDown
 }: Args) {
   const [dropNodesOpened, {open: dropNodesOpen, close: dropNodesClose}] =
     useDisclosure(false)
@@ -61,6 +68,10 @@ export default function Folder({
   }
 
   const onDragStartLocal = (e: React.DragEvent) => {
+    if (reorderMode) {
+      e.preventDefault()
+      return
+    }
     const data = {
       nodes: [node.id, ...selectedIds],
       sourceFolderID: currentFolderID!
@@ -76,6 +87,9 @@ export default function Folder({
   }
 
   const onLocalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (reorderMode) {
+      return
+    }
     e.preventDefault()
     e.stopPropagation()
     setDragOver(true)
@@ -86,20 +100,45 @@ export default function Folder({
   }
 
   const onLocalDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
+    if (reorderMode) {
+      return
+    }
     event.preventDefault()
     setDragOver(true)
   }
 
   const onLocalDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    if (reorderMode) {
+      return
+    }
     event.stopPropagation()
     dropNodesOpen()
   }
 
+  const onPointerDown = (event: React.PointerEvent) => {
+    if (!reorderMode || !onReorderPointerDown) {
+      return
+    }
+    onReorderPointerDown(event, node.id)
+  }
+
+  const nodeClass = [
+    classes.folder,
+    ...cssClassNames,
+    dragOver && !reorderMode ? classes.acceptFolder : "",
+    reorderMode ? nodeClasses.reorder : "",
+    isReorderDragging ? nodeClasses.reorderDragging : ""
+  ]
+    .filter(Boolean)
+    .join(" ")
+
   return (
     <>
       <Stack
-        className={`${classes.folder} ${cssClassNames.join(" ")} ${dragOver ? classes.acceptFolder : ""}`}
-        draggable
+        className={nodeClass}
+        draggable={!reorderMode}
+        data-node-id={node.id}
+        onPointerDown={onPointerDown}
         onDragStart={onDragStartLocal}
         onDrag={onDragLocal}
         onDragEnd={onDragEnd}
@@ -108,8 +147,20 @@ export default function Folder({
         onDragEnter={onLocalDragEnter}
         onDrop={onLocalDrop}
       >
-        <Checkbox onChange={onCheck} checked={selectedIds.includes(node.id)} />
-        <a onClick={() => onClick(node)}>
+        <Checkbox
+          onChange={onCheck}
+          checked={selectedIds.includes(node.id)}
+          style={reorderMode ? {visibility: "hidden"} : undefined}
+        />
+        <a
+          onClick={e => {
+            if (reorderMode) {
+              e.preventDefault()
+              return
+            }
+            onClick(node)
+          }}
+        >
           <div className={classes.folderIcon}></div>
           {node.is_shared && <IconUsers className={classes.iconUsers} />}
           <Tags names={tagNames} node={node} />

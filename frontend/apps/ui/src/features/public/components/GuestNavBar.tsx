@@ -50,7 +50,15 @@ export default function GuestNavBar() {
       </div>
       <Center className="navbar-bg-color">
         <Text size="sm" c="dimmed">
-          {isLoading ? <Loader size="xs" /> : version?.version}
+          {isLoading ? (
+            <Loader size="xs" />
+          ) : collapsed ? (
+            version?.version
+          ) : (
+            <>
+              {t("app.version")} {version?.version}
+            </>
+          )}
         </Text>
       </Center>
     </>

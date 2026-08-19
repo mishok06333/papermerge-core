@@ -5,7 +5,7 @@ import {useGetPortalNodesQuery, useGetPortalRootQuery} from "@/features/portal/p
 import {makePortalDocumentNavState} from "@/features/portal/portalNavState"
 import {COMMANDER_VIEW} from "@/scopes"
 import {selectCurrentUser} from "@/slices/currentUser"
-import type {BreadcrumbType, NodeType, UserDetails} from "@/types"
+import type {BreadcrumbType, UserDetails} from "@/types"
 import {formatNodeDisplayTitle} from "@/utils"
 import {
   homeFolderTreeToggled,
@@ -31,15 +31,6 @@ import {useMemo} from "react"
 import {useSelector} from "react-redux"
 import {Link, useParams} from "react-router-dom"
 import {useTranslation} from "react-i18next"
-
-function sortPortalItems(items: NodeType[]): NodeType[] {
-  return [...items].sort((a, b) => {
-    if (a.ctype !== b.ctype) {
-      return a.ctype === "folder" ? -1 : 1
-    }
-    return a.title.localeCompare(b.title, undefined, {sensitivity: "base"})
-  })
-}
 
 function portalBreadcrumbTrail(
   crumb: BreadcrumbType | undefined,
@@ -83,10 +74,7 @@ export default function PortalFolderPage() {
     {skip: !parentId}
   )
 
-  const sortedItems = useMemo(
-    () => (data?.items ? sortPortalItems(data.items) : []),
-    [data?.items]
-  )
+  const catalogItems = data?.items ?? []
 
   const trail = useMemo(() => {
     const rootTitle = (id: string, title: string) =>
@@ -191,7 +179,7 @@ export default function PortalFolderPage() {
           </Group>
         </Group>
 
-        {sortedItems.length === 0 ? (
+        {catalogItems.length === 0 ? (
           <Paper withBorder p="xl" radius="md">
             <Text c="dimmed" ta="center">
               {t("portal.folder_empty")}
@@ -199,7 +187,7 @@ export default function PortalFolderPage() {
           </Paper>
         ) : (
           <Stack gap="sm" className={classes.list}>
-            {sortedItems.map(row => {
+            {catalogItems.map(row => {
               const isFolder = row.ctype === "folder"
               return (
                 <Paper

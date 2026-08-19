@@ -28,6 +28,7 @@ from papermerge.core.types import (
 from papermerge.core.db.common import get_ancestors, get_node_owner
 from papermerge.core.features.nodes.db.node_titles import (
     find_node_id_by_title,
+    next_sort_index,
     revive_trashed_node,
 )
 from papermerge.core.utils.misc import str2date, str2float, float2str
@@ -385,6 +386,7 @@ async def create_document(
         lang=attrs.lang,
         user_id=owner.user_id,
         group_id=owner.group_id,
+        sort_index=await next_sort_index(db_session, attrs.parent_id),
     )
     doc_ver = orm.DocumentVersion(
         id=uuid.uuid4(),

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, func, CheckConstraint, Index, text
+from sqlalchemy import ForeignKey, Integer, String, func, CheckConstraint, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, deferred
 
 from papermerge.core import constants as const
@@ -50,6 +50,9 @@ class Node(Base):
         nullable=True,
     )
     parent_id: Mapped[UUID] = mapped_column(ForeignKey("nodes.id"), nullable=True)
+    sort_index: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     tags: Mapped[list["Tag"]] = relationship(secondary="nodes_tags", lazy="selectin")
     created_at: Mapped[datetime] = mapped_column(insert_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -86,6 +89,7 @@ class Node(Base):
             "user_id IS NOT NULL OR group_id IS NOT NULL",
             name="check__user_id_not_null__or__group_id_not_null",
         ),
+        Index("ix_nodes_parent_id_sort_index", "parent_id", "sort_index"),
     )
 
     def __repr__(self):

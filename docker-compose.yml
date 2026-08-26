@@ -172,38 +172,27 @@ services:
 
   solr:
     <<: *common
-    # Official Solr image already runs under tini; a second init process
-    # (from x-common) can leave solr-precreate hanging on Linux.
+    # Solr image already ships tini; do not wrap it again.
     init: false
     image: solr:9.7
     environment:
-      # Heap must stay well below the container limit (off-heap + OS).
       SOLR_JAVA_MEM: ${SOLR_JAVA_MEM:--Xms256m -Xmx768m}
     ports:
       - "127.0.0.1:8983:8983"
     volumes:
       - solrdata:/var/solr
     stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    # Do not mark the container unhealthy: on Linux Solr can take minutes to
+    # bind :8983, and index_worker used to abort the whole `compose up`.
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8983/solr/papermerge/admin/ping || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 20
-      start_period: 120s
+      disable: true
     command:
       - solr-precreate
       - papermerge
-    deploy:
-      resources:
-        limits:
-          # 1G was enough to *start* under Docker Desktop, but on Linux
-          # cgroups this limit is enforced and Solr 9 is OOM-killed / never
-          # becomes healthy (heap 768m + off-heap needs more than 1G).
-          cpus: "${SOLR_CPU_LIMIT:-1}"
-          memory: "${SOLR_MEM_LIMIT:-2G}"
-        reservations:
-          cpus: "0.25"
-          memory: 512M
 
   index_worker:
     <<: *common
@@ -243,7 +232,7 @@ services:
       redis:
         condition: service_healthy
       solr:
-        condition: service_healthy
+        condition: service_started
     deploy:
       resources:
         limits:

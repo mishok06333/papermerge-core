@@ -16,6 +16,7 @@ import {
 } from "@/slices/currentUser"
 
 import Uploader from "@/components/Uploader"
+import {navigateToLogin} from "@/features/public/guestMode"
 import {selectNavBarWidth} from "@/features/ui/uiSlice"
 import "./App.css"
 
@@ -37,6 +38,12 @@ function App() {
       dispatch(updateOutlet(value))
     }
   }, [width, height, dispatch])
+
+  useEffect(() => {
+    if (status === "failed") {
+      navigateToLogin()
+    }
+  }, [status])
 
   if (status == "failed") {
     return <>{error}</>

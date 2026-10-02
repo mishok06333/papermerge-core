@@ -13,22 +13,18 @@ import {Link} from "react-router-dom"
 import {useTranslation} from "react-i18next"
 
 import {
+  CitizenCategoryRowActions
+} from "@/features/citizen_categories/components/ManageCitizenCategories"
+import {
   useGetCitizenCategoriesQuery,
-  useGetPublicCitizenCategoriesQuery,
   type CitizenCategory
 } from "@/features/citizen_categories/citizenCategoriesApiSlice"
 
-type Props = {
-  guest?: boolean
-}
-
 function CategoryList({
   categories,
-  guest,
   emptyMessage
 }: {
   categories: CitizenCategory[]
-  guest?: boolean
   emptyMessage: string
 }) {
   const {t} = useTranslation()
@@ -42,8 +38,6 @@ function CategoryList({
       </Paper>
     )
   }
-
-  const base = guest ? "/browse/citizen-categories" : "/citizen-categories"
 
   return (
     <Stack gap="sm">
@@ -63,13 +57,15 @@ function CategoryList({
             }
           }}
         >
-          <Anchor
-            component={Link}
-            to={`${base}/${cat.id}`}
-            underline="never"
-            c="var(--mantine-color-text)"
-            display="block"
-          >
+          <Group wrap="nowrap" align="center" justify="space-between" gap="sm">
+            <Anchor
+              component={Link}
+              to={`/citizen-categories/${cat.id}`}
+              underline="never"
+              c="var(--mantine-color-text)"
+              display="block"
+              style={{minWidth: 0, flex: 1}}
+            >
             <Group wrap="nowrap" gap="md" justify="space-between">
               <Group wrap="nowrap" gap="md" style={{minWidth: 0}}>
                 <ThemeIcon
@@ -105,21 +101,18 @@ function CategoryList({
                 aria-hidden
               />
             </Group>
-          </Anchor>
+            </Anchor>
+            <CitizenCategoryRowActions category={cat} />
+          </Group>
         </Paper>
       ))}
     </Stack>
   )
 }
 
-export default function CitizenCategoriesList({guest = false}: Props) {
+export default function CitizenCategoriesList() {
   const {t} = useTranslation()
-  const authQuery = useGetCitizenCategoriesQuery(undefined, {skip: guest})
-  const publicQuery = useGetPublicCitizenCategoriesQuery(undefined, {
-    skip: !guest
-  })
-
-  const {data, isLoading, isError} = guest ? publicQuery : authQuery
+  const {data, isLoading, isError} = useGetCitizenCategoriesQuery()
 
   const categories = useMemo(
     () => (data ? [...data].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: "base"})) : []),
@@ -141,7 +134,6 @@ export default function CitizenCategoriesList({guest = false}: Props) {
   return (
     <CategoryList
       categories={categories}
-      guest={guest}
       emptyMessage={t("citizen_categories.empty")}
     />
   )

@@ -2,15 +2,6 @@ import Cookies from "js-cookie"
 
 const ACCESS_TOKEN_COOKIE = "access_token"
 
-/** True when the SPA should run in guest mode (no user fetch required). */
-
-export function isGuestRoute(pathname: string): boolean {
-  if (pathname === "/" || pathname === "" || pathname === "/help") {
-    return true
-  }
-  return pathname.startsWith("/browse")
-}
-
 export function hasAuthCookie(): boolean {
   return document.cookie
     .split(";")
@@ -54,19 +45,18 @@ export function usesNginxAuthGate(): boolean {
 
 /**
  * Open the auth-server login page. Clears any stale client cookie first so
- * nginx auth_request returns 401 and serves the login SPA instead of looping
- * through PostAuthRedirect back to the guest landing.
+ * nginx auth_request returns 401 and serves the login SPA.
  */
 export function navigateToLogin(): void {
   clearAuthCookie()
-  window.location.replace("/home")
+  window.location.replace("/login")
 }
 
-/** End the session and return to the public landing (full page navigation). */
+/** End the session and open the login page (full page navigation). */
 export function navigateToLogout(): void {
   void recordAuthSessionEvent("logout").finally(() => {
     clearAuthCookie()
-    window.location.replace("/")
+    window.location.replace("/login")
   })
 }
 

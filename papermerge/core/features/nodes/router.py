@@ -430,8 +430,12 @@ async def move_nodes(
             messages=["No results found. Please check that all source nodes exists"]
         )
         raise HTTPException(status_code=404, detail=error.model_dump())
+    except ValueError as e:
+        logger.debug(e, exc_info=True)
+        error = schema.Error(messages=[str(e)])
+        raise HTTPException(status_code=400, detail=error.model_dump())
     except (IntegrityError, EntityNotFound) as e:
-        logger.debug(exc, exc_info=True)
+        logger.debug(e, exc_info=True)
         error = schema.Error(
             messages=["Integrity error. Please check that target exists"]
         )

@@ -33,6 +33,9 @@ SQLALCHEMY_DATABASE_URL = _async_database_url(resolve_database_url())
 
 is_postgres = SQLALCHEMY_DATABASE_URL.startswith("postgresql+asyncpg://")
 if is_postgres:
+    # Keep TIMESTAMP WITHOUT TIME ZONE writes in UTC even when the container
+    # TZ is Asia/Vladivostok (asyncpg otherwise inherits a local session TZ).
+    connect_args = {"server_settings": {"timezone": "UTC"}}
     pool_size = int(os.environ.get("PAPERMERGE__DATABASE__POOL_SIZE", "20"))
     max_overflow = int(os.environ.get("PAPERMERGE__DATABASE__MAX_OVERFLOW", "40"))
     pool_timeout = int(os.environ.get("PAPERMERGE__DATABASE__POOL_TIMEOUT", "30"))

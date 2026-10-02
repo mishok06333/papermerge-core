@@ -35,7 +35,7 @@ const injected = apiSlice.injectEndpoints({
     }),
     updateCitizenCategory: builder.mutation<
       CitizenCategory,
-      {id: string; name?: string; description?: string; sort_order?: number}
+      {id: string; name?: string; description?: string | null; sort_order?: number}
     >({
       query: ({id, ...body}) => ({
         url: `/citizen-categories/${id}`,
@@ -80,15 +80,6 @@ const injected = apiSlice.injectEndpoints({
         {type: "CitizenCategory", id: "LIST"},
         {type: "CitizenCategoryFolders", id: "LIST"}
       ]
-    }),
-    getPublicCitizenCategories: builder.query<CitizenCategory[], void>({
-      query: () => "/public/citizen-categories"
-    }),
-    getPublicCitizenCategoryFolders: builder.query<
-      CitizenCategoryFolder[],
-      string
-    >({
-      query: categoryId => `/public/citizen-categories/${categoryId}/folders`
     })
   })
 })
@@ -100,7 +91,5 @@ export const {
   useDeleteCitizenCategoryMutation,
   useGetCitizenCategoryFoldersQuery,
   useGetFolderCitizenCategoriesQuery,
-  useSetFolderCitizenCategoriesMutation,
-  useGetPublicCitizenCategoriesQuery,
-  useGetPublicCitizenCategoryFoldersQuery
+  useSetFolderCitizenCategoriesMutation
 } = injected

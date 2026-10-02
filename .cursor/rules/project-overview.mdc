@@ -173,14 +173,20 @@ the uniform `orm.Foo` path.
   also enforces `eol=lf` for `*.sh`, `Dockerfile`, `*.yml`, `*.conf`, and
   `.env*` so Git itself doesn't reintroduce CRLF on Windows clones.
 - **Runtime configs (auth-server + UI)**: `roco` has been removed entirely.
-  The auth-server's `papermerge-runtime-config.js` is now emitted inline by
-  a shell heredoc in `docker/app/entrypoint.sh::render_runtime_configs`
-  (defaults mirror the old `roco` behaviour, e.g. `login_provider: "db"`).
-  The UI's runtime config is rendered by `env2js` from
-  `docker/app/core.js.tmpl` (currently an empty object `{}`; OCR is disabled).
+  Both SPAs' `papermerge-runtime-config.js` are emitted inline by shell
+  heredocs in `docker/app/entrypoint.sh::render_runtime_configs`
+  (auth-server defaults mirror the old `roco` behaviour; UI exposes
+  `timezone` from `PAPERMERGE__MAIN__TIMEZONE`, default `Asia/Vladivostok`).
   The script-tag injection into each SPA's
   `index.html` matches on `</title>` (NOT on the literal word
   "Papermerge") so that branded/customised titles still work.
+- **Timezone (UTC+10)**: every compose service sets `TZ=Asia/Vladivostok`.
+  Postgres `PGTZ` must stay `UTC`, and the app asyncpg engine must force
+  `server_settings.timezone=UTC` — otherwise the session inherits the
+  container TZ and `func.now()` into `TIMESTAMP WITHOUT TIME ZONE` stores
+  local wall clock while the UI treats naive values as UTC (+10h skew).
+  The UI always formats via `formatApiDateTime` with
+  `timeZone: Asia/Vladivostok` (never the browser's local zone).
 - **`PAPERMERGE__AUTH__PASSWORD` / `USERNAME` / `EMAIL`** are the env
   names the auth-server CLI reads for the `--superuser` flag. The
   compose file maps `ADMIN_*` from `.env` onto these. Don't rename one

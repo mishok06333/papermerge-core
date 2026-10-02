@@ -92,7 +92,7 @@ export default function Folder({
     }
     e.preventDefault()
     e.stopPropagation()
-    setDragOver(true)
+    setDragOver(!draggedNodes.some(item => item.id === node.id))
   }
 
   const onLocalDragLeave = () => {
@@ -112,6 +112,14 @@ export default function Folder({
       return
     }
     event.stopPropagation()
+    setDragOver(false)
+
+    // A folder cannot be moved into itself. Do not even open the
+    // confirmation dialog for this invalid drop target.
+    if (draggedNodes.some(item => item.id === node.id)) {
+      return
+    }
+
     dropNodesOpen()
   }
 

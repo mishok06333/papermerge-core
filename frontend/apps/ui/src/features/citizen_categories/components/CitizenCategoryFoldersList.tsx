@@ -11,27 +11,15 @@ import {IconChevronRight, IconFolder} from "@tabler/icons-react"
 import {Link} from "react-router-dom"
 import {useTranslation} from "react-i18next"
 
-import {
-  useGetCitizenCategoryFoldersQuery,
-  useGetPublicCitizenCategoryFoldersQuery
-} from "@/features/citizen_categories/citizenCategoriesApiSlice"
+import {useGetCitizenCategoryFoldersQuery} from "@/features/citizen_categories/citizenCategoriesApiSlice"
 
 type Props = {
   categoryId: string
-  guest?: boolean
 }
 
-export default function CitizenCategoryFoldersList({
-  categoryId,
-  guest = false
-}: Props) {
+export default function CitizenCategoryFoldersList({categoryId}: Props) {
   const {t} = useTranslation()
-  const authQuery = useGetCitizenCategoryFoldersQuery(categoryId, {skip: guest})
-  const publicQuery = useGetPublicCitizenCategoryFoldersQuery(categoryId, {
-    skip: !guest
-  })
-
-  const {data, isLoading, isError} = guest ? publicQuery : authQuery
+  const {data, isLoading, isError} = useGetCitizenCategoryFoldersQuery(categoryId)
 
   if (isLoading) {
     return <Loader p="md" />
@@ -46,7 +34,6 @@ export default function CitizenCategoryFoldersList({
   }
 
   const folders = data ?? []
-  const folderBase = guest ? "/browse/folder" : "/folder"
 
   if (folders.length === 0) {
     return (
@@ -59,7 +46,15 @@ export default function CitizenCategoryFoldersList({
   }
 
   return (
-    <Stack gap="sm">
+    <Stack
+      gap="sm"
+      style={{
+        maxHeight: "calc(100dvh - 10rem)",
+        overflowY: "auto",
+        overflowX: "hidden",
+        paddingRight: "0.25rem"
+      }}
+    >
       {folders.map(row => (
         <Paper
           key={row.node_id}
@@ -78,7 +73,7 @@ export default function CitizenCategoryFoldersList({
         >
           <Anchor
             component={Link}
-            to={`${folderBase}/${row.node_id}`}
+            to={`/portal/folder/${row.node_id}`}
             underline="never"
             c="var(--mantine-color-text)"
             display="block"

@@ -3,10 +3,8 @@ import {canViewAdminGuide} from "@/features/help/canViewAdminGuide"
 import classes from "@/features/help/HelpPage.module.css"
 import {
   ADMIN_GUIDE_SECTION_KEYS,
-  GUEST_GUIDE_SECTION_KEYS,
   USER_GUIDE_SECTION_KEYS
 } from "@/features/help/sectionKeys"
-import {hasAuthCookie} from "@/features/public/guestMode"
 import {
   selectCurrentUser,
   selectCurrentUserStatus
@@ -20,10 +18,8 @@ export default function UserGuidePage() {
   const {t} = useTranslation()
   const status = useSelector(selectCurrentUserStatus)
   const user = useSelector(selectCurrentUser) as UserDetails | null
-  const authenticated =
-    hasAuthCookie() || status === "loading" || status === "succeeded"
 
-  if (authenticated && status === "loading") {
+  if (status === "loading" || status === "idle") {
     return (
       <Stack className={classes.page} align="center" justify="center">
         <Loader />
@@ -32,25 +28,6 @@ export default function UserGuidePage() {
   }
 
   const showAdminGuide = status === "succeeded" && canViewAdminGuide(user)
-  const showGuestGuide =
-    !authenticated || (status !== "succeeded" && !hasAuthCookie())
-
-  if (showGuestGuide) {
-    return (
-      <div className={classes.page}>
-        <Title className={classes.pageHeader} order={3}>
-          {t("user_guide.guest.title")}
-        </Title>
-        <div className={classes.pageBody}>
-          <GuidePanel
-            i18nPrefix="user_guide.guest.sections"
-            sectionKeys={GUEST_GUIDE_SECTION_KEYS}
-            idPrefix="help-guest"
-          />
-        </div>
-      </div>
-    )
-  }
 
   if (!showAdminGuide) {
     return (

@@ -259,6 +259,7 @@ async def add_comment(
         user_id=user_id,
         document_id=document_id,
         body=body[:8000],
+        created_at=_utc_naive_now(),
     )
     db_session.add(row)
     return row

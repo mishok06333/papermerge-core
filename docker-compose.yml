@@ -20,8 +20,11 @@ services:
     <<: *common
     image: postgres:16.1
     environment:
+      # Container wall clock / logs: UTC+10. Session TimeZone for
+      # TIMESTAMP WITHOUT TIME ZONE writes must stay UTC so func.now()
+      # matches app-side _utc_naive_now(); the UI displays Asia/Vladivostok.
       TZ: ${TZ:-Asia/Vladivostok}
-      PGTZ: ${TZ:-Asia/Vladivostok}
+      PGTZ: ${PGTZ:-UTC}
       POSTGRES_USER: ${POSTGRES_USER:-papermerge}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-papermerge}
       POSTGRES_DB: ${POSTGRES_DB:-papermerge}
@@ -49,6 +52,8 @@ services:
   redis:
     <<: *common
     image: redis:7.2-alpine
+    environment:
+      TZ: ${TZ:-Asia/Vladivostok}
     command:
       - redis-server
       - --appendonly
@@ -146,6 +151,8 @@ services:
   gotenberg:
     <<: *common
     image: gotenberg/gotenberg:8
+    environment:
+      TZ: ${TZ:-Asia/Vladivostok}
     ports:
       - "127.0.0.1:3000:3000"
     command:
@@ -176,6 +183,7 @@ services:
     init: false
     image: solr:9.7
     environment:
+      TZ: ${TZ:-Asia/Vladivostok}
       SOLR_JAVA_MEM: ${SOLR_JAVA_MEM:--Xms256m -Xmx768m}
     ports:
       - "127.0.0.1:8983:8983"

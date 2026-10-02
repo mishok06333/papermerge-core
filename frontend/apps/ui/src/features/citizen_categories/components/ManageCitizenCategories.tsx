@@ -72,12 +72,12 @@ function CategoryFormModal({
       await update({
         id: categoryId,
         name,
-        description: form.description.trim() || undefined
+        description: form.description.trim() || null
       })
     } else {
       await create({
         name,
-        description: form.description.trim() || undefined
+        description: form.description.trim() || null
       })
     }
     onClose()

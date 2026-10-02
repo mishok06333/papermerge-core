@@ -44,6 +44,23 @@ async def test_nodes_move_basic(
     assert new_parent_id == target.id
 
 
+async def test_nodes_move_rejects_moving_folder_into_itself(
+    auth_api_client: AuthTestClient, make_folder, db_session: AsyncSession
+):
+    user = auth_api_client.user
+    folder = await make_folder(title="Folder", user=user, parent=user.home_folder)
+
+    params = {"source_ids": [str(folder.id)], "target_id": str(folder.id)}
+
+    response = await auth_api_client.post("/nodes/move", json=params)
+
+    assert response.status_code == 400, response.json()
+
+    stmt = select(orm.Node.parent_id).where(orm.Node.id == folder.id)
+    current_parent_id = (await db_session.execute(stmt)).scalar()
+    assert current_parent_id == user.home_folder.id
+
+
 async def test_nodes_move_when_target_id_does_not_exist(
     auth_api_client: AuthTestClient, make_folder, make_document, db_session: AsyncSession
 ):

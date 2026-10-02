@@ -26,7 +26,7 @@ import {
   ERRORS_404_RESOURCE_NOT_FOUND,
   ERRORS_422_UNPROCESSABLE_CONTENT
 } from "@/cconstants"
-import {isSupportedFile} from "@/features/nodes/utils"
+import {isSupportedFile, sortCommanderNodes} from "@/features/nodes/utils"
 import {useGetPortalRootQuery} from "@/features/portal/portalApiSlice"
 import PortalFolderTree from "@/features/portal/components/PortalFolderTree"
 import {makePortalDocumentNavState} from "@/features/portal/portalNavState"
@@ -52,6 +52,8 @@ import {
   commanderLastPageSizeUpdated,
   currentDocVerUpdated,
   selectContentHeight,
+  selectCommanderSortMenuColumn,
+  selectCommanderSortMenuDir,
   selectHomeFolderTreeSidebarHeight,
   selectDraggedNodes,
   selectDraggedNodesSourceFolderID,
@@ -59,7 +61,13 @@ import {
   selectHomeFolderTreeOpen,
   selectLastPageSize
 } from "@/features/ui/uiSlice"
-import type {NodeType, NType, PanelMode} from "@/types"
+import type {
+  NodeType,
+  NType,
+  PanelMode,
+  SortMenuColumn,
+  SortMenuDirection
+} from "@/types"
 import classes from "./Commander.module.scss"
 
 import {
@@ -147,10 +155,13 @@ export default function Commander() {
   const [pageSize, setPageSize] = useState<number>(lastPageSize)
   const [page, setPage] = useState<number>(1)
   const filter = useAppSelector(s => selectFilterText(s, mode))
+  const sortColumn = useAppSelector(s => selectCommanderSortMenuColumn(s, mode))
+  const sortDir = useAppSelector(s => selectCommanderSortMenuDir(s, mode))
   const [reorderMode, setReorderMode] = useState(false)
   const [orderedItems, setOrderedItems] = useState<NodeType[]>([])
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
   const draggingNodeIdRef = useRef<string | null>(null)
+  const reorderBaselineRef = useRef<NodeType[]>([])
   const [reorderSaving, setReorderSaving] = useState(false)
   const [reorderNodes] = useReorderNodesMutation()
 
@@ -158,6 +169,7 @@ export default function Commander() {
     setReorderMode(false)
     setDraggingNodeId(null)
     draggingNodeIdRef.current = null
+    reorderBaselineRef.current = []
     setPage(1)
   }, [currentNodeID])
 
@@ -167,7 +179,9 @@ export default function Commander() {
         nodeID: currentNodeID!,
         page_number: reorderMode ? 1 : page,
         page_size: reorderMode ? REORDER_PAGE_SIZE : pageSize,
-        filter: reorderMode ? undefined : filter
+        filter: reorderMode ? undefined : filter,
+        sortColumn: reorderMode ? undefined : sortColumn,
+        sortDir: reorderMode ? undefined : sortDir
       },
       {skip: !currentNodeID}
     )
@@ -213,10 +227,13 @@ export default function Commander() {
   }, [scopes, commanderWriteContext, reorderMode])
 
   useEffect(() => {
-    if (!reorderMode || !data?.items || draggingNodeIdRef.current) {
+    if (!reorderMode || !data?.items?.length) {
       return
     }
-    setOrderedItems(data.items)
+    if (reorderBaselineRef.current.length === 0) {
+      reorderBaselineRef.current = data.items
+      setOrderedItems(data.items)
+    }
   }, [data?.items, reorderMode])
 
   useEffect(() => {
@@ -428,15 +445,29 @@ export default function Commander() {
   }
 
   const onStartReorder = () => {
-    setOrderedItems(data?.items ?? [])
+    const items = data?.items ?? []
+    reorderBaselineRef.current = items
+    setOrderedItems(items)
     setReorderMode(true)
   }
 
   const onCancelReorder = () => {
     draggingNodeIdRef.current = null
     setDraggingNodeId(null)
+    reorderBaselineRef.current = []
     setOrderedItems(data?.items ?? [])
     setReorderMode(false)
+  }
+
+  const onApplyReorderSort = (
+    column: SortMenuColumn | undefined,
+    direction: SortMenuDirection
+  ) => {
+    if (!column) {
+      setOrderedItems([...reorderBaselineRef.current])
+      return
+    }
+    setOrderedItems(prev => sortCommanderNodes(prev, column, direction))
   }
 
   const onFinishReorder = async () => {
@@ -449,6 +480,7 @@ export default function Commander() {
         parentId: currentNodeID,
         node_ids: orderedItems.map(item => item.id)
       }).unwrap()
+      reorderBaselineRef.current = []
       setReorderMode(false)
     } finally {
       draggingNodeIdRef.current = null
@@ -551,6 +583,7 @@ export default function Commander() {
             onStartReorder={onStartReorder}
             onFinishReorder={onFinishReorder}
             onCancelReorder={onCancelReorder}
+            onApplyReorderSort={onApplyReorderSort}
           />
           <Breadcrumbs
             breadcrumb={currentFolder?.breadcrumb}

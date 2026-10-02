@@ -86,6 +86,7 @@ RUN set -eux; \
             supervisor \
             imagemagick \
             nginx \
+            postgresql-client \
             libpq-dev \
             poppler-utils \
             tzdata && \

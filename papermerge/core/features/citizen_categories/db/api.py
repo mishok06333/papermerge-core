@@ -107,6 +107,9 @@ async def update_category(
     except IntegrityError:
         await db_session.rollback()
         return None, "citizen_category.duplicate_name"
+    # updated_at uses a server-side onupdate expression; refresh it before
+    # building the response so async SQLAlchemy does not try implicit IO.
+    await db_session.refresh(row)
     counts = await _folder_count_map(db_session, [row.id])
     return _category_out(row, counts.get(row.id, 0)), None
 

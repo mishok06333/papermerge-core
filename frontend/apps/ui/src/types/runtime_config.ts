@@ -1,4 +1,7 @@
-export type RuntimeConfig = Record<string, unknown>
+export type RuntimeConfig = {
+  timezone?: string
+  [key: string]: unknown
+}
 
 declare global {
   interface Window {

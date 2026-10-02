@@ -11,7 +11,7 @@ type Props = {
 
 export default function PublicBreadcrumbs({
   trail,
-  folderHref = id => `/browse/folder/${id}`
+  folderHref = id => `/portal/folder/${id}`
 }: Props) {
   if (trail.length === 0) {
     return null

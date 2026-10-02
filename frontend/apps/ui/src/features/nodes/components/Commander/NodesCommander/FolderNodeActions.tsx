@@ -18,13 +18,14 @@ import {useContext, useEffect, useMemo, useRef, useState} from "react"
 
 import ToggleSecondaryPanel from "@/components/DualPanel/ToggleSecondaryPanel"
 
-import type {PanelMode} from "@/types"
+import type {PanelMode, SortMenuColumn, SortMenuDirection} from "@/types"
 
 import PanelContext from "@/contexts/PanelContext"
 
 import DuplicatePanelButton from "@/components/DualPanel/DuplicatePanelButton"
 
 import QuickFilter from "@/components/QuickFilter"
+import SortMenu from "../SortMenu"
 import {filterUpdated} from "@/features/ui/uiSlice"
 
 import DeleteButton from "./DeleteButton"
@@ -67,6 +68,10 @@ type FolderNodeActionsProps = {
   onStartReorder?: () => void
   onFinishReorder?: () => void
   onCancelReorder?: () => void
+  onApplyReorderSort?: (
+    column: SortMenuColumn | undefined,
+    direction: SortMenuDirection
+  ) => void
 }
 
 export default function FolderNodeActions({
@@ -77,7 +82,8 @@ export default function FolderNodeActions({
   reorderSaving = false,
   onStartReorder,
   onFinishReorder,
-  onCancelReorder
+  onCancelReorder,
+  onApplyReorderSort
 }: FolderNodeActionsProps) {
   const {t} = useTranslation()
   const [filterText, selectFilterText] = useState<string>()
@@ -199,6 +205,10 @@ export default function FolderNodeActions({
               {t("nodes.reorder.start")}
             </Button>
           ))}
+        <SortMenu
+          reorderMode={reorderMode}
+          onApplyReorderSort={onApplyReorderSort}
+        />
         {!reorderMode && (
           <QuickFilter
             onChange={onQuickFilterChange}

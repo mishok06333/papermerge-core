@@ -14,22 +14,16 @@ import LibraryPage from "@/features/library/pages/LibraryPage"
 import SearchPage from "@/pages/Search"
 import AuditLogPage from "@/features/audit/pages/AuditLogPage"
 import ProfilePage from "@/features/profile/pages/ProfilePage"
-import HelpShellPicker from "@/features/help/pages/HelpShellPicker"
 import UserGuidePage from "@/features/help/pages/UserGuidePage"
+import BackupPage from "@/features/backup/pages/BackupPage"
 
 import {AccessForbidden, NotFound, UnprocessableContent} from "@/pages/errors"
 
 import {loader as documentLoader} from "@/pages/Document"
 
 import ErrorPage from "@/pages/Error.tsx"
-import GuestApp from "@/features/public/GuestApp"
-import PublicCatalogPage from "@/features/public/pages/PublicCatalogPage"
-import PublicDocumentPage from "@/features/public/pages/PublicDocumentPage"
-import PublicCitizenCategoriesPage from "@/features/public/pages/PublicCitizenCategoriesPage"
-import PublicCitizenCategoryDetailPage from "@/features/public/pages/PublicCitizenCategoryDetailPage"
 import CitizenCategoriesPage from "@/features/citizen_categories/pages/CitizenCategoriesPage"
 import CitizenCategoryDetailPage from "@/features/citizen_categories/pages/CitizenCategoryDetailPage"
-import PublicBrowseRedirect from "@/features/public/pages/PublicBrowseRedirect"
 import PostAuthRedirect from "@/features/auth/PostAuthRedirect"
 import {
   ERRORS_403_ACCESS_FORBIDDEN,
@@ -38,44 +32,6 @@ import {
 } from "./cconstants"
 
 const router = createBrowserRouter([
-  {
-    element: <HelpShellPicker />,
-    children: [
-      {
-        path: "/help",
-        element: <UserGuidePage />
-      }
-    ]
-  },
-  {
-    element: <GuestApp />,
-    children: [
-      {
-        path: "/",
-        element: <PublicBrowseRedirect />
-      },
-      {
-        path: "/browse",
-        element: <PublicBrowseRedirect />
-      },
-      {
-        path: "/browse/folder/:folderId",
-        element: <PublicCatalogPage />
-      },
-      {
-        path: "/browse/document/:documentId",
-        element: <PublicDocumentPage />
-      },
-      {
-        path: "/browse/citizen-categories",
-        element: <PublicCitizenCategoriesPage />
-      },
-      {
-        path: "/browse/citizen-categories/:categoryId",
-        element: <PublicCitizenCategoryDetailPage />
-      }
-    ]
-  },
   {
     path: "/login",
     element: <PostAuthRedirect />
@@ -93,6 +49,14 @@ const router = createBrowserRouter([
   {
     path: "/home/:folderId",
     element: <PostAuthRedirect />
+  },
+  {
+    path: "/",
+    element: <PostAuthRedirect />
+  },
+  {
+    path: "/browse/*",
+    element: <Navigate to="/" replace />
   },
   {
     element: <App />,
@@ -173,8 +137,16 @@ const router = createBrowserRouter([
         element: <AuditLogPage />
       },
       {
+        path: "/admin/backup",
+        element: <BackupPage />
+      },
+      {
         path: "/profile",
         element: <ProfilePage />
+      },
+      {
+        path: "/help",
+        element: <UserGuidePage />
       },
       {
         path: ERRORS_403_ACCESS_FORBIDDEN,

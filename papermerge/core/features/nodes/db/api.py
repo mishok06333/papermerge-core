@@ -533,6 +533,12 @@ async def move_nodes(db_session: AsyncSession, source_ids: list[UUID], target_id
     if target is None:
         raise EntityNotFound("Node target not found")
 
+    # Moving a node into itself would create a self-referencing parent and
+    # can make the node effectively disappear from the tree. Reject it at
+    # the database layer as a final safeguard even if a client bypasses the UI.
+    if target_id in source_ids:
+        raise ValueError("Cannot move a node into itself")
+
     stmt = (
         update(orm.Node).where(orm.Node.id.in_(source_ids)).values(parent_id=target_id)
     )

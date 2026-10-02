@@ -107,7 +107,7 @@ type DragNodeStartedArg = {
 
 type SortMenuColumnUpdatedArgs = {
   mode: PanelMode
-  column: SortMenuColumn
+  column: SortMenuColumn | undefined
 }
 
 type SortMenuDirectionUpdatedArgs = {
@@ -1101,7 +1101,7 @@ export const selectLastPageSize = (
 export const selectCommanderSortMenuColumn = (
   state: RootState,
   mode: PanelMode
-): SortMenuColumn => {
+): SortMenuColumn | undefined => {
   const column =
     mode == "main"
       ? state.ui.mainCommanderSortMenuColumn
@@ -1109,7 +1109,7 @@ export const selectCommanderSortMenuColumn = (
   if ((column as string | undefined) === "ctype") {
     return "file_type"
   }
-  return column || "updated_at"
+  return column
 }
 
 export const selectCommanderSortMenuDir = (

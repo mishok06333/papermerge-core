@@ -5,6 +5,7 @@ import {Navigate} from "react-router-dom"
 
 import {
   clearAuthCookie,
+  navigateToLogin,
   recordAuthSessionEvent,
   usesNginxAuthGate
 } from "@/features/public/guestMode"
@@ -64,13 +65,14 @@ export default function PostAuthRedirect() {
     if (status !== "failed" || retrying || authHandoffStarted.current) {
       return
     }
-    if (!usesNginxAuthGate()) {
+    authHandoffStarted.current = true
+    if (usesNginxAuthGate()) {
+      clearAuthCookie()
+      // Full reload so nginx serves auth-server login (not this UI route).
+      window.location.replace("/login")
       return
     }
-    authHandoffStarted.current = true
-    clearAuthCookie()
-    // Full reload so nginx serves auth-server login (not this UI route).
-    window.location.replace("/home")
+    navigateToLogin()
   }, [status, retrying])
 
   if (status === "idle" || status === "loading" || retrying) {
@@ -82,14 +84,11 @@ export default function PostAuthRedirect() {
   }
 
   if (status === "failed" || !user) {
-    if (usesNginxAuthGate()) {
-      return (
-        <Center mih="50vh">
-          <Loader />
-        </Center>
-      )
-    }
-    return <Navigate to="/" replace />
+    return (
+      <Center mih="50vh">
+        <Loader />
+      </Center>
+    )
   }
 
   return <Navigate to={resolveDefaultPath(user.scopes ?? [])} replace />

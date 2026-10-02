@@ -13,7 +13,6 @@ from papermerge.core.features.tags.router import router as tags_router
 from papermerge.core.features.groups.router import router as groups_router
 from papermerge.core.features.roles.router import router as roles_router
 from papermerge.core.features.nodes.router import router as nodes_router
-from papermerge.core.features.nodes.router_public import router as public_nodes_router
 from papermerge.core.features.nodes.router_folders import \
     router as folders_router
 from papermerge.core.features.nodes.router_thumbnails import \
@@ -32,9 +31,6 @@ from papermerge.core.features.portal.router import router as portal_router
 from papermerge.core.features.citizen_categories.router import (
     router as citizen_categories_router,
 )
-from papermerge.core.features.citizen_categories.router_public import (
-    router as citizen_categories_public_router,
-)
 from papermerge.core.routers.version import (
     router as version_router,
 )
@@ -42,6 +38,7 @@ from papermerge.core.routers.ws import router as ws_router
 from papermerge.core.version import __version__
 from papermerge.core.config import get_settings
 from papermerge.core.features.library_ts.router import router as library_ts_router
+from papermerge.core.features.backup.router import router as backup_router
 
 settings = get_settings()
 prefix = settings.papermerge__main__api_prefix
@@ -97,10 +94,8 @@ async def correlation_id_middleware(request: Request, call_next):
 
 
 app.include_router(nodes_router, prefix=prefix)
-app.include_router(public_nodes_router, prefix=prefix)
 app.include_router(portal_router, prefix=prefix)
 app.include_router(citizen_categories_router, prefix=prefix)
-app.include_router(citizen_categories_public_router, prefix=prefix)
 app.include_router(folders_router, prefix=prefix)
 app.include_router(thumbnails_router, prefix=prefix)
 app.include_router(document_router, prefix=prefix)
@@ -114,6 +109,7 @@ app.include_router(probe_router, prefix=prefix)
 app.include_router(tasks_router, prefix=prefix)
 app.include_router(version_router, prefix=prefix)
 app.include_router(library_ts_router, prefix=prefix)
+app.include_router(backup_router, prefix=prefix)
 app.include_router(ws_router)
 
 if settings.papermerge__search__url:

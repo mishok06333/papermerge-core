@@ -18,8 +18,21 @@ set "PAPERMERGE__REDIS__URL=redis://127.0.0.1:6379/0"
 set "PAPERMERGE__MAIN__MEDIA_ROOT=%ROOT_DIR%media"
 
 REM Full-text search (Solr in docker-compose, exposed on localhost).
-set "PAPERMERGE__SEARCH__URL=solr://127.0.0.1:8983/papermerge"
+REM If Solr is not up yet, skip SEARCH_URL so startup does not die on
+REM `paper-cli index-schema apply` (ConnectionError :8983).
 set "PAPERMERGE__MAIN__GOTENBERG_URL=http://127.0.0.1:3000"
+set "PAPERMERGE__SEARCH__URL="
+set "INDEX_SCHEMA_CMD=echo [info] Solr unavailable - starting without search"
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8983/solr/admin/info/system' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -ge 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+if %ERRORLEVEL%==0 (
+  set "PAPERMERGE__SEARCH__URL=solr://127.0.0.1:8983/papermerge"
+  set "INDEX_SCHEMA_CMD=poetry run paper-cli index-schema apply"
+  echo Solr is up — search enabled.
+) else (
+  echo [warn] Solr is not reachable on 127.0.0.1:8983
+  echo        Backend will start WITHOUT full-text search.
+  echo        Fix: docker compose up -d solr
+)
 
 REM Keep API shape identical to nginx/container mode.
 set "PAPERMERGE__MAIN__API_PREFIX=/api"
@@ -29,11 +42,15 @@ REM Local auth bypass for debugging only.
 set "PAPERMERGE__DEV__AUTH_BYPASS_ENABLED=true"
 set "PAPERMERGE__DEV__AUTH_BYPASS_USERNAME=admin"
 
+REM Display / wall-clock timezone (UTC+10). Matches docker-compose TZ.
+set "TZ=Asia/Vladivostok"
+set "PAPERMERGE__MAIN__TIMEZONE=Asia/Vladivostok"
+
 REM Leave VITE_BASE_URL unset so the UI calls relative /api and /ws via the Vite
 REM dev proxy (same origin as :15173 — no browser CORS preflight).
 
 echo Starting backend on http://127.0.0.1:%DEV_BE_PORT%
-start "papermerge-be-dev" cmd /k "cd /d ""%ROOT_DIR%"" && set ""PAPERMERGE__DATABASE__URL=%PAPERMERGE__DATABASE__URL%"" && set ""PAPERMERGE__REDIS__URL=%PAPERMERGE__REDIS__URL%"" && set ""PAPERMERGE__MAIN__MEDIA_ROOT=%PAPERMERGE__MAIN__MEDIA_ROOT%"" && set ""PAPERMERGE__MAIN__API_PREFIX=%PAPERMERGE__MAIN__API_PREFIX%"" && set ""PAPERMERGE__MAIN__CORS_ORIGINS=%PAPERMERGE__MAIN__CORS_ORIGINS%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_ENABLED=%PAPERMERGE__DEV__AUTH_BYPASS_ENABLED%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_USERNAME=%PAPERMERGE__DEV__AUTH_BYPASS_USERNAME%"" && set ""PAPERMERGE__SEARCH__URL=%PAPERMERGE__SEARCH__URL%"" && set ""PAPERMERGE__MAIN__GOTENBERG_URL=%PAPERMERGE__MAIN__GOTENBERG_URL%"" && set ""PAPERMERGE__OCR__ENABLED=false"" && poetry env use 3.13 && poetry install -E pg && poetry run task migrate && poetry run paper-cli index-schema apply && poetry run task server --host 127.0.0.1 --port %DEV_BE_PORT%"
+start "papermerge-be-dev" cmd /k "cd /d ""%ROOT_DIR%"" && set ""TZ=%TZ%"" && set ""PAPERMERGE__MAIN__TIMEZONE=%PAPERMERGE__MAIN__TIMEZONE%"" && set ""PAPERMERGE__DATABASE__URL=%PAPERMERGE__DATABASE__URL%"" && set ""PAPERMERGE__REDIS__URL=%PAPERMERGE__REDIS__URL%"" && set ""PAPERMERGE__MAIN__MEDIA_ROOT=%PAPERMERGE__MAIN__MEDIA_ROOT%"" && set ""PAPERMERGE__MAIN__API_PREFIX=%PAPERMERGE__MAIN__API_PREFIX%"" && set ""PAPERMERGE__MAIN__CORS_ORIGINS=%PAPERMERGE__MAIN__CORS_ORIGINS%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_ENABLED=%PAPERMERGE__DEV__AUTH_BYPASS_ENABLED%"" && set ""PAPERMERGE__DEV__AUTH_BYPASS_USERNAME=%PAPERMERGE__DEV__AUTH_BYPASS_USERNAME%"" && set ""PAPERMERGE__SEARCH__URL=%PAPERMERGE__SEARCH__URL%"" && set ""PAPERMERGE__MAIN__GOTENBERG_URL=%PAPERMERGE__MAIN__GOTENBERG_URL%"" && set ""PAPERMERGE__OCR__ENABLED=false"" && poetry env use 3.13 && poetry install -E pg && poetry run task migrate && %INDEX_SCHEMA_CMD% && poetry run task server --host 127.0.0.1 --port %DEV_BE_PORT%"
 
 echo Waiting for backend (migrations + poetry install may take a few minutes)...
 set /a WAIT_COUNT=0

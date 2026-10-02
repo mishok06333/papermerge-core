@@ -57,7 +57,7 @@ exec_portal_bootstrap() {
 }
 
 exec_library_catalog_bootstrap() {
-    echo "[init] Ensuring library catalog root for public browsing..."
+    echo "[init] Ensuring library catalog root..."
     _run_core paper-cli library init-catalog || echo "[init] library init-catalog failed (see logs)"
 }
 
@@ -113,9 +113,14 @@ window.__PAPERMERGE_RUNTIME_CONFIG__ = {
 };
 EOF
 
-    # Core UI runtime config (optional; empty object when OCR and other knobs are off).
-    /bin/env2js -f /etc/papermerge/core.js.tmpl \
-        > /usr/share/nginx/html/ui/papermerge-runtime-config.js
+    # Core UI runtime config. Rendered inline (same pattern as auth-server)
+    # so we can expose timezone without relying on env2js's OCR-only whitelist.
+    UI_TIMEZONE="${PAPERMERGE__MAIN__TIMEZONE:-Asia/Vladivostok}"
+    cat > /usr/share/nginx/html/ui/papermerge-runtime-config.js <<EOF
+window.__PAPERMERGE_RUNTIME_CONFIG__ = {
+  timezone: "${UI_TIMEZONE}"
+};
+EOF
 
     APP_TITLE="${PAPERMERGE__MAIN__APP_TITLE:-Электронная библиотека Хабаровского центра социальной поддержки населения}"
     AUTH_BRAND_TITLE="${PAPERMERGE__AUTH__BRAND_TITLE:-${APP_TITLE}}"

@@ -22,11 +22,3 @@ export const ADMIN_GUIDE_SECTION_KEYS = [
   "visibility",
   "audit"
 ] as const
-
-export const GUEST_GUIDE_SECTION_KEYS = [
-  "about",
-  "intro",
-  "browse",
-  "citizen_categories",
-  "login"
-] as const

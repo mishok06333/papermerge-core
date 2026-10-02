@@ -22,6 +22,7 @@ import {
   IconUsers,
   IconBookmark,
   IconClipboardList,
+  IconDatabaseExport,
   IconBook2,
   IconUsersGroup
 } from "@tabler/icons-react"
@@ -111,9 +112,14 @@ function NavBarFull() {
           </NavLink>
         )}
         {user.is_superuser && (
-          <NavLink to="/audit-log">
-            {NavLinkWithFeedback(t("audit_log.nav"), <IconClipboardList />)}
-          </NavLink>
+          <>
+            <NavLink to="/audit-log">
+              {NavLinkWithFeedback(t("audit_log.nav"), <IconClipboardList />)}
+            </NavLink>
+            <NavLink to="/admin/backup">
+              {NavLinkWithFeedback(t("backup.nav"), <IconDatabaseExport />)}
+            </NavLink>
+          </>
         )}
       </div>
       <Center className="navbar-bg-color">
@@ -200,9 +206,14 @@ function NavBarCollapsed() {
           </NavLink>
         )}
         {user.is_superuser && (
-          <NavLink to="/audit-log">
-            {NavLinkWithFeedbackShort(<IconClipboardList />)}
-          </NavLink>
+          <>
+            <NavLink to="/audit-log">
+              {NavLinkWithFeedbackShort(<IconClipboardList />)}
+            </NavLink>
+            <NavLink to="/admin/backup">
+              {NavLinkWithFeedbackShort(<IconDatabaseExport />)}
+            </NavLink>
+          </>
         )}
       </div>
       <Center className="navbar-bg-color">

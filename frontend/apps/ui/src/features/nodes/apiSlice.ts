@@ -46,6 +46,8 @@ export type PaginatedArgs = {
   page_number?: number
   page_size?: number
   filter?: string | null
+  sortColumn?: "title" | "file_type" | "created_at" | "updated_at"
+  sortDir?: "az" | "za"
 }
 
 import {COMMANDER_DEFAULT_PAGE_SIZE} from "@/cconstants"
@@ -57,7 +59,9 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
         nodeID,
         page_number = 1,
         page_size = COMMANDER_DEFAULT_PAGE_SIZE,
-        filter = undefined
+        filter = undefined,
+        sortColumn,
+        sortDir
       }: PaginatedArgs) => {
         const params = new URLSearchParams({
           page_number: String(page_number),
@@ -66,6 +70,14 @@ export const apiSliceWithNodes = apiSlice.injectEndpoints({
         if (filter) {
           params.set("filter", filter)
         }
+
+        if (sortColumn) {
+          const orderByColumn =
+            sortColumn === "file_type" ? "ctype" : sortColumn
+          const orderBy = sortDir === "za" ? `-${orderByColumn}` : orderByColumn
+          params.set("order_by", orderBy)
+        }
+
         return `/nodes/${nodeID}?${params.toString()}`
       },
       providesTags: (

@@ -920,5 +920,8 @@
   "backup.confirm_button": "Yes, restore",
   "backup.error": "Failed to create the backup.",
   "backup.restore_error": "Failed to restore the backup.",
+  "backup.restore_busy": "The archive is uploading and being applied. Keep this tab open.",
+  "backup.restore_too_large": "The archive is larger than the server will accept.",
+  "backup.restore_network_error": "The connection dropped during restore. The archive was not applied.",
   "backup.restore_success": "Backup restored. The page will reload."
 }

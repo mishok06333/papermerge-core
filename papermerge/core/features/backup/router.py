@@ -90,7 +90,8 @@ async def import_backup(
         # Release the request's SQLAlchemy connection before pg_restore drops
         # and recreates the application's tables.
         await db_session.close()
-        manifest = restore_backup(path)
+        # Keep the event loop free so the healthcheck is not failed mid-restore.
+        manifest = await asyncio.to_thread(restore_backup, path)
         return {
             "status": "ok",
             "message": "Backup restored successfully. Reload the application.",

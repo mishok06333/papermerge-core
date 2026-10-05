@@ -133,6 +133,9 @@ export default function BackupPage() {
         body: formData
       })
       if (!response.ok) {
+        if (response.status === 413) {
+          throw new Error(t("backup.restore_too_large"))
+        }
         const body = await response.text()
         throw new Error(body || t("backup.restore_error"))
       }
@@ -141,7 +144,10 @@ export default function BackupPage() {
       setFile(null)
       window.setTimeout(() => window.location.reload(), 1500)
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("backup.restore_error"))
+      const offline =
+        e instanceof TypeError ||
+        (e instanceof Error && /failed to fetch|networkerror|connection/i.test(e.message))
+      setError(offline ? t("backup.restore_network_error") : e instanceof Error ? e.message : t("backup.restore_error"))
     } finally {
       setBusy(false)
     }
@@ -219,6 +225,12 @@ export default function BackupPage() {
       >
         <Stack>
           <Text>{t("backup.confirm_text")}</Text>
+          {error ? <Alert color="red">{error}</Alert> : null}
+          {busy ? (
+            <Text size="sm" c="dimmed">
+              {t("backup.restore_busy")}
+            </Text>
+          ) : null}
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setRestoreOpened(false)} disabled={busy}>
               {t("common.cancel")}

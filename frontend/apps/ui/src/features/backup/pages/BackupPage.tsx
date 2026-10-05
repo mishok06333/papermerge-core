@@ -47,6 +47,30 @@ async function readError(response: Response, fallback: string): Promise<string> 
   return text.trim() || fallback
 }
 
+function restoreFailureText(
+  status: number,
+  body: string,
+  tooLarge: string,
+  fallback: string
+): string {
+  if (status === 413) {
+    return tooLarge
+  }
+  const trimmed = body.trim()
+  if (!trimmed || trimmed.startsWith("<")) {
+    return fallback
+  }
+  try {
+    const data = JSON.parse(trimmed) as {detail?: unknown}
+    if (typeof data.detail === "string" && data.detail.trim()) {
+      return data.detail
+    }
+  } catch {
+    // Plain text from the server.
+  }
+  return trimmed
+}
+
 export default function BackupPage() {
   const {t} = useTranslation()
   const user = useSelector(selectCurrentUser) as UserDetails | null
@@ -133,11 +157,15 @@ export default function BackupPage() {
         body: formData
       })
       if (!response.ok) {
-        if (response.status === 413) {
-          throw new Error(t("backup.restore_too_large"))
-        }
         const body = await response.text()
-        throw new Error(body || t("backup.restore_error"))
+        throw new Error(
+          restoreFailureText(
+            response.status,
+            body,
+            t("backup.restore_too_large"),
+            t("backup.restore_error")
+          )
+        )
       }
       setSuccess(true)
       setRestoreOpened(false)

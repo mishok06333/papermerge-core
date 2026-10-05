@@ -237,26 +237,101 @@ def _terminate_other_postgres_connections(db: dict) -> None:
     )
 
 
+def _is_unsupported_restore_guc(line: bytes) -> bool:
+    """True for session settings emitted by pg_restore 17+ that PostgreSQL 16 rejects.
+
+    ``transaction_timeout`` exists only on the server from version 17. The app
+    image ships a newer client than ``postgres:16``, and ``pg_restore`` sends
+    ``SET transaction_timeout = 0`` while initializing. Combined with
+    ``--single-transaction`` that one statement aborts the whole restore.
+    """
+    stripped = line.lstrip().lower()
+    return stripped.startswith(b"set transaction_timeout")
+
+
+def _apply_restore_sql(dump_path: Path, env: dict) -> None:
+    """Turn a custom dump into SQL, drop PG17-only settings, apply with psql."""
+    restore = subprocess.Popen(
+        [
+            "pg_restore",
+            "--clean",
+            "--if-exists",
+            "--no-owner",
+            "--no-acl",
+            "--file",
+            "-",
+            str(dump_path),
+        ],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    psql = subprocess.Popen(
+        [
+            "psql",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "--single-transaction",
+            "-q",
+            "--file",
+            "-",
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    restore_stderr: list[bytes] = []
+    psql_stderr: list[bytes] = []
+    psql_stdout: list[bytes] = []
+
+    def _drain(stream, bucket: list[bytes]) -> None:
+        if stream is not None:
+            bucket.append(stream.read())
+
+    readers = [
+        threading.Thread(target=_drain, args=(restore.stderr, restore_stderr)),
+        threading.Thread(target=_drain, args=(psql.stderr, psql_stderr)),
+        threading.Thread(target=_drain, args=(psql.stdout, psql_stdout)),
+    ]
+    for reader in readers:
+        reader.start()
+
+    assert restore.stdout is not None and psql.stdin is not None
+    try:
+        for line in restore.stdout:
+            if _is_unsupported_restore_guc(line):
+                continue
+            psql.stdin.write(line)
+    except BrokenPipeError:
+        pass
+    finally:
+        try:
+            psql.stdin.close()
+        except BrokenPipeError:
+            pass
+        restore.stdout.close()
+
+    restore_code = restore.wait()
+    psql_code = psql.wait()
+    for reader in readers:
+        reader.join()
+
+    if restore_code != 0:
+        detail = (restore_stderr[0] if restore_stderr else b"").decode("utf-8", "replace").strip()
+        raise RuntimeError(f"pg_restore failed: {detail or restore_code}")
+    if psql_code != 0:
+        detail = (psql_stderr[0] if psql_stderr else b"").decode("utf-8", "replace").strip()
+        raise RuntimeError(f"psql failed: {detail or psql_code}")
+
+
 def _restore_postgres(db: dict, dump_path: Path) -> None:
     env = _pg_env(db)
     _terminate_other_postgres_connections(db)
 
-    if _pg_tool_available("pg_restore"):
-        _run_checked(
-            [
-                "pg_restore",
-                "--clean",
-                "--if-exists",
-                "--no-owner",
-                "--no-acl",
-                "--exit-on-error",
-                "--single-transaction",
-                "--dbname",
-                f"postgresql://{db['user']}@{db['host']}:{db['port']}/{db['database']}",
-                str(dump_path),
-            ],
-            env=env,
-        )
+    if _pg_tool_available("pg_restore") and _pg_tool_available("psql"):
+        _apply_restore_sql(dump_path, env)
         return
 
     container = _docker_db_container(int(db["port"]))

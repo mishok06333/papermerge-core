@@ -484,6 +484,46 @@ async def stream_backup_archive(staging: Path) -> AsyncIterator[bytes]:
         raise RuntimeError("Backup archive failed") from error[0]
 
 
+def _discard_path(path: Path) -> None:
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    elif path.exists() or path.is_symlink():
+        path.unlink()
+
+
+def _replace_tree_contents(source: Path, destination: Path) -> None:
+    """Replace the children of ``destination`` with the children of ``source``.
+
+    ``destination`` itself is never renamed. In production it is the bind mount
+    ``/var/media/pmg``, and renaming a mount point fails with EBUSY
+    (``[Errno 16] Resource busy``).
+    """
+    destination.mkdir(parents=True, exist_ok=True)
+    incoming = destination / ".restore-incoming"
+    _discard_path(incoming)
+    copied = False
+    try:
+        if source.exists():
+            shutil.copytree(source, incoming, symlinks=True)
+        else:
+            incoming.mkdir()
+        copied = True
+        for child in list(destination.iterdir()):
+            if child.name == incoming.name:
+                continue
+            _discard_path(child)
+        for child in list(incoming.iterdir()):
+            shutil.move(str(child), str(destination / child.name))
+    except Exception:
+        # A failed copy must not leave a partial tree beside the current files.
+        # Once the copy is complete, keep it even if publishing fails.
+        if not copied:
+            _discard_path(incoming)
+        raise
+    else:
+        _discard_path(incoming)
+
+
 def _safe_extract_media(archive: tarfile.TarFile, target: Path) -> None:
     target = target.resolve()
     for member in archive.getmembers():
@@ -527,27 +567,8 @@ def restore_backup(archive_path: Path) -> dict:
 
         media_root = Path(get_settings().papermerge__main__media_root)
         staged_media = root / "media"
-        media_root.parent.mkdir(parents=True, exist_ok=True)
-        previous_media = media_root.parent / f".{media_root.name}.restore-old"
-        if previous_media.exists():
-            if previous_media.is_dir():
-                shutil.rmtree(previous_media)
-            else:
-                previous_media.unlink()
-
-        # Swap the complete media tree only after the DB restore succeeded.
-        # If the swap itself fails, put the original tree back.
-        if media_root.exists():
-            media_root.rename(previous_media)
-        try:
-            shutil.copytree(staged_media, media_root)
-        except Exception:
-            if media_root.exists():
-                shutil.rmtree(media_root)
-            if previous_media.exists():
-                previous_media.rename(media_root)
-            raise
-        if previous_media.exists():
-            shutil.rmtree(previous_media)
+        # The database is already replaced. Publish staged files inside the
+        # existing media directory; do not rename that directory.
+        _replace_tree_contents(staged_media, media_root)
 
         return manifest

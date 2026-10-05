@@ -36,6 +36,8 @@ import {useSelector} from "react-redux"
 import {Link} from "react-router-dom"
 import {useTranslation} from "react-i18next"
 
+import classes from "@/components/ViewportPage.module.css"
+
 export default function PortalFeedPage() {
   const {t} = useTranslation()
   const user = useSelector(selectCurrentUser) as UserDetails | null
@@ -158,7 +160,8 @@ export default function PortalFeedPage() {
   const busy = creating || updating
 
   return (
-    <Stack p="md" gap="lg">
+    <div className={classes.page}>
+    <Stack className={classes.scroll} p="md" gap="lg">
       <Paper withBorder p="md" radius="md" shadow="xs">
         <Group justify="space-between" align="center" wrap="wrap" gap="md">
           <Group gap="sm" align="center" wrap="wrap">
@@ -345,5 +348,6 @@ export default function PortalFeedPage() {
         </Stack>
       </Modal>
     </Stack>
+    </div>
   )
 }

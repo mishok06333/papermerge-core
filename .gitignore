@@ -16,6 +16,9 @@ docker/app/bin/env2js.amd64
 .env
 .envok.yaml
 
+# Local-only Cursor rule with production SSH credentials — never commit.
+.cursor/rules/server-upgrade.mdc
+
 
 *.pid
 .idea/

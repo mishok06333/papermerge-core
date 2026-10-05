@@ -1,8 +1,7 @@
-import importlib
-
 from fastapi import APIRouter
 
 from papermerge.core import schema
+from papermerge.core.version import __version__
 
 router = APIRouter(
     prefix="/version",
@@ -13,6 +12,4 @@ router = APIRouter(
 @router.get("/")
 async def get_version() -> schema.Version:
     """Papermerge REST API version"""
-    version_str = importlib.metadata.version("papermerge")
-
-    return schema.Version(version=version_str)
+    return schema.Version(version=__version__)

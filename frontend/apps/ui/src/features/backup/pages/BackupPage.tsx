@@ -11,6 +11,7 @@ import {
   Title
 } from "@mantine/core"
 import {IconAlertTriangle, IconDatabaseExport, IconDatabaseImport} from "@tabler/icons-react"
+import Cookies from "js-cookie"
 import {useState} from "react"
 import {useSelector} from "react-redux"
 import {useTranslation} from "react-i18next"
@@ -20,6 +21,32 @@ import {selectCurrentUser} from "@/slices/currentUser"
 import type {UserDetails} from "@/types"
 import AccessForbidden from "@/pages/errors/AccessForbidden"
 
+const BACKUP_FILENAME = "papermerge-backup.pmgbackup"
+
+type SaveFilePicker = (options: {
+  suggestedName?: string
+}) => Promise<{
+  createWritable: () => Promise<WritableStream & {abort: () => Promise<void>}>
+}>
+
+function authHeaders(): Record<string, string> {
+  const token = Cookies.get("access_token")
+  return token ? {Authorization: `Bearer ${token}`} : {}
+}
+
+async function readError(response: Response, fallback: string): Promise<string> {
+  const text = await response.text()
+  try {
+    const data = JSON.parse(text) as {detail?: unknown}
+    if (typeof data.detail === "string" && data.detail.trim()) {
+      return data.detail
+    }
+  } catch {
+    // Response is not JSON.
+  }
+  return text.trim() || fallback
+}
+
 export default function BackupPage() {
   const {t} = useTranslation()
   const user = useSelector(selectCurrentUser) as UserDetails | null
@@ -27,38 +54,63 @@ export default function BackupPage() {
   const [restoreOpened, setRestoreOpened] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
   if (!user) return <Loader />
   if (!user.is_superuser) return <AccessForbidden />
 
-  const authHeaders = () => {
-    const token = document.cookie
-      .split("; ")
-      .find(item => item.startsWith("access_token="))
-      ?.split("=")[1]
-    return token ? {Authorization: `Bearer ${decodeURIComponent(token)}`} : {}
-  }
-
   const exportBackup = async () => {
     setBusy(true)
     setError(null)
+    setNotice(null)
+    const url = `${getBaseURL()}/api/admin/backup/export`
     try {
-      const response = await fetch(`${getBaseURL()}/api/admin/backup/export`, {
-        headers: authHeaders()
-      })
-      if (!response.ok) {
-        throw new Error(await response.text())
+      const picker = (
+        window as Window & {showSaveFilePicker?: SaveFilePicker}
+      ).showSaveFilePicker
+      if (typeof picker === "function") {
+        let handle: Awaited<ReturnType<SaveFilePicker>>
+        try {
+          handle = await picker({suggestedName: BACKUP_FILENAME})
+        } catch (e) {
+          if (e instanceof DOMException && e.name === "AbortError") {
+            return
+          }
+          throw e
+        }
+        const writable = await handle.createWritable()
+        try {
+          const response = await fetch(url, {
+            headers: authHeaders(),
+            credentials: "include"
+          })
+          if (!response.ok || !response.body) {
+            throw new Error(await readError(response, t("backup.error")))
+          }
+          await response.body.pipeTo(writable)
+          setNotice(t("backup.export_done"))
+        } catch (e) {
+          await writable.abort().catch(() => undefined)
+          throw e
+        }
+        return
       }
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
+
+      const probe = await fetch(`${url}?probe=1`, {
+        headers: authHeaders(),
+        credentials: "include"
+      })
+      if (!probe.ok) {
+        throw new Error(await readError(probe, t("backup.error")))
+      }
       const anchor = document.createElement("a")
       anchor.href = url
-      anchor.download = "papermerge-backup.pmgbackup"
+      anchor.download = BACKUP_FILENAME
       document.body.appendChild(anchor)
       anchor.click()
       anchor.remove()
-      URL.revokeObjectURL(url)
+      setNotice(t("backup.export_started"))
     } catch (e) {
       setError(e instanceof Error ? e.message : t("backup.error"))
     } finally {
@@ -70,6 +122,7 @@ export default function BackupPage() {
     if (!file) return
     setBusy(true)
     setError(null)
+    setNotice(null)
     setSuccess(false)
     try {
       const formData = new FormData()
@@ -100,6 +153,7 @@ export default function BackupPage() {
       <Text c="dimmed">{t("backup.description")}</Text>
 
       {error ? <Alert color="red">{error}</Alert> : null}
+      {notice ? <Alert color="blue">{notice}</Alert> : null}
       {success ? <Alert color="green">{t("backup.restore_success")}</Alert> : null}
 
       <Card withBorder padding="lg">
@@ -113,11 +167,16 @@ export default function BackupPage() {
           </Group>
           <Button
             leftSection={<IconDatabaseExport size={18} />}
-            onClick={exportBackup}
+            onClick={() => void exportBackup()}
             loading={busy}
           >
             {t("backup.export_button")}
           </Button>
+          {busy ? (
+            <Text size="sm" c="dimmed">
+              {t("backup.export_busy")}
+            </Text>
+          ) : null}
         </Stack>
       </Card>
 

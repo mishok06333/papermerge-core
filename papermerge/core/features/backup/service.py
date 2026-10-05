@@ -1,10 +1,14 @@
+import asyncio
 import json
+import logging
 import os
 import shutil
 import subprocess
 import tarfile
 import tempfile
+import threading
 import uuid
+from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,7 +17,10 @@ from sqlalchemy.engine import make_url
 from papermerge.core.config import get_settings
 from papermerge.core.db.engine import resolve_database_url
 
+logger = logging.getLogger(__name__)
+
 BACKUP_FORMAT_VERSION = 1
+_ARCHIVE_CHUNK_SIZE = 1024 * 1024
 _PG_CLIENT_HINT = (
     "PostgreSQL client tools (pg_dump / pg_restore / psql) were not found on PATH, "
     "and no Docker Postgres container publishing the database port was available. "
@@ -89,6 +96,8 @@ def _pg_env(db: dict) -> dict:
     env["PGUSER"] = str(db["user"])
     env["PGDATABASE"] = str(db["database"])
     env["PGPASSWORD"] = str(db["password"])
+    # Fail instead of blocking the export request when the server is unreachable.
+    env.setdefault("PGCONNECT_TIMEOUT", "15")
     return env
 
 
@@ -100,6 +109,7 @@ def _run_checked(cmd: list[str], *, env: dict | None = None) -> subprocess.Compl
             check=True,
             capture_output=True,
             text=True,
+            stdin=subprocess.DEVNULL,
         )
     except FileNotFoundError as exc:
         raise RuntimeError(f"Command not found: {cmd[0]}") from exc
@@ -124,6 +134,7 @@ def _docker_db_container(port: int) -> str | None:
         capture_output=True,
         text=True,
         check=False,
+        stdin=subprocess.DEVNULL,
     )
     if result.returncode != 0:
         return None
@@ -147,6 +158,7 @@ def _dump_postgres(db: dict, db_path: Path) -> None:
                 "--format=custom",
                 "--no-owner",
                 "--no-acl",
+                "--lock-wait-timeout=60000",
                 "--file",
                 str(db_path),
             ],
@@ -178,6 +190,7 @@ def _dump_postgres(db: dict, db_path: Path) -> None:
                 "--format=custom",
                 "--no-owner",
                 "--no-acl",
+                "--lock-wait-timeout=60000",
                 "--file",
                 remote,
             ]
@@ -282,15 +295,28 @@ def _restore_postgres(db: dict, dump_path: Path) -> None:
         )
 
 
-def create_backup(output_path: Path) -> dict:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="papermerge-backup-") as tmp:
-        root = Path(tmp)
-        db_path = root / "database.dump"
-        media_path = root / "media"
-        media_path.mkdir()
-        db = _database_parts()
+def assert_backup_tools_available() -> None:
+    """Raise if this host cannot dump the configured database."""
+    db = _database_parts()
+    if db["kind"] != "postgresql":
+        return
+    if _pg_tool_available("pg_dump"):
+        return
+    if _docker_db_container(int(db["port"])):
+        return
+    raise RuntimeError(_PG_CLIENT_HINT)
 
+
+def prepare_backup_staging() -> tuple[Path, dict]:
+    """Dump the database into a temp directory. Media is not copied.
+
+    The caller owns the directory and must delete it.
+    """
+    root = Path(tempfile.mkdtemp(prefix="papermerge-backup-"))
+    try:
+        db = _database_parts()
+        assert_backup_tools_available()
+        db_path = root / "database.dump"
         if db["kind"] == "postgresql":
             _dump_postgres(db, db_path)
         else:
@@ -300,16 +326,15 @@ def create_backup(output_path: Path) -> dict:
             shutil.copy2(source, db_path)
 
         media_root = Path(get_settings().papermerge__main__media_root)
-        if media_root.exists():
-            shutil.copytree(media_root, media_path, dirs_exist_ok=True)
-
         manifest = {
             "format": "papermerge-backup",
             "format_version": BACKUP_FORMAT_VERSION,
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "papermerge_version": __import__("papermerge.core.version", fromlist=["__version__"]).__version__,
+            "papermerge_version": __import__(
+                "papermerge.core.version", fromlist=["__version__"]
+            ).__version__,
             "database": {"kind": db["kind"]},
-            "media_included": True,
+            "media_included": media_root.is_dir(),
             "runtime_settings": _runtime_settings(),
             "restore_notes": [
                 "The database dump contains users, roles, permissions, documents, folders, portal news, citizen categories and all other database-backed data.",
@@ -321,12 +346,67 @@ def create_backup(output_path: Path) -> dict:
         (root / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        with tarfile.open(output_path, "w:gz") as archive:
-            archive.add(root / "manifest.json", arcname="manifest.json")
-            archive.add(db_path, arcname="database.dump")
-            archive.add(media_path, arcname="media")
+        return root, manifest
+    except Exception:
+        shutil.rmtree(root, ignore_errors=True)
+        raise
 
+
+def _write_archive(staging: Path, destination) -> None:
+    """Write a gzip tar. Media is read from disk, not from a second full copy."""
+    media_root = Path(get_settings().papermerge__main__media_root)
+    with tarfile.open(fileobj=destination, mode="w|gz") as archive:
+        archive.add(staging / "manifest.json", arcname="manifest.json")
+        archive.add(staging / "database.dump", arcname="database.dump")
+        if media_root.is_dir():
+            archive.add(media_root, arcname="media")
+        else:
+            info = tarfile.TarInfo(name="media")
+            info.type = tarfile.DIRTYPE
+            info.mode = 0o755
+            archive.addfile(info)
+
+
+def create_backup(output_path: Path) -> dict:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    staging, manifest = prepare_backup_staging()
+    try:
+        with output_path.open("wb") as raw:
+            _write_archive(staging, raw)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
     return manifest
+
+
+async def stream_backup_archive(staging: Path) -> AsyncIterator[bytes]:
+    """Stream the archive as it is packed so the client can save it incrementally."""
+    read_fd, write_fd = os.pipe()
+    error: list[BaseException] = []
+
+    def produce() -> None:
+        try:
+            with os.fdopen(write_fd, "wb") as raw:
+                _write_archive(staging, raw)
+        except BrokenPipeError:
+            return
+        except BaseException as exc:  # noqa: BLE001
+            error.append(exc)
+            logger.exception("Backup archive stream failed")
+
+    thread = threading.Thread(target=produce, name="backup-archive", daemon=True)
+    thread.start()
+    loop = asyncio.get_running_loop()
+    try:
+        with os.fdopen(read_fd, "rb") as raw:
+            while True:
+                chunk = await loop.run_in_executor(None, raw.read, _ARCHIVE_CHUNK_SIZE)
+                if not chunk:
+                    break
+                yield chunk
+    finally:
+        thread.join(timeout=30)
+    if error:
+        raise RuntimeError("Backup archive failed") from error[0]
 
 
 def _safe_extract_media(archive: tarfile.TarFile, target: Path) -> None:

@@ -2,7 +2,7 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -57,10 +57,16 @@ def extract_token_data(token: str = Depends(oauth2_scheme)) -> types.TokenData |
 
 async def get_current_user(
     security_scopes: SecurityScopes,
+    request: Request,
     token: str | None = Depends(oauth2_scheme),
     db_session: AsyncSession = Depends(get_db),
 ) -> users_schema.User:
     settings = get_settings()
+
+    # Browser downloads (anchor / location) send the cookie but not Authorization.
+    if not token:
+        cookie_token = request.cookies.get("access_token")
+        token = cookie_token or None
 
     if not token and settings.papermerge__dev__auth_bypass_enabled:
         bypass_username = settings.papermerge__dev__auth_bypass_username

@@ -401,7 +401,7 @@
         "about": {
           "title": "About the project",
           "items": [
-            "Digital library, version 0.0.8",
+            "Digital library, version 0.2.4",
             "Project created for KGKU \"Khabarovsk Center for Social Support of the Population\"",
             "Developers: Sokolov Mikhail Andreevich, Razuvaev Sergey Alexandrovich"
           ]
@@ -446,7 +446,7 @@
         "about": {
           "title": "About the project",
           "items": [
-            "Digital library, version 0.0.8",
+            "Digital library, version 0.2.4",
             "Project created for KGKU \"Khabarovsk Center for Social Support of the Population\"",
             "Developers: Sokolov Mikhail Andreevich, Razuvaev Sergey Alexandrovich"
           ]
@@ -457,7 +457,8 @@
             "Sign in using the Sign in button on the landing page or go to /home.",
             "After login you see the main UI: section menu on the left, search bar, notifications, theme toggle, and user menu on top.",
             "The ? icon in the header opens this help page at any time.",
-            "Use the sidebar toggle in the header to collapse or expand the navigation menu."
+            "Use the sidebar toggle in the header to collapse or expand the navigation menu.",
+            "Dates and times in lists, the feed, and the audit log are shown in the Vladivostok time zone (UTC+10)."
           ]
         },
         "portal": {
@@ -475,7 +476,10 @@
             "The Library menu item combines personal lists: favorites, recent items, and trash.",
             "Favorites — materials you starred for quick access.",
             "Recent — folders and documents you opened recently.",
-            "Trash — deleted materials. With sufficient rights you can restore or purge them permanently."
+            "Trash — deleted materials. With sufficient rights you can restore or purge them permanently.",
+            "Files stay in trash for a limited number of days, then are deleted automatically. The retention period is shown on the Trash tab.",
+            "The Notifications tab and the bell in the header report new feed posts. You can mark them as read.",
+            "On a document you can leave a private note (visible only to you), a rating, and comments when your role allows it."
           ]
         },
         "citizen_categories": {
@@ -494,7 +498,10 @@
             "For PDFs you can select and copy recognized text when OCR has been run.",
             "Download is available from the viewer toolbar when you have the download permission.",
             "Use the viewer controls to change zoom.",
-            "Dual-panel mode lets you browse different folders or documents side by side."
+            "Dual-panel mode lets you browse different folders or documents side by side.",
+            "Microsoft Word documents open page by page. On upload the system also prepares a PDF copy.",
+            "Download lets you choose a file version: the original document or the prepared PDF.",
+            "The Full file version block on the document card lists attached catalog materials when you have permission to view them."
           ]
         },
         "search": {
@@ -502,7 +509,9 @@
           "items": [
             "Enter a query in the header search field.",
             "Press Enter or the search button to open the results page.",
-            "Results list documents found in the full-text index when search is enabled by the administrator."
+            "Results list documents found in the full-text index when search is enabled by the administrator.",
+            "Narrow results by type (folders or documents), by tag, and change the sort order.",
+            "When a match is inside a document, the page number is shown next to it."
           ]
         },
         "tags": {
@@ -539,7 +548,7 @@
         "about": {
           "title": "About the project",
           "items": [
-            "Digital library, version 0.0.8",
+            "Digital library, version 0.2.4",
             "Project created for KGKU \"Khabarovsk Center for Social Support of the Population\"",
             "Developers: Sokolov Mikhail Andreevich, Razuvaev Sergey Alexandrovich"
           ]
@@ -562,6 +571,7 @@
             "The Employee role is for browsing, downloading, and commenting without changing catalog content.",
             "Administrator and Moderator roles grant extended rights to manage the catalog, users, and settings.",
             "The role permission tree includes Citizen categories: view, create, update, and delete categories, plus assign folders to categories.",
+            "Separate permissions control viewing and attaching the Full file version block on a document card.",
             "When creating a custom role, grant only the permissions that are truly needed.",
             "After permission changes in code, run paper-cli perms sync on the server."
           ]
@@ -596,6 +606,8 @@
             "Citizen categories: when one folder is selected, the users-group icon button opens category assignment.",
             "Delete: select items and click Delete — with soft delete enabled they go to trash.",
             "Sorting and quick filter are on the toolbar above the list.",
+            "Arrange turns on a manual order: start from the current sort, then drag individual folders and files. Done saves that order for every user.",
+            "Uploaded Word files automatically get a PDF copy for viewing and download.",
             "Page operations (extract, rotate, delete pages) are available in the viewer when permitted."
           ]
         },
@@ -612,19 +624,31 @@
         "visibility": {
           "title": "7. Document and folder visibility",
           "items": [
-            "Each document or folder can be public, restricted, or visible only to the owner and moderators.",
+            "A folder or document can inherit access from its parent, stay limited to the owner and moderators, be open to everyone including guests, or be limited to selected roles.",
             "A visibility icon appears next to the name in the file manager.",
             "Change visibility with the Visibility button when one item is selected and you have node.update.",
-            "Public materials are available to guests at /browse without signing in."
+            "Guests open public materials without signing in. Role-based materials are visible only to users with the selected roles.",
+            "Nested items set to Inherit take the effective access level of the parent folder."
+          ]
+        },
+        "backup": {
+          "title": "8. Backup",
+          "items": [
+            "The Backup menu item is available only to the superuser.",
+            "Export everything builds a portable archive: the database (users, roles, permissions, documents, folders, news, citizen categories, settings) and every uploaded file.",
+            "After you choose where to save it, the archive downloads as papermerge-backup.pmgbackup. Keep the tab open until the export finishes.",
+            "Restore from archive replaces the current database and files with the selected archive. Make a fresh copy before restoring.",
+            "Database address, media path, and the token signing secret are not carried over. Users may need to sign in again after import."
           ]
         },
         "audit": {
-          "title": "8. Audit log",
+          "title": "9. Audit log",
           "items": [
             "The Audit log menu item is available only to superusers.",
             "The log records user actions: views, downloads, catalog changes, and other events.",
             "Use pagination to browse a long history.",
-            "The audit log helps investigate incidents and monitor system usage."
+            "The audit log helps investigate incidents and monitor system usage.",
+            "The superuser sets trash retention on the Trash tab in Library. After that period files are deleted permanently."
           ]
         }
       }
@@ -882,6 +906,9 @@
   "backup.export_title": "Export entire system",
   "backup.export_description": "The archive includes users, roles, permissions, documents, folders, news, citizen categories, database-backed settings and the entire media directory.",
   "backup.export_button": "Export everything",
+  "backup.export_busy": "The archive is being built and saved. Keep this tab open until the export finishes.",
+  "backup.export_done": "Backup saved.",
+  "backup.export_started": "Download handed off to the browser. Watch the browser downloads list.",
   "backup.import_title": "Import entire system",
   "backup.import_description": "Restores the database and file storage from a previously created archive.",
   "backup.file_placeholder": "Choose a .pmgbackup archive",

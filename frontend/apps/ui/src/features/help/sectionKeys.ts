@@ -20,5 +20,6 @@ export const ADMIN_GUIDE_SECTION_KEYS = [
   "commander",
   "citizen_categories",
   "visibility",
+  "backup",
   "audit"
 ] as const

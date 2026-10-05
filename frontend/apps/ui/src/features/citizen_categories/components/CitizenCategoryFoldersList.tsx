@@ -46,15 +46,7 @@ export default function CitizenCategoryFoldersList({categoryId}: Props) {
   }
 
   return (
-    <Stack
-      gap="sm"
-      style={{
-        maxHeight: "calc(100dvh - 10rem)",
-        overflowY: "auto",
-        overflowX: "hidden",
-        paddingRight: "0.25rem"
-      }}
-    >
+    <Stack gap="sm">
       {folders.map(row => (
         <Paper
           key={row.node_id}

@@ -23,7 +23,16 @@ logger = logging.getLogger(__name__)
 
 
 def _set_access_token(response: Response, access_token: str) -> schema.Token:
-    response.set_cookie("access_token", access_token)
+    # Match the JWT lifetime. A session cookie outlives the token and the
+    # login SPA then reloads forever on the next visit.
+    max_age = int(settings.papermerge__security__token_expire_minutes) * 60
+    response.set_cookie(
+        settings.papermerge__security__cookie_name,
+        access_token,
+        max_age=max_age,
+        path="/",
+        samesite="lax",
+    )
     response.headers["Authorization"] = f"Bearer {access_token}"
     return schema.Token(access_token=access_token)
 
@@ -179,7 +188,9 @@ async def verify_endpoint(request: Request) -> Response:
             settings.papermerge__security__secret_key,
             algorithms=[settings.papermerge__security__token_algorithm],
         )
-    except jwt.DecodeError:
+    except jwt.InvalidTokenError:
+        # ExpiredSignatureError is not a DecodeError; leaving it uncaught
+        # turned an expired cookie into HTTP 500 and the login-page reload loop.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",

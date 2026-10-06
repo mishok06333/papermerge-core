@@ -217,13 +217,17 @@ EOF
     cp -f "${AUTH_I18N_DIR}/en.json" "${AUTH_I18N_DIR}/ru.json"
     cp -f "${AUTH_I18N_DIR}/en.json" "${AUTH_I18N_DIR}/de.json"
 
-    # Auth-server login SPA sometimes keeps the login form after a successful
-    # POST /token (client-side navigation without a full reload). Poll for the
-    # access_token cookie and hard-navigate to the UI bundle on /home.
+    # After POST /token the login SPA must hard-navigate into the UI. The
+    # snippet must not reload when nginx already served this page because
+    # /verify rejected an expired access_token cookie — that loops forever.
     AUTH_HTML="/usr/share/nginx/html/auth_server/index.html"
     AUTH_POST_LOGIN_SNIPPET="/etc/papermerge/post-login-redirect.snippet.html"
-    if [ -f "$AUTH_HTML" ] && [ -f "$AUTH_POST_LOGIN_SNIPPET" ] \
-        && ! grep -q 'id="post-login-redirect"' "$AUTH_HTML"; then
+    if [ -f "$AUTH_HTML" ] && [ -f "$AUTH_POST_LOGIN_SNIPPET" ]; then
+        # Replace any previously injected copy so a stale reload loop cannot
+        # survive an image update.
+        if grep -q 'id="post-login-redirect"' "$AUTH_HTML"; then
+            sed -i '/<script id="post-login-redirect">/,/<\/script>/d' "$AUTH_HTML"
+        fi
         sed -i "/<\\/body>/r ${AUTH_POST_LOGIN_SNIPPET}" "$AUTH_HTML"
     fi
 }

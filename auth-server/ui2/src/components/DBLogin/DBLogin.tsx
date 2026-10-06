@@ -49,9 +49,15 @@ export default function Login() {
           } else if (response.status != 200) {
             setError(`Error: status code ${response.status}`);
           } else {
-            let a = document.createElement('a');
-            a.href = get_redirect_endpoint()
-            a.click()
+            const target = get_redirect_endpoint()
+            const here = window.location.pathname
+            // Already on /home: a same-URL link click does not replace the
+            // login document nginx served after a rejected cookie.
+            if (here === "/home" || here.indexOf("/home/") === 0) {
+              window.location.reload()
+            } else {
+              window.location.assign(target)
+            }
           }
         }
       ).catch(error => {

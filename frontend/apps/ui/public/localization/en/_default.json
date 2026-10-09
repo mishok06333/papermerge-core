@@ -149,6 +149,7 @@
   "citizen_categories.assign_hint": "Pick categories from the list. Remove assigned ones with the pill close button.",
   "citizen_categories.folder_count": "Folders: {{count}}",
   "portal.root_folder": "Home",
+  "breadcrumb.show_full_path": "Full path",
   "portal.catalog_hint": "Pick a section in the tree on the left or an item below. Documents open in the built-in viewer.",
   "portal.feed_hint": "Official portal updates. Attachments open documents in the viewer.",
   "portal.feed_nav": "News",
@@ -410,13 +411,13 @@
           "title": "1. About the system",
           "items": [
             "The digital library provides access to the organization's document catalog.",
-            "Without signing in you can only browse public materials."
+            "Catalog, news, and document pages open after sign-in. Without an account the site shows the login page."
           ]
         },
         "browse": {
           "title": "2. Browsing the catalog",
           "items": [
-            "The home page shows the section tree and a list of documents.",
+            "After sign-in, Home shows the list of sections and documents.",
             "Open a section to see subfolders and files.",
             "Click a document to view it in the built-in viewer."
           ]
@@ -425,17 +426,16 @@
           "title": "3. Citizen categories",
           "items": [
             "The Citizen categories item in the menu shows a catalog of categories — a convenient way to find materials by target audience.",
-            "Pick a category to see linked catalog folders.",
-            "Open a folder to browse documents the same way as in the main catalog.",
-            "Only public folders assigned by an administrator appear in a category."
+            "Pick a category to see linked catalog folders you are allowed to open.",
+            "Open a folder to browse documents the same way as in the main catalog."
           ]
         },
         "login": {
           "title": "4. Signing in",
           "items": [
-            "Click Sign in in the header to open the login form.",
+            "If there is no session, or it has ended, the login page opens.",
             "When self-registration is enabled by the administrator, the login page offers a Create account link.",
-            "After a successful login, additional sections appear depending on your assigned role.",
+            "After a successful login, sections appear according to your assigned role.",
             "If registration is disabled and you do not have an account, contact a system administrator."
           ]
         }
@@ -454,91 +454,93 @@
         "intro": {
           "title": "1. Getting started",
           "items": [
-            "Sign in using the Sign in button on the landing page or go to /home.",
-            "After login you see the main UI: section menu on the left, search bar, notifications, theme toggle, and user menu on top.",
-            "The ? icon in the header opens this help page at any time.",
-            "Use the sidebar toggle in the header to collapse or expand the navigation menu.",
-            "Dates and times in lists, the feed, and the audit log are shown in the Vladivostok time zone (UTC+10)."
+            "After sign-in the working interface opens. When the session ends, the site returns to the login page.",
+            "On the left is the menu of sections your role can open. On top are search, the ? button (this help), the bell, the light/dark theme switch, and the user menu.",
+            "The sidebar button in the header collapses or expands the menu.",
+            "Dates and times in lists, the news feed, and the audit log use the Vladivostok time zone (UTC+10)."
           ]
         },
         "portal": {
           "title": "2. Portal and document catalog",
           "items": [
-            "The Home item in the menu opens the portal catalog with a section tree and material list.",
-            "Click a folder to open its contents; click a document to view it in the built-in viewer.",
-            "The Feed section contains official portal news. Attachments open like regular documents.",
-            "Navigate using the tree on the left or the list in the main area."
+            "Home opens the catalog: a list of folders and documents, a path trail, and an optional section tree. Turn the tree on with Show folder tree.",
+            "Click a folder to open its contents and a document to open the viewer.",
+            "If your role can use the file browser, the catalog has Manage in file browser. From the browser, Browse in catalog returns to the catalog list.",
+            "News is the portal feed: title, text, date, author, and attachments. An attachment opens like any other document.",
+            "Users who can manage the feed see Add news and can edit or delete a post. Attachments are picked from the portal tree with Documents…."
           ]
         },
         "library": {
           "title": "3. Library",
           "items": [
-            "The Library menu item combines personal lists: favorites, recent items, and trash.",
-            "Favorites — materials you starred for quick access.",
-            "Recent — folders and documents you opened recently.",
-            "Trash — deleted materials. With sufficient rights you can restore or purge them permanently.",
-            "Files stay in trash for a limited number of days, then are deleted automatically. The retention period is shown on the Trash tab.",
-            "The Notifications tab and the bell in the header report new feed posts. You can mark them as read.",
-            "On a document you can leave a private note (visible only to you), a rating, and comments when your role allows it."
+            "Library has three tabs: Favorites, Recent, and Trash.",
+            "Favorites are materials you starred in the document viewer. You can also remove the star on the Favorites tab.",
+            "Recent lists folders and documents you opened, with the view time.",
+            "Trash holds deleted materials. Select rows and choose Restore or Delete permanently when your role allows it.",
+            "The Trash tab shows how long files are kept. After that they are deleted automatically. Only a superuser can change the period (1 to 3650 days).",
+            "The bell in the header lists new feed posts only. You can mark an item read and open the feed."
           ]
         },
         "citizen_categories": {
           "title": "4. Citizen categories",
           "items": [
-            "The Citizen categories item in the sidebar opens a catalog with a short description and linked folder count for each category.",
-            "Pick a category to see catalog folders assigned to it.",
-            "Open a folder — navigation and document viewing work the same as under Home.",
-            "Creating and editing categories and linking folders to categories require the appropriate permissions."
+            "Citizen categories opens a catalog with a name, short description, and linked folder count.",
+            "Pick a category to see folders you are allowed to open.",
+            "Open a folder — navigation continues the same way as under Home.",
+            "Creating and editing categories and linking folders to them require the matching permissions."
           ]
         },
         "documents": {
           "title": "5. Viewing documents",
           "items": [
-            "Documents open in a viewer with page navigation. PDF, images, and other common formats are supported.",
-            "For PDFs you can select and copy recognized text when OCR has been run.",
-            "Download is available from the viewer toolbar when you have the download permission.",
-            "Use the viewer controls to change zoom.",
-            "Dual-panel mode lets you browse different folders or documents side by side.",
-            "Microsoft Word documents open page by page. On upload the system also prepares a PDF copy.",
-            "Download lets you choose a file version: the original document or the prepared PDF.",
-            "The Full file version block on the document card lists attached catalog materials when you have permission to view them."
+            "The viewer toolbar has the favorite star, Download (when permitted), About file, and, with file-browser permission, split screen.",
+            "Split screen opens a second panel with the same material. The arrow copies one panel into the other so you can compare different folders or documents.",
+            "The breadcrumb above the document returns to the parent folder.",
+            "PDFs and images open in the browser preview. Zoom and text selection, when the file contains text, use that preview.",
+            "Word documents (.docx) are shown page by page: you can jump to a page number and change the zoom.",
+            "Video and audio play in the viewer. Text files and HTML are shown as text.",
+            "Spreadsheets, presentations, archives, and older Word files (.doc) can be downloaded. A detailed preview may be unavailable.",
+            "On upload, Word (.docx) and JPG, JPEG, PNG, TIF, and TIFF images also get a PDF copy. Download lets you choose the original or that copy.",
+            "The About file panel contains tags, Full file version, a private note, a rating, and comments.",
+            "The private note is visible only to you and requires permission to edit materials. The rating is 1 to 5 stars, with the average shown beside it.",
+            "Full file version lists attached catalog materials. Documents… is available when you can change that list."
           ]
         },
         "search": {
           "title": "6. Search",
           "items": [
-            "Enter a query in the header search field.",
-            "Press Enter or the search button to open the results page.",
-            "Results list documents found in the full-text index when search is enabled by the administrator.",
-            "Narrow results by type (folders or documents), by tag, and change the sort order.",
-            "When a match is inside a document, the page number is shown next to it."
+            "The header search field takes a text query. Enter or the search button opens the results page.",
+            "Results include folders and documents. Limit the type to all, folders only, or documents only.",
+            "Sort by relevance, title A–Z, or title Z–A.",
+            "A result shows its tags. There is no separate tag filter.",
+            "When a match inside a document is not on the first page, the page number is shown next to it.",
+            "The Go back to library arrow on the results page opens the Favorites tab."
           ]
         },
         "tags": {
           "title": "7. Tags",
           "items": [
-            "Tags help group documents by topic.",
-            "The Tags menu item shows the tag catalog available in the system.",
-            "You can assign tags to documents and folders from the file manager when you have the required permission.",
-            "Creating and editing tags in the catalog is limited to administrators and moderators."
+            "Tags group documents and folders by topic.",
+            "The Tags menu item shows the catalog: name and description.",
+            "You can assign tags in the file browser (one selected item) and in About file when you may pick tags from the catalog.",
+            "New tags are created only in the catalog. That is limited to administrators and moderators."
           ]
         },
         "profile": {
-          "title": "8. Profile and notifications",
+          "title": "8. Profile",
           "items": [
             "The user menu in the top-right corner includes Profile.",
             "In your profile you can change email, first name, last name, and password.",
             "Username and assigned roles are read-only.",
-            "The bell icon shows notifications about system events.",
-            "Choose Log out in the user menu to end your session."
+            "Choose Log out in the user menu to end the session."
           ]
         },
         "comments": {
           "title": "9. Comments",
           "items": [
-            "You can leave comments on documents when your role allows it.",
-            "You may edit and delete your own comments.",
-            "Other users' comments are read-only unless you have moderator rights."
+            "Comments and the rating are in the About file panel of an open document.",
+            "You can leave a comment when your role allows it. You can edit and delete your own comments.",
+            "Other people's comments can be edited or deleted only with the separate comment-moderation permissions."
           ]
         }
       }
@@ -556,99 +558,93 @@
         "users": {
           "title": "1. User management",
           "items": [
-            "The Users item in the sidebar opens the account list.",
-            "Create a user with username, email, and initial password (per your policy).",
-            "Assign one or more roles and groups — they define access rights.",
-            "Disable an account with the Active flag to block login without deleting data.",
-            "Edit other users on their detail page."
+            "Users opens the account list.",
+            "Create adds a user: username, email, first name, last name, and an initial password.",
+            "Select one row to edit the account, change the password (Change Password), or delete it. Several rows can be deleted together.",
+            "The account form assigns one or more roles. Roles decide which menu sections and catalog actions are available.",
+            "Clear Active to block sign-in and keep the data. Superuser opens the audit log, backup, and the trash retention setting."
           ]
         },
         "roles": {
           "title": "2. Roles and permissions",
           "items": [
-            "The Roles section lists roles and their permission scopes.",
-            "Built-in roles: Administrator, Moderator, and Employee.",
-            "The Employee role is for browsing, downloading, and commenting without changing catalog content.",
-            "Administrator and Moderator roles grant extended rights to manage the catalog, users, and settings.",
-            "The role permission tree includes Citizen categories: view, create, update, and delete categories, plus assign folders to categories.",
-            "Separate permissions control viewing and attaching the Full file version block on a document card.",
-            "When creating a custom role, grant only the permissions that are truly needed.",
-            "After permission changes in code, run paper-cli perms sync on the server."
+            "Roles lists every role. A role can be created, edited (its permissions), and deleted.",
+            "Built-in roles are shown as Administrator, Moderator, and Employee.",
+            "Employee can browse the catalog and feed, download documents, pick existing tags, comment, and rate. That role cannot change the catalog, publish news, write private notes, or manage users.",
+            "Administrator and Moderator receive the full application permission set. The audit log and backup stay limited to the superuser.",
+            "The permission tree includes Citizen categories: view, create, update, delete, and assign folders.",
+            "Separate permissions control viewing and editing the Full file version block.",
+            "For a new role, grant only the permissions that are needed."
           ]
         },
         "tags": {
           "title": "3. Tag catalog",
           "items": [
-            "Create, rename, and delete tags centrally in the Tags section.",
-            "Users with tag-select permission assign tags from the catalog but cannot create new tags themselves.",
-            "Before deleting a tag, check that it is no longer used on important documents."
+            "In Tags you create, edit, and delete tags: name, description, and the Pinned flag.",
+            "Users who may select tags assign them from the catalog and cannot create new ones.",
+            "Before deleting a tag, check that it is no longer needed. Deletion removes the tag from documents and folders."
           ]
         },
         "portal": {
           "title": "4. Portal and news feed",
           "items": [
-            "Edit the portal catalog structure (folders and documents) in the file manager under Home.",
-            "Upload files with Upload and create folders with New folder.",
-            "The Feed section publishes news with title, body, and attachments from the portal catalog.",
-            "Use the Documents… dialog to pick attachments from the portal tree.",
-            "On first deploy, initialize the portal catalog with paper-cli portal init on the server."
+            "The catalog is edited in the file browser, not in the Home list: use Manage in file browser.",
+            "In the browser you can Upload, create a New Folder, and drop files from the computer into the current folder.",
+            "On Feed, Add news creates a post with a title, text, and attachments. An existing post can be edited or deleted.",
+            "Attachments and Full file version are chosen with Documents… from the portal tree."
           ]
         },
         "commander": {
           "title": "5. File manager",
           "items": [
-            "The file manager opens when you enter a catalog or portal folder.",
-            "Upload: use Upload and select one or more files from your computer.",
-            "New folder: use New folder to create a subfolder.",
-            "MSP template: Create MSP template (when you can create folders) adds a root folder with the standard social support measure layout: intake, assignment, and reference materials.",
-            "Move: drag selected items onto a target folder.",
-            "Rename: select one item and click Rename.",
-            "Citizen categories: when one folder is selected, the users-group icon button opens category assignment.",
-            "Delete: select items and click Delete — with soft delete enabled they go to trash.",
-            "Sorting and quick filter are on the toolbar above the list.",
-            "Arrange turns on a manual order: start from the current sort, then drag individual folders and files. Done saves that order for every user.",
-            "Uploaded Word files automatically get a PDF copy for viewing and download.",
-            "Page operations (extract, rotate, delete pages) are available in the viewer when permitted."
+            "The file browser opens from Manage in file browser in the catalog. The bottom of the list has page numbers and a page size.",
+            "When nothing is selected: Upload, New Folder, and, if you can create folders, Create MSP template.",
+            "Create MSP template adds a folder named by you, with the sections «1. Прием документов», «2. Назначение», and «3. Информационный материал», plus the nested folders inside them. If a folder with that name already exists, the template is not created.",
+            "One selected item: Change title, tags, and Visibility. For one folder, the users-group icon assigns citizen categories.",
+            "Delete moves the selected items to trash. Restore and permanent delete are on the Trash tab in Library.",
+            "The superuser sets how long trash is kept on that same tab.",
+            "The sort icon orders the list by title, type, modified date, or created date, ascending or descending. Quick search keeps name matches in the list.",
+            "Arrange turns on a manual order. Start from the current sort, then drag individual folders and files. Done saves the order for everyone; Cancel leaves without saving.",
+            "To move items, drag them onto the target folder and confirm the dialog.",
+            "Word (.docx) files and JPG, JPEG, PNG, TIF, and TIFF images get a PDF copy on upload. Rotating, deleting, and extracting pages in the viewer is unavailable."
           ]
         },
         "citizen_categories": {
           "title": "6. Citizen category catalog",
           "items": [
-            "The Citizen categories item in the menu opens the category catalog.",
-            "Create a category with a name and description — it appears immediately for users and guests.",
-            "Edit or delete a category from the row actions. Deleting a category does not delete folders — only the link is removed.",
-            "To show a folder in a category, open it in the file manager, select the folder, and assign categories with the users-group icon button.",
-            "Only public folders appear in categories for guests."
+            "Citizen categories opens the catalog. With create permission you can add a category with a name and description.",
+            "A row can be edited or deleted. Deleting a category does not delete folders — only the link is removed.",
+            "To show a folder in a category, open it in the file browser, select the folder, and click the users-group icon (Citizen categories).",
+            "In a category, a user sees only the linked folders they are allowed to open."
           ]
         },
         "visibility": {
           "title": "7. Document and folder visibility",
           "items": [
-            "A folder or document can inherit access from its parent, stay limited to the owner and moderators, be open to everyone including guests, or be limited to selected roles.",
-            "A visibility icon appears next to the name in the file manager.",
-            "Change visibility with the Visibility button when one item is selected and you have node.update.",
-            "Guests open public materials without signing in. Role-based materials are visible only to users with the selected roles.",
-            "Nested items set to Inherit take the effective access level of the parent folder."
+            "Visibility is available when one item is selected and you can change it.",
+            "Modes: Inherit from parent folder, Owner and moderators only, Everyone (including guests), and Selected roles only.",
+            "For Selected roles only, pick the roles. An icon next to the name in the list shows the current mode.",
+            "Items set to Inherit take the level of the nearest parent folder that has an explicit mode. If none is set, the material stays restricted.",
+            "A superuser can see materials regardless of the mode. The site still opens only after sign-in: Everyone widens access under the visibility rules and does not replace an account."
           ]
         },
         "backup": {
           "title": "8. Backup",
           "items": [
-            "The Backup menu item is available only to the superuser.",
+            "Backup in the menu is available only to the superuser.",
             "Export everything builds a portable archive: the database (users, roles, permissions, documents, folders, news, citizen categories, settings) and every uploaded file.",
-            "After you choose where to save it, the archive downloads as papermerge-backup.pmgbackup. Keep the tab open until the export finishes.",
-            "Restore from archive replaces the current database and files with the selected archive. Make a fresh copy before restoring.",
+            "The archive is saved as papermerge-backup.pmgbackup. Keep the tab open until the export finishes.",
+            "Restore from archive replaces the current database and files with the selected archive. Make a fresh copy and confirm before restoring.",
             "Database address, media path, and the token signing secret are not carried over. Users may need to sign in again after import."
           ]
         },
         "audit": {
           "title": "9. Audit log",
           "items": [
-            "The Audit log menu item is available only to superusers.",
-            "The log records user actions: views, downloads, catalog changes, and other events.",
-            "Use pagination to browse a long history.",
-            "The audit log helps investigate incidents and monitor system usage.",
-            "The superuser sets trash retention on the Trash tab in Library. After that period files are deleted permanently."
+            "Audit log in the menu is available only to the superuser.",
+            "The table shows time, user, action, resource type, identifier, and detail.",
+            "It records sign-in and sign-out, views and downloads, search, catalog changes, tags, visibility, comments, ratings, notes, favorites, users, roles, and feed posts.",
+            "A long history is split into pages."
           ]
         }
       }

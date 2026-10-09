@@ -223,7 +223,7 @@ export default function Viewer() {
         onRotateCCClicked={onRotateCCItemClicked}
         onDeletePagesClicked={onDeletePagesItemClicked}
       />
-      <Breadcrumbs breadcrumb={breadcrumb} onClick={onClick} />
+      <Breadcrumbs breadcrumb={breadcrumb} onClick={onClick} leaf="document" />
       <Flex className={classes.inner} style={{height: `${height}px`}}>
         {chrome === "native-pdf" && <NativePdfViewer />}
         {chrome === "docx" && (
